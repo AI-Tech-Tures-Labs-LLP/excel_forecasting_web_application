@@ -213,131 +213,300 @@ const ProductDetailsView = ({ productId, onBack }) => {
     );
   };
 
-  const renderMonthlyForecastTable = (year) => {
-    if (!productData?.monthly_forecast) return null;
+  const renderCurrentYearForecastTable = () => {
+  const year = new Date().getFullYear(); // Current year
+  if (!productData?.monthly_forecast) return null;
 
-    const yearForecasts = productData.monthly_forecast.filter(
-      (f) => f.year === year
-    );
+  const yearForecasts = productData.monthly_forecast.filter(
+    (f) => f.year === year
+  );
 
-    const forecastRows = [
-      { key: "TY_Unit_Sales", label: "Total Sales Units" },
-      { key: "LY_Unit_Sales", label: "Store Sales Units" },
-      { key: "TY_MCOM_Unit_Sales", label: "COM Sales Units" },
-      {
-        key: "MCOM_PTD_TY_Sales",
-        label: "COM % to TTL (Sales)",
-        isPercentage: true,
-      },
-      { key: "TY_OH_Units", label: "TOTAL EOM OH" },
-      { key: "MacysProjectionReciepts", label: "Macys Projection Receipts" },
-    ];
+  const forecastRows = [
+    { key: "TY_Unit_Sales", label: "Total Sales Units" },
+    { key: "Formula(ayega)", label: "Store Sales Units" },
+    { key: "TY_MCOM_Unit_Sales", label: "COM Sales Units" },
+    {
+      key: "Formula(ayega)",
+      label: "COM % to TTL (Sales)",
+      isPercentage: true,
+    },
+    { key: "TY_OH_Units", label: "TOTAL EOM OH" },
+    { key: "Formula(ayega)", label: "STORE EOM OH" },
+    { key: "TY_OH_MCOM_Units", label: "COM EOH OH" },
+    {
+      key: "Formula(ayega)",
+      label: "COM % to TTL (EOH)",
+      isPercentage: true,
+    },
+    { key: "PTD_TY_Sales", label: "Omni Sales $" },
+    { key: "MCOM_PTD_TY_Sales", label: "COM Sales $" },
+    { key: "Formula(ayega)", label: "Omni AUR/% Diff Own" },
+    { key: "Formula(ayega)", label: "Omni Sell Thru %" },
+    { key: "Formula(ayega)", label: "Store SellThru %" },
+    { key: "Formula(ayega)", label: "Omni Turn" },
+    { key: "Formula(ayega)", label: "Store turn" },
+    { key: "Formula(ayega)", label: "TY Store Sales U vs LY" },
+    { key: "Formula(ayega)", label: "TY COM sales U vs LY" },
+    { key: "Formula(ayega)", label: "TY Store EOH vs LY" },
+    { key: "OO_Total_Units", label: "Omni OO Units" },
+    { key: "OO_MCOM_Total_Units", label: "COM OO Units" },
+    { key: "TY_Receipts", label: "Omni Receipts" },
 
-    return (
-      <div className="overflow-x-auto">
-        <table className="min-w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">
-                TOTAL {year}
+
+        
+
+    // { key: "MacysProjectionReciepts", label: "Macys Projection Receipts" },
+  ];
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse border border-gray-300">
+        <thead>
+          <tr className="bg-gray-50">
+            <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">
+              TOTAL {year}
+            </th>
+            {monthLabels.map((month) => (
+              <th
+                key={month}
+                className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700"
+              >
+                {month}
               </th>
-              {monthLabels.map((month) => (
-                <th
-                  key={month}
-                  className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700"
-                >
-                  {month}
-                </th>
-              ))}
-              <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
-                ANNUAL
-              </th>
-              <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
-                SPRING
-              </th>
-              <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
-                FALL
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {forecastRows.map((row, index) => {
-              const forecast = yearForecasts.find(
-                (f) => f.variable_name === row.key
-              );
+            ))}
+            <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+              ANNUAL
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+              SPRING
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+              FALL
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {forecastRows.map((row, index) => {
+            const forecast = yearForecasts.find(
+              (f) => f.variable_name === row.key
+            );
 
-              if (!forecast) {
-                return (
-                  <tr
-                    key={row.key}
-                    className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                  >
-                    <td className="border border-gray-300 px-3 py-2 text-sm font-medium">
-                      {row.label}
-                    </td>
-                    {monthLabels.map((_, i) => (
-                      <td
-                        key={i}
-                        className="border border-gray-300 px-3 py-2 text-center text-sm"
-                      >
-                        -
-                      </td>
-                    ))}
-                    <td className="border border-gray-300 px-3 py-2 text-center text-sm font-medium">
-                      -
-                    </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center text-sm">
-                      -
-                    </td>
-                    <td className="border border-gray-300 px-3 py-2 text-center text-sm">
-                      -
-                    </td>
-                  </tr>
-                );
-              }
-
-              const totals = calculateTotals(forecast);
-              const isPercentageRow = row.key === "MCOM_PTD_TY_Sales";
-
+            if (!forecast) {
               return (
                 <tr
                   key={row.key}
-                  className={
-                    isPercentageRow
-                      ? "bg-yellow-50"
-                      : index % 2 === 0
-                      ? "bg-white"
-                      : "bg-gray-50"
-                  }
+                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                 >
                   <td className="border border-gray-300 px-3 py-2 text-sm font-medium">
                     {row.label}
                   </td>
-                  {months.map((month) => (
+                  {monthLabels.map((_, i) => (
                     <td
-                      key={month}
+                      key={i}
                       className="border border-gray-300 px-3 py-2 text-center text-sm"
                     >
-                      {formatValue(forecast[month], row.isPercentage)}
+                      -
                     </td>
                   ))}
                   <td className="border border-gray-300 px-3 py-2 text-center text-sm font-medium">
-                    {formatValue(totals.annual, row.isPercentage)}
+                    -
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-center text-sm">
-                    {formatValue(totals.spring, row.isPercentage)}
+                    -
                   </td>
                   <td className="border border-gray-300 px-3 py-2 text-center text-sm">
-                    {formatValue(totals.fall, row.isPercentage)}
+                    -
                   </td>
                 </tr>
               );
-            })}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
+            }
+
+            const totals = calculateTotals(forecast);
+            const isPercentageRow = row.key === "MCOM_PTD_TY_Sales";
+
+            return (
+              <tr
+                key={row.key}
+                className={
+                  isPercentageRow
+                    ? "bg-yellow-50"
+                    : index % 2 === 0
+                    ? "bg-white"
+                    : "bg-gray-50"
+                }
+              >
+                <td className="border border-gray-300 px-3 py-2 text-sm font-medium">
+                  {row.label}
+                </td>
+                {months.map((month) => (
+                  <td
+                    key={month}
+                    className="border border-gray-300 px-3 py-2 text-center text-sm"
+                  >
+                    {formatValue(forecast[month], row.isPercentage)}
+                  </td>
+                ))}
+                <td className="border border-gray-300 px-3 py-2 text-center text-sm font-medium">
+                  {formatValue(totals.annual, row.isPercentage)}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-center text-sm">
+                  {formatValue(totals.spring, row.isPercentage)}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-center text-sm">
+                  {formatValue(totals.fall, row.isPercentage)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+const renderLastYearForecastTable = () => {
+  const year = new Date().getFullYear() - 1; // Last year
+  if (!productData?.monthly_forecast) return null;
+
+  const yearForecasts = productData.monthly_forecast.filter(
+    (f) => f.year === year
+  );
+
+  const forecastRows = [
+    { key: "LY_Unit_Sales", label: "Total Sales Units" },
+    { key: "Formula(ayega)", label: "Store Sales Units" },
+    { key: "LY_MCOM_Unit_Sales", label: "COM Sales Units" },
+    {
+      key: "Formula(ayega)",
+      label: "COM % to TTL (Sales)",
+      isPercentage: true,
+    },
+    { key: "LY_OH_Units", label: "TOTAL EOM OH" },
+    { key: "Formula(ayega)", label: "STORE EOM OH" },
+
+    { key: "LY_MCOM_OH_Units", label: "COM EOH OH" },
+
+    {
+      key: "Formula(ayega)",
+      label: "COM % to TTL (EOH)",
+      isPercentage: true,
+    },
+    { key: "LY_PTD_Sales", label: "Omni Sales $" },
+    { key: "MCOM_PTD_LY_Sales", label: "COM Sales $" },
+    { key: "Formula(ayega)", label: "Omni AUR/% Diff Own" },
+    { key: "Formula(ayega)", label: "Omni Sell Thru %" },
+    { key: "Formula(ayega)", label: "Store SellThru %" },
+    { key: "Formula(ayega)", label: "Omni Turn" },
+    { key: "Formula(ayega)", label: "Store turn" },
+    { key: "LY_Receipts", label: "Omni Receipts" },
+    // { key: "MacysProjectionReciepts", label: "Macys Projection Receipts" },
+  ];
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full border-collapse border border-gray-300">
+        <thead>
+          <tr className="bg-gray-50">
+            <th className="border border-gray-300 px-3 py-2 text-left text-sm font-medium text-gray-700">
+              TOTAL {year}
+            </th>
+            {monthLabels.map((month) => (
+              <th
+                key={month}
+                className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700"
+              >
+                {month}
+              </th>
+            ))}
+            <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+              ANNUAL
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+              SPRING
+            </th>
+            <th className="border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700">
+              FALL
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {forecastRows.map((row, index) => {
+            const forecast = yearForecasts.find(
+              (f) => f.variable_name === row.key
+            );
+
+            if (!forecast) {
+              return (
+                <tr
+                  key={row.key}
+                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
+                  <td className="border border-gray-300 px-3 py-2 text-sm font-medium">
+                    {row.label}
+                  </td>
+                  {monthLabels.map((_, i) => (
+                    <td
+                      key={i}
+                      className="border border-gray-300 px-3 py-2 text-center text-sm"
+                    >
+                      -
+                    </td>
+                  ))}
+                  <td className="border border-gray-300 px-3 py-2 text-center text-sm font-medium">
+                    -
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-center text-sm">
+                    -
+                  </td>
+                  <td className="border border-gray-300 px-3 py-2 text-center text-sm">
+                    -
+                  </td>
+                </tr>
+              );
+            }
+
+            const totals = calculateTotals(forecast);
+            const isPercentageRow = row.key === "MCOM_PTD_TY_Sales";
+
+            return (
+              <tr
+                key={row.key}
+                className={
+                  isPercentageRow
+                    ? "bg-yellow-50"
+                    : index % 2 === 0
+                    ? "bg-white"
+                    : "bg-gray-50"
+                }
+              >
+                <td className="border border-gray-300 px-3 py-2 text-sm font-medium">
+                  {row.label}
+                </td>
+                {months.map((month) => (
+                  <td
+                    key={month}
+                    className="border border-gray-300 px-3 py-2 text-center text-sm"
+                  >
+                    {formatValue(forecast[month], row.isPercentage)}
+                  </td>
+                ))}
+                <td className="border border-gray-300 px-3 py-2 text-center text-sm font-medium">
+                  {formatValue(totals.annual, row.isPercentage)}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-center text-sm">
+                  {formatValue(totals.spring, row.isPercentage)}
+                </td>
+                <td className="border border-gray-300 px-3 py-2 text-center text-sm">
+                  {formatValue(totals.fall, row.isPercentage)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
   if (loading) {
     return (
@@ -459,20 +628,20 @@ const ProductDetailsView = ({ productId, onBack }) => {
         </div>
         {expandedSections.monthlyForecast && (
           <div className="p-6 space-y-6">
-            {/* 2025 Data */}
+            {/* 2025 Data - Current Year */}
             <div>
               <h4 className="text-md font-semibold text-gray-700 mb-4">
-                TOTAL 2025
+                TOTAL {new Date().getFullYear()}
               </h4>
-              {renderMonthlyForecastTable(2025)}
+              {renderCurrentYearForecastTable()}
             </div>
 
-            {/* 2024 Data */}
+            {/* 2024 Data - Last Year */}
             <div>
               <h4 className="text-md font-semibold text-gray-700 mb-4">
-                TOTAL 2024
+                TOTAL {new Date().getFullYear() - 1}
               </h4>
-              {renderMonthlyForecastTable(2024)}
+              {renderLastYearForecastTable()}
             </div>
           </div>
         )}
