@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from forecast.service.staticVariable import *
 
 
+
 def count_ttl_com_sale(LY_Unit_Sales, LY_MCOM_Unit_Sales):
     All_LY_Unit_Sales_list = [LY_Unit_Sales[month] for month in MONTHS]
     ALL_LY_MCOM_Unit_Sales = [LY_MCOM_Unit_Sales[month] for month in MONTHS]
@@ -59,7 +60,13 @@ def get_vendor_details(vendor, vendor_sheet):
    
     return country, lead_time
  
-
+def calculate_forecast_date_basic(current_date: datetime, lead_time: int, country) -> datetime:
+    """
+    Calculate forecast date based on lead time (in weeks).
+    If country is Italy and August is between current_date and forecast_date, skip August.
+    """
+    raw_forecast_date = current_date + timedelta(weeks=lead_time)
+    return raw_forecast_date
 
 def calculate_forecast_date(current_date: datetime, lead_time: int, country) -> datetime:
     """
@@ -84,7 +91,7 @@ def adjust_lead_time(country, current_date, forecast_date, lead_time):
     """Adjust lead time based on holiday periods."""
     holiday_periods = {
         "China": ("2025-01-22", "2025-02-05", 11),
-        "Italy": ("2025-08-1", "2025-08-31", 14)
+        "Italy": ("2025-08-01", "2025-08-31", 14)
     }
    
     currentdate = current_date.strftime("%Y-%m-%d")
@@ -133,9 +140,9 @@ def calculate_std_index_value(index_value_dict,STD_PERIOD):
     Compute rounded index values and total for given months.
     """
     # Round index values for each STD month
-    std_period_index_value_list = [round(index_value_dict[month], 2) for month in STD_PERIOD]
+    std_period_index_value_list = [index_value_dict[month] for month in STD_PERIOD]
     # Sum the index values
-    total_std_period_index_value = sum(std_period_index_value_list)
+    total_std_period_index_value = round(sum(std_period_index_value_list),2)
  
     return total_std_period_index_value
  
@@ -355,19 +362,19 @@ def adjust_std_trend_minimum(std_trend_main, std_trend_new):
     if abs(std_trend_new) <= abs(std_trend_main):
         std_trend = std_trend_new
     else:
-        if std_trend_main > 65:
-            std_trend = 40
-        elif std_trend_main < -60:
-            std_trend = -30
-        else:
-            std_trend = std_trend_main  # keep original if not exceeding thresholds
-
+        std_trend=std_trend_main
+    if std_trend > 0.65:
+        std_trend = 0.40
+    elif std_trend < -0.60:
+        std_trend = -0.30
+    else:
+        std_trend = std_trend
     return std_trend
 def handle_large_trend(std_trend_main):
-    if std_trend_main > 65:
-        std_trend = 40
-    elif std_trend_main < -60:
-        std_trend = -30
+    if std_trend_main > 0.65:
+        std_trend = 0.40
+    elif std_trend_main < -0.60:
+        std_trend = -0.30
     else:
         std_trend = std_trend_main  # keep original if not exceeding thresholds
 
@@ -512,7 +519,15 @@ def get_return_quantity_dict(pid, df):
     required_quantity_dict_80_percent = {month: round(value * 0.8) for month, value in return_quantity_dict.items()}
  
     return return_quantity_dict, required_quantity_dict_80_percent
- 
+def clean_return_dict(return_quantity_dict,current_month):
+    # Set months before current to 0
+    current_month=find_next_month_after_forecast_month(current_month)
+    for month in MONTHS:
+        if month == current_month:
+            break
+        if month in return_quantity_dict:
+            return_quantity_dict[month] = 0
+    return return_quantity_dict
 def calculate_planned_oh(v1, k1, row_10, row_11, row_21, row_37, row_43, row_17, current_month):
     # Define the fixed column-to-month mapping
     month_to_index = {month: idx + 1 for idx, month in enumerate(MONTHS)}  # FEB=1, ..., JAN=12
@@ -829,17 +844,20 @@ def safe_float(value):
 
 def sum_planned_shipments(season_months, forecast_month, planned_shipments, macys_proj_receipt, omni_receipts):
     start_index = 0
-    season_months=MONTHS
-    end_index = season_months.index(forecast_month) + 2  # Include forecast month
+    if forecast_month=='JUL' or forecast_month=='AUG':
+        season_months=MONTHS
+    else:
+        season_months=season_months
+    end_index = season_months.index(forecast_month) + 1  # Include forecast month
     selected_months = season_months[start_index:end_index]
     logging.info(f'selected_months',selected_months)
     omni_receipts_sum = sum(safe_float(omni_receipts.get(month, 0)) for month in selected_months)
     planned_shipment_sum = sum(safe_float(planned_shipments.get(month, 0)) for month in selected_months)
     macys_proj_receipt_sum = sum(safe_float(macys_proj_receipt.get(month, 0)) for month in selected_months)
 
-    sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month = omni_receipts_sum + planned_shipment_sum
+    sum_of_omni_receipt_and_planned_shipment = omni_receipts_sum + planned_shipment_sum
 
-    return sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month, macys_proj_receipt_sum
+    return sum_of_omni_receipt_and_planned_shipment, macys_proj_receipt_sum
 
 # def sum_planned_shipments(season_months, forecast_month, planned_shipments,macys_proj_receipt,omni_receipts):
    
@@ -872,6 +890,8 @@ def determine_percentage_to_add_quantity(average_store_sale_thru, Own_Retail):
         percentage = 0.75
     elif Own_Retail <= 1000 and average_store_sale_thru >= 0.04:
         percentage = 0.75
+    elif Own_Retail >= 2000 and average_store_sale_thru >= 0.04:
+        percentage = 0.50
     elif Own_Retail > 1000 and average_store_sale_thru >= 0.04:
         percentage = 0.65
     else:
@@ -886,9 +906,8 @@ def adjust_planned_shipments_based_on_macys(
     planned_shipments,
     planned_oh,
     KPI_Door_count,
-    category,
-    return_quantity_dict,
-    pid_value
+    category
+
 ):
     # Calculate remaining units
     remaining_units = macys_proj_receipt_upto_next_month_after_forecast_month - sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month
@@ -896,29 +915,28 @@ def adjust_planned_shipments_based_on_macys(
     if remaining_units > 0:
         if planned_oh[forecast_month] < 3 * KPI_Door_count:
             if category != "Men's":
+
                 additional_units = round((remaining_units * percentage), 0)
                 planned_shipments[forecast_month] += additional_units
                 logging.info(f'Macy additional_units: {additional_units}')
+    return planned_shipments,additional_units
 
-
-    logging.info(f'return_quantity_dict: {return_quantity_dict}')
-
+def handle_return_qty(planned_shipments,return_quantity_dict,forecast_month):
     # Subtract return quantities from planned shipments
+    logging.info(f'return_quantity_dict: {return_quantity_dict}')
+    total_sum = sum(return_quantity_dict.values())
     planned_shipments = {
         month: planned_shipments.get(month, 0) - return_quantity_dict.get(month, 0)
         for month in MONTHS
 
     }
+    planned_shipments[forecast_month]=total_sum
+    return planned_shipments
 
-    return planned_shipments,additional_units
- 
 def round_to_nearest_five(value):
     return math.ceil(value / 5) * 5
  
-def check_macys_min_order(
-    pid_value,
-    macys_season_sum, 
-    planned_season_sum,
+def calculate_total_added_qty(
     total_gross_projection,
     in_transit,
     planned_shp,

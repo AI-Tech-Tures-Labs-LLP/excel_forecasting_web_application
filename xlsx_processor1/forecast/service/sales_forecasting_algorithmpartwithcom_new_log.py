@@ -6,7 +6,7 @@ logging.basicConfig(filename=r'log_file_all1.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s',
                     filemode='w')
 
-def algorithm(loader,category,store,coms,omni):
+def algorithm(loader,category,store,coms,omni,code):
    
     from forecast.service.getretailinfo import current_month,year_of_previous_month,season,previous_week_number
     from forecast.service.staticVariable import month_week_dict,CURRENT_DATE
@@ -17,12 +17,17 @@ def algorithm(loader,category,store,coms,omni):
     logging.info(f'pid: {loader.pid_value}')
     logging.info(f'RLJ: {loader.RLJ}')
     logging.info(f'country: {country}')
-    forecast_date =calculate_forecast_date(CURRENT_DATE, lead_time,country)
+    forecast_date =calculate_forecast_date_basic(CURRENT_DATE, lead_time,country)
     logging.info(f'current_month: {current_month}')
     logging.info(f'forecast_date: {forecast_date}')
-    logging.info(f'previous_week_number: {previous_week_number}')
+    logging.info(f'forecast_date: {forecast_date}')
+    logging.info(f'CURRENT_DATE: {CURRENT_DATE}')
     lead_time,leadtime_holiday = adjust_lead_time(country, CURRENT_DATE, forecast_date, lead_time)
-    forecast_date = calculate_forecast_date(CURRENT_DATE, lead_time, country)
+    logging.info(f'previous_week_number: {leadtime_holiday}')
+    
+    
+    if leadtime_holiday:
+        forecast_date = calculate_forecast_date(CURRENT_DATE, lead_time, country)
     forecast_month = get_forecast_info(forecast_date)
     week_of_forecast_month = get_week_of_month(forecast_date)
     actual_weeks=[feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks ]
@@ -30,9 +35,7 @@ def algorithm(loader,category,store,coms,omni):
     logging.info(f'actual_weeks_dict[forecast_month]: {actual_weeks_dict[forecast_month]}')
     logging.info(f'week_of_forecast_month: {week_of_forecast_month}')
     logging.info(f'forecast_month: {forecast_month}')
-    last_week_or_not_result = is_day_after_23(forecast_date)
 
-    logging.info(f'last_week_or_not_result: {last_week_or_not_result}')
     logging.info(f'forecast_date: {forecast_date}')
     logging.info(f'loader.Safe_Non_Safe: {loader.Safe_Non_Safe}')
     current_month=current_month.upper()
@@ -50,7 +53,8 @@ def algorithm(loader,category,store,coms,omni):
     row17_values=[loader.TY_Unit_Sales[month] for month in MONTHS]
     row39_values=[loader.LY_Unit_Sales[month] for month in MONTHS]
     row41_values=[loader.LY_MCOM_Unit_Sales[month] for month in MONTHS]
-
+    return_quantity_dict, return_quantity_dict_80_percent = get_return_quantity_dict(loader.pid_value, return_QA_df)
+    return_quantity_dict_80_percent=clean_return_dict(return_quantity_dict_80_percent,current_month)
     forecast_season=get_forecast_month_season(forecast_month)
     logging.info(f'forecast_season: {forecast_season}')
     logging.info(f'season: {season}')
@@ -63,6 +67,8 @@ def algorithm(loader,category,store,coms,omni):
     logging.info(f'in_transit: {in_transit}')
     planned_shp = loader.planned_shp
     planned_shp[current_month] += in_transit
+    planned_shp=handle_return_qty(planned_shp,return_quantity_dict_80_percent,forecast_month)
+    logging.info(f'return_quantity_dict_80_percent: {return_quantity_dict_80_percent}')
     planned_shp_original = copy.deepcopy(planned_shp)
     logging.info(f'planned_shp: {planned_shp}')
     check_no_red_box = contains_no_longer_red_box(loader.Planner_Response)
@@ -175,7 +181,7 @@ def algorithm(loader,category,store,coms,omni):
         
         planned_oh_before_adding_qty_next_to_next_month = copy.deepcopy(planned_oh)
         logging.info(f'planned_oh {planned_oh}')
-        if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2) or last_week_or_not_result:
+        if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2):
            
             planned_shp = update_projection_for_month(forecast_month_next_next_month, required_quantity, planned_oh, planned_shp, loader.pid_value)
             if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2):
@@ -254,11 +260,11 @@ def algorithm(loader,category,store,coms,omni):
                 com_doorcount=round(find_average_com_oh(TY_average_COM_OH,LY_average_COM_OH,std_trend),0)
                 logging.info(f'com_doorcount inventory maintain: {com_doorcount}')
             else:
-                com_doorcount =round( (sum(LY_MCOM_Unit_Sales_List) / len(LY_MCOM_Unit_Sales_List)),0)
+                com_doorcount =round( (sum(TY_com_Unit_Sales_list_new) / len(TY_com_Unit_Sales_list_new)),0)
                 logging.info(f'com_doorcount inventory not maintain: {com_doorcount}')
             required_quantity,Calculate_FLDC=required_quantity_for_com(forecast_month, planned_fc,com_doorcount)
             logging.info(f'required_quantity: {required_quantity}')
-            override_value=loader.TY_MCOM_OH_Units[current_month]
+            override_value=loader.TY_MCOM_OH_Units[current_month]+planned_shp[current_month]-planned_fc[current_month]
             logging.info(f'override_value: {override_value}')
             planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=override_value)
             logging.info(f'planned_oh: {planned_oh}')
@@ -281,7 +287,7 @@ def algorithm(loader,category,store,coms,omni):
             logging.info(f'planned_oh {planned_oh}')
 
             planned_oh_before_adding_qty_com_next_to_next_month = copy.deepcopy(planned_oh)
-            if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2) or last_week_or_not_result:
+            if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2):
                 if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2):
                     leadtime_holiday=True
                 forecast_month_next_next_month=find_next_month_after_forecast_month(forecast_month_next_month)
@@ -366,7 +372,7 @@ def algorithm(loader,category,store,coms,omni):
                 com_doorcount=round(find_average_com_oh(TY_average_COM_OH,LY_average_COM_OH,std_trend),0)
                 logging.info(f'com_doorcount inventory maintain: {com_doorcount}')
             else:
-                com_doorcount =round( (sum(LY_MCOM_Unit_Sales_List) / len(LY_MCOM_Unit_Sales_List)),0)
+                com_doorcount =round( (sum(TY_com_Unit_Sales_list_new) / len(TY_com_Unit_Sales_list_new)),0)
                 logging.info(f'com_doorcount inventory not maintain: {com_doorcount}')
             required_quantity_com,com_Calculate_FLDC=required_quantity_for_com(forecast_month, planned_fc_com,com_doorcount)
             logging.info(f'required_quantity_com: {required_quantity_com}')
@@ -445,7 +451,6 @@ def algorithm(loader,category,store,coms,omni):
             planned_fc=calculate_planned_fc(row4_values, recommended_fc, loader.TY_Unit_Sales, loader.LY_OH_Units,rolling_method, current_month_number)
             actual_sale_unit=loader.TY_Unit_Sales[current_month]
             planned_fc=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc,fc_by_trend,planned_fc,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status_store,std_trend,check_no_red_box,actual_sale_unit)
-            
             planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
             planned_oh_before_adding_qty = copy.deepcopy(planned_oh)
             required_quantity={month: required_quantity_store.get(month, 0) + required_quantity_com.get(month, 0) for month in required_quantity_store}
@@ -465,7 +470,7 @@ def algorithm(loader,category,store,coms,omni):
             logging.info(f'2 planned_oh before holiday check: {planned_oh}')
 
             planned_oh_before_adding_qty_next_to_next_month= copy.deepcopy(planned_oh)
-            if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2) or last_week_or_not_result:
+            if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2):
                 if (country=='Italy' and forecast_month=='JUL' and week_of_forecast_month > 2):
                     leadtime_holiday=True
                 forecast_month_next_next_month=find_next_month_after_forecast_month(forecast_month_next_month)
@@ -510,24 +515,44 @@ def algorithm(loader,category,store,coms,omni):
         else:
             MAcy_SOQ_percentage = 0.75
         logging.info(f'MAcy_SOQ_percentage: {MAcy_SOQ_percentage}')
-        return_quantity_dict, return_quantity_dict_80_percent = get_return_quantity_dict(loader.pid_value, return_QA_df)
+        
 
+        # planned_oh_qty=planned_shp[forecast_month]-planned_shp_original[]
+        planned_oh_qty={month: planned_shp.get(month, 0) - planned_shp_original.get(month, 0) for month in planned_shp}
+        logging.info(f'planned_oh_qty************* {planned_oh_qty}')
         planned_shp,macy_additional_units = adjust_planned_shipments_based_on_macys(
             forecast_month, macys_proj_receipt_upto_next_month_after_forecast_month,
             sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month,
-            MAcy_SOQ_percentage, planned_shp, planned_oh, loader.KPI_Door_count, category,
-            return_quantity_dict_80_percent, loader.pid_value
+            MAcy_SOQ_percentage, planned_shp, planned_oh, loader.KPI_Door_count, category         
         )
         logging.info(f'planned_shp after macys adjustment: {planned_shp}')
-
+        planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
+        logging.info(f'planned_oh {planned_oh}')
+        logging.info(f'KPI_Door_count {loader.KPI_Door_count}')
+        if (planned_oh[forecast_month]>(3*loader.KPI_Door_count)) and (pid_type=='store_pid'or pid_omni_status) and macy_additional_units :
+            extra_oh_qty=planned_oh[forecast_month]-(3*loader.KPI_Door_count)
+            logging.info(f'extra_oh_qty {extra_oh_qty}')
+            if macy_additional_units>extra_oh_qty:
+                extra_oh_qty=extra_oh_qty
+            else:
+                extra_oh_qty=macy_additional_units
+            logging.info(f'extra_oh_qty {extra_oh_qty}')
+            planned_shp[forecast_month]=planned_shp[forecast_month] - extra_oh_qty
+        planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
+        logging.info(f'planned_shp after macys adjustment: {planned_shp}')
+        
+        planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
+        logging.info(f'planned_shp after return qty adjustment: {planned_shp}')
         total_gross_projection = sum([
             loader.Nav_Feb, loader.Nav_Mar, loader.Nav_Apr, loader.Nav_May, loader.Nav_Jun,
             loader.Nav_Jul, loader.Nav_Aug, loader.Nav_Sep, loader.Nav_Oct, loader.Nav_Nov,
             loader.Nav_Dec, loader.Nav_Jan
         ])
         logging.info(f'total_gross_projection: {total_gross_projection}')
-
-        total_added_quantity = check_macys_min_order(loader.pid_value, macys_season_sum, planned_season_sum, total_gross_projection,in_transit, planned_shp)
+        logging.info(f'original shp: {planned_shp_original}')
+        logging.info(f'updated shp: {planned_shp}')
+    
+        total_added_quantity = calculate_total_added_qty(total_gross_projection,in_transit, planned_shp)
 
         logging.info(f'total_added_quantity: {total_added_quantity}')
 
@@ -538,7 +563,7 @@ def algorithm(loader,category,store,coms,omni):
         is_added_by_only_SOQ = True if total_added_quantity == macy_additional_units else False
         if pid_type=='store_pid':
             data_store = {
-            "category":category,
+            "category":f"{category} ({code})",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             "vendor":vendor,
@@ -573,12 +598,18 @@ def algorithm(loader,category,store,coms,omni):
             "Added qtys by Macys SOQ":macy_additional_units,  
             "forecast_month_planned_shipment":planned_shp[forecast_month],
             "Next_forecast_month_planned_shipment":planned_shp[forecast_month_next_month],
+            "Qty_added_to_maintain_OH_forecast_month": planned_oh_qty[forecast_month],
+            "Qty_added_to_maintain_OH_next_forecast_month": planned_oh_qty[forecast_month_next_month],
+            "Qty_added_to_balance_SOQ_forecast_month": planned_shp[forecast_month] - planned_oh_qty[forecast_month]-planned_shp_original[forecast_month],
             # "Next_to_next_forecast_month_planned_shipment":planned_shp[forecast_month_next_next_month],
             "Total added qty":total_added_quantity,
             "Min_order":loader.Min_order,
             "Macys_SOQ" : macys_proj_receipt_upto_next_month_after_forecast_month,
+            "average_store_sale_thru":average_store_sale_thru,
+            "Macy_SOQ_percentage":MAcy_SOQ_percentage,
             "Qty_given_to_macys":sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month,
             "Added qty using macys_SOQ":is_added_by_macys_SOQ,
+            
             "Below_min_order":is_below_min_order,
             "Over_macys_SOQ":is_over_macys_SOQ,
             "Added_only_to_balance_macys_SOQ":is_added_by_only_SOQ,
@@ -588,9 +619,10 @@ def algorithm(loader,category,store,coms,omni):
             store.append(data_store)
         elif pid_type=='com_pid'and not pid_omni_status:
             data_com = {
-            "category":category,
+            "category":f"{category} ({code})",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
+            
             "vendor":vendor,
             "Valentine_day":False,
             "Mothers_day":False,
@@ -601,7 +633,7 @@ def algorithm(loader,category,store,coms,omni):
             "leadtime holiday adjustment":leadtime_holiday,
             "selected_months":selected_months,
             "com_month_12_fc_index":new_com_month_12_fc_index,
-            "com trend":new_com_std_trend,
+            "com trend":com_std_trend,
             "trend":std_trend,
             "Inventory maintained":is_maintained_status_com,
             "trend index difference":difference,
@@ -621,12 +653,18 @@ def algorithm(loader,category,store,coms,omni):
             "Added qtys by Macys SOQ":macy_additional_units,  
             "VDF_status":VDF_status,
             "VDF_added_qty":VDF_added_qty,
+
+            # "Next_to_next_forecast_month_planned_shipment":planned_shp[forecast_month_next_next_month],
+            "Qty_added_to_maintain_OH_forecast_month": planned_oh_qty[forecast_month],
+            "Qty_added_to_maintain_OH_next_forecast_month": planned_oh_qty[forecast_month_next_month],
+            "Qty_added_to_balance_SOQ_forecast_month":planned_shp[forecast_month] - planned_oh_qty[forecast_month]-planned_shp_original[forecast_month],
             "forecast_month_planned_shipment":planned_shp[forecast_month],
             "Next_forecast_month_planned_shipment":planned_shp[forecast_month_next_month],
-            # "Next_to_next_forecast_month_planned_shipment":planned_shp[forecast_month_next_next_month],
             "Total added qty":total_added_quantity,
             "Min_order":loader.Min_order,
             "Macys_SOQ" : macys_proj_receipt_upto_next_month_after_forecast_month,
+            "average_store_sale_thru":average_store_sale_thru,
+            "Macy_SOQ_percentage":MAcy_SOQ_percentage,
             "Qty_given_to_macys":sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month,
             "Added qty using macys_SOQ":is_added_by_macys_SOQ,
             "Below_min_order":is_below_min_order,
@@ -637,7 +675,7 @@ def algorithm(loader,category,store,coms,omni):
             coms.append(data_com)
         elif pid_omni_status:
             data_omni= {
-            "category":category,
+            "category":f"{category} ({code})",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             "vendor":vendor,
@@ -666,7 +704,7 @@ def algorithm(loader,category,store,coms,omni):
             "store_month_12_fc_index":new_store_month_12_fc_index,
             "loss":loss,
             "store_month_12_fc_index_(loss)":new_store_month_12_fc_index,
-            "store_trend":store_std_trend,
+            "store_trend":new_store_std_trend,
             "store Inventory maintained":is_maintained_status_store,
             "trend index difference(store)":difference_store,
             "forecasting_method(store)":forecasting_method,            
@@ -690,12 +728,18 @@ def algorithm(loader,category,store,coms,omni):
             # "Next_to_Next_forecast_month_planned_oh_before_adding_qty":planned_oh_before_adding_qty_next_to_next_month.get(forecast_month_next_next_month, None),
  
             "Added qtys by Macys SOQ":macy_additional_units, 
+            # "Next_to_next_forecast_month_planned_shipment":planned_shp[forecast_month_next_next_month],
+            "Qty_added_to_maintain_OH_forecast_month": planned_oh_qty[forecast_month],
+            "Qty_added_to_maintain_OH_next_forecast_month": planned_oh_qty[forecast_month_next_month],
+            "Qty_added_to_balance_SOQ_forecast_month": planned_shp[forecast_month] - planned_oh_qty[forecast_month]-planned_shp_original[forecast_month],
             "forecast_month_planned_shipment":planned_shp[forecast_month],            
             "Next_forecast_month_planned_shipment":planned_shp[forecast_month_next_month],
             # "Next_to_next_forecast_month_planned_shipment":planned_shp[forecast_month_next_next_month],
             "Total added qty":total_added_quantity,
             "Min_order":loader.Min_order,
             "Macys_SOQ" : macys_proj_receipt_upto_next_month_after_forecast_month,
+            "average_store_sale_thru":average_store_sale_thru,
+            "Macy_SOQ_percentage":MAcy_SOQ_percentage,
             "Qty_given_to_macys":sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month, 
             "Added qty using macys_SOQ":is_added_by_macys_SOQ,
             "Below_min_order":is_below_min_order,
