@@ -1,6 +1,7 @@
 from .createDataframe import planning_df,Macys_Recpts,All_DATA,MCOM_Data,index_df
 from .staticVariable import  year_of_previous_month,last_year_of_previous_month,STD_PERIOD
 import pandas as pd
+from forecast.service.utils import calculate_store_unit_sales_and_OH,calculate_com_to_ttl_sales_and_OH,format_sales_data,calculate_omni_sell_through,calculate_store_sell_through,calculate_turn,calculate_diff
 class VariableLoader:
 
     def __init__(self,cross_ref):
@@ -197,4 +198,25 @@ class VariableLoader:
             else L_LY_Unit_Sales.get(month, 0)
             for month in STD_PERIOD
         ]
+        self.LY_store_unit_sales=calculate_store_unit_sales_and_OH(self.LY_Unit_Sales, self.LY_MCOM_Unit_Sales)#correct
+        self.LY_store_EOM_OH = calculate_store_unit_sales_and_OH(self.LY_OH_Units, self.LY_MCOM_OH_Units)#correct
+        self.LY_COM_to_TTL= calculate_com_to_ttl_sales_and_OH(self.LY_MCOM_Unit_Sales, self.LY_Unit_Sales)#correct
+        self.LY_COM_to_TTL_OH = calculate_com_to_ttl_sales_and_OH(self.LY_MCOM_OH_Units, self.LY_OH_Units)#correct
+        self.LY_omni_sell_through = calculate_omni_sell_through(self.LY_Unit_Sales, self.LY_OH_Units)#correct
+        self.LY_store_sell_through = calculate_store_sell_through(self.LY_Unit_Sales, self.LY_MCOM_Unit_Sales, self.LY_OH_Units, self.LY_MCOM_OH_Units)
+        self.LY_omni_turn = calculate_turn(self.LY_Unit_Sales, self.LY_OH_Units)
+        self.LY_store_turn = calculate_turn(self.LY_store_unit_sales, self.LY_store_EOM_OH)
+        self.LY_Omni_AUR_Diff_Own = format_sales_data(self.LY_PTD_Sales,self.LY_Unit_Sales, self.Own_Retail)#correct
+        self.TY_store_unit_sales = calculate_store_unit_sales_and_OH(self.TY_Unit_Sales, self.TY_MCOM_Unit_Sales)#correct
+        self.TY_store_EOM_OH = calculate_store_unit_sales_and_OH(self.TY_OH_Units, self.TY_MCOM_OH_Units)#correct
+        self.TY_COM_to_TTL= calculate_com_to_ttl_sales_and_OH(self.TY_MCOM_Unit_Sales, self.TY_Unit_Sales)#correct
+        self.TY_COM_to_TTL_OH = calculate_com_to_ttl_sales_and_OH(self.TY_MCOM_OH_Units, self.TY_OH_Units)#correct
+        self.TY_Omni_AUR_Diff_Own = format_sales_data(self.PTD_TY_Sales,self.TY_Unit_Sales, self.Own_Retail)#correct
+        self.TY_Omni_sell_through = calculate_omni_sell_through(self.TY_Unit_Sales, self.TY_OH_Units)
+        self.TY_store_sell_through = calculate_store_sell_through(self.TY_Unit_Sales, self.TY_MCOM_Unit_Sales, self.TY_OH_Units, self.TY_MCOM_OH_Units)
+        self.TY_omni_turn = calculate_turn(self.TY_Unit_Sales, self.TY_OH_Units)
+        self.TY_store_turn = calculate_turn(self.TY_store_unit_sales, self.TY_store_EOM_OH)
+        self.TY_store_unit_sales_diff = calculate_diff(self.TY_store_unit_sales, self.LY_store_unit_sales)#correct
+        self.TY_com_unit_sales_diff = calculate_diff(self.TY_MCOM_Unit_Sales, self.LY_MCOM_Unit_Sales)#correct
+        self.TY_store_eom_oh_diff = calculate_diff(self.TY_store_EOM_OH, self.LY_store_EOM_OH)#correct
 
