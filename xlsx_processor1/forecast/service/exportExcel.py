@@ -136,6 +136,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             return []
         
     print("DataFrames created successfully.")
+    print()
     # Create dictionaries for each record
     store_instances = [
         {
@@ -184,7 +185,13 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             'Below_min_order': row.get('Below_min_order', 'FALSE') == 'TRUE',  # New field
             'Over_macys_SOQ': row.get('Over_macys_SOQ', 'FALSE') == 'TRUE',  # New field
             'Added_only_to_balance_macys_SOQ': row.get('Added_only_to_balance_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE'  # New field
+            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE',  # New field
+            'qty_added_to_maintain_OH_forecast_month' : row['Qty_added_to_maintain_OH_forecast_month'],
+            'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
+            'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
+            'average_store_sale_thru' : row['average_store_sale_thru'],
+            'macy_SOQ_percentage' : row['Macy_SOQ_percentage']
+            
         }
         for _, row in df_store.iterrows()
     ]
@@ -234,7 +241,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             'Below_min_order': row.get('Below_min_order', 'FALSE') == 'TRUE',  # New field
             'Over_macys_SOQ': row.get('Over_macys_SOQ', 'FALSE') == 'TRUE',  # New field
             'Added_only_to_balance_macys_SOQ': row.get('Added_only_to_balance_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE'  # New field
+            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE',# New field
+            'qty_added_to_maintain_OH_forecast_month' : row['Qty_added_to_maintain_OH_forecast_month'],
+            'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
+            'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
+            'average_store_sale_thru' : row['average_store_sale_thru'],
+            'macy_SOQ_percentage' : row['Macy_SOQ_percentage']  
         }
         for _, row in df_coms.iterrows()
     ]
@@ -304,7 +316,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             'Below_min_order': row.get('Below_min_order', 'FALSE') == 'TRUE',  # New field
             'Over_macys_SOQ': row.get('Over_macys_SOQ', 'FALSE') == 'TRUE',  # New field
             'Added_only_to_balance_macys_SOQ': row.get('Added_only_to_balance_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE'  # New field
+            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE',  # New field
+            'qty_added_to_maintain_OH_forecast_month' : row['Qty_added_to_maintain_OH_forecast_month'],
+            'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
+            'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
+            'average_store_sale_thru' : row['average_store_sale_thru'],
+            'macy_SOQ_percentage' : row['Macy_SOQ_percentage']
         }
         for _, row in df_omni.iterrows()
     ]
@@ -357,7 +374,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 'Below_min_order': instance['Below_min_order'],
                 'Over_macys_SOQ': instance['Over_macys_SOQ'],
                 'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
-                'Need_to_review_first': instance['Need_to_review_first']
+                'Need_to_review_first': instance['Need_to_review_first'],
+                'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
+                'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
+                'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
+                'average_store_sale_thru' : instance['average_store_sale_thru'],
+                'macy_SOQ_percentage' : instance['macy_SOQ_percentage']
             }
         )
     print("StoreForecast data saved/updated successfully.")
@@ -406,7 +428,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 'Below_min_order': instance['Below_min_order'],
                 'Over_macys_SOQ': instance['Over_macys_SOQ'],
                 'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
-                'Need_to_review_first': instance['Need_to_review_first']
+                'Need_to_review_first': instance['Need_to_review_first'],
+                'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
+                'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
+                'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
+                'average_store_sale_thru' : instance['average_store_sale_thru'],
+                'macy_SOQ_percentage' : instance['macy_SOQ_percentage']
             }
         )
     print("ComForecast data saved/updated successfully.")
@@ -470,7 +497,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 'forecast_month_required_quantity_store': instance['forecast_month_required_quantity_store'],
                 'next_forecast_month_required_quantity_store': instance['next_forecast_month_required_quantity_store'],
                 'forecast_month_required_quantity_total': instance['forecast_month_required_quantity_total'],
-                'next_forecast_month_required_quantity_total': instance['next_forecast_month_required_quantity_total']
+                'next_forecast_month_required_quantity_total': instance['next_forecast_month_required_quantity_total'],
+                'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
+                'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
+                'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
+                'average_store_sale_thru' : instance['average_store_sale_thru'],
+                'macy_SOQ_percentage' : instance['macy_SOQ_percentage']
             }
         )
     print("OmniForecast data saved/updated successfully.")
@@ -530,10 +562,6 @@ def process_category(args):
     ws_index = wb.create_sheet(title="Index")
     ws_month = wb.create_sheet(title="Month")
     ws_dropdown = wb.create_sheet(title="DropdownData")
-    store_products=[]
-    birthstone_list=[]
-    notify_macys=[]
-    pids_below_door_count = []
 
 
     # Loop through products to generate PIDs
@@ -765,7 +793,7 @@ def process_category(args):
 
         # Find the matching rows
         loader = VariableLoader(cross_ref)
-        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni= algorithm(loader,category,store,coms,omni)
+        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni= algorithm(loader,category,store,coms,omni,code)
         print("################################################################3")
 
         def safe_int(value):
@@ -2183,10 +2211,9 @@ def process_category(args):
         
         # Add more ranges as needed
     ]
-        
-        if pid_type == 'com_pid' and loader.Safe_Non_Safe!='OMNI':
+        if pid_type == 'com_pid' and not pid_omni_status:
             key = f"{month_col_map[current_month_upper]}{start_row + 7}"
-            value = loader.TY_MCOM_OH_Units[current_month_upper]
+            value = loader.TY_MCOM_OH_Units[current_month_upper]+planned_shp[current_month_upper]-planned_fc[current_month_upper]
             dynamic_formulas[key] = value
         sheet = ws
                 # Add values to column B from ALL_VALUES and apply alignment
@@ -2468,8 +2495,6 @@ def process_category(args):
         for row in ws[f"B{start_row+50}:W{start_row+50}"]:
             for cell in row:
                 cell.border = gridline_top_bottom
-    
-        	
     # Define border style for left and right only
 
         
