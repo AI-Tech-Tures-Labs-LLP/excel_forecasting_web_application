@@ -2,7 +2,7 @@ from django.urls import path,include
 from .views import UploadXlsxAPIView,DownloadFileAPIView
 
 from rest_framework.routers import DefaultRouter
-from .views import ProductDetailViewSet, StoreForecastViewSet, ComForecastViewSet, OmniForecastViewSet, ForecastViewSet
+from .views import ProductDetailViewSet, StoreForecastViewSet, ComForecastViewSet, OmniForecastViewSet, ForecastViewSet, ForecastNoteViewSet
 
 router = DefaultRouter()
 router.register(r'api/product', ProductDetailViewSet, basename='product-detail-forecast')
@@ -10,6 +10,7 @@ router.register(r'store-forecast', StoreForecastViewSet, basename='store-forecas
 router.register(r'com-forecast', ComForecastViewSet, basename='com-forecast')
 router.register(r'omni-forecast', OmniForecastViewSet, basename='omni-forecast')
 router.register(r'query', ForecastViewSet, basename='forecast')
+router.register(r'forecast-notes', ForecastNoteViewSet, basename='forecastnote')
 
 
 urlpatterns = [

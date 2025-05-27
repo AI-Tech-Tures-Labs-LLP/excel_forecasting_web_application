@@ -52,7 +52,7 @@ def save_macys_projection_receipts(product, matching_row, year):
 # from datetime import datetime
 # current_year = datetime.now().year
 
-def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit_Sales, LY_OH_Units, TY_OH_Units, TY_Receipts, LY_Receipts, TY_MCOM_Unit_Sales, LY_MCOM_Unit_Sales, TY_OH_MCOM_Units, LY_MCOM_OH_Units, PTD_TY_Sales, LY_PTD_Sales, MCOM_PTD_TY_Sales, MCOM_PTD_LY_Sales, OO_Total_Units, OO_MCOM_Total_Units):
+def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit_Sales, LY_OH_Units, TY_OH_Units, TY_Receipts, LY_Receipts, TY_MCOM_Unit_Sales, LY_MCOM_Unit_Sales, TY_OH_MCOM_Units, LY_MCOM_OH_Units, PTD_TY_Sales, LY_PTD_Sales, MCOM_PTD_TY_Sales, MCOM_PTD_LY_Sales, OO_Total_Units, OO_MCOM_Total_Units, LY_store_unit_sales, LY_store_EOM_OH, LY_COM_to_TTL, LY_COM_to_TTL_OH, LY_omni_sell_through, LY_store_sell_through, LY_omni_turn, LY_store_turn, LY_Omni_AUR_Diff_Own, TY_store_unit_sales, TY_store_EOM_OH, TY_COM_to_TTL, TY_COM_to_TTL_OH, TY_Omni_AUR_Diff_Own, TY_Omni_sell_through, TY_store_sell_through, TY_omni_turn, TY_store_turn, TY_store_unit_sales_diff, TY_com_unit_sales_diff, TY_store_eom_oh_diff):
     """
     Saves forecast data for all variables in MonthlyForecast, 
     updating fields: jan, feb, mar, ..., dec instead of a single month field.
@@ -104,6 +104,38 @@ def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit
         'OO_MCOM_Total_Units': current_year
     }
 
+    loader_computed_variables = {
+        'LY_store_unit_sales': LY_store_unit_sales,
+        'LY_store_EOM_OH': LY_store_EOM_OH,
+        'LY_COM_to_TTL': LY_COM_to_TTL,
+        'LY_COM_to_TTL_OH': LY_COM_to_TTL_OH,
+        'LY_omni_sell_through': LY_omni_sell_through,
+        'LY_store_sell_through': LY_store_sell_through,
+        'LY_omni_turn': LY_omni_turn,
+        'LY_store_turn': LY_store_turn,
+        'LY_Omni_AUR_Diff_Own': LY_Omni_AUR_Diff_Own,
+
+        'TY_store_unit_sales': TY_store_unit_sales,
+        'TY_store_EOM_OH': TY_store_EOM_OH,
+        'TY_COM_to_TTL': TY_COM_to_TTL,
+        'TY_COM_to_TTL_OH': TY_COM_to_TTL_OH,
+        'TY_Omni_AUR_Diff_Own': TY_Omni_AUR_Diff_Own,
+        'TY_Omni_sell_through': TY_Omni_sell_through,
+        'TY_store_sell_through': TY_store_sell_through,
+        'TY_omni_turn': TY_omni_turn,
+        'TY_store_turn': TY_store_turn,
+        'TY_store_unit_sales_diff': TY_store_unit_sales_diff,
+        'TY_com_unit_sales_diff': TY_com_unit_sales_diff,
+        'TY_store_eom_oh_diff': TY_store_eom_oh_diff
+    }
+
+    # Merge both dictionaries
+    all_variables.update(loader_computed_variables)
+
+    # Update year_mapping for these variables
+    loader_year_mapping = {key: current_year if key.startswith('TY_') else current_year - 1 for key in loader_computed_variables}
+    year_mapping.update(loader_year_mapping)
+
     # Process each variable and construct the forecast data
     for variable_name, data_dict in all_variables.items():
         year = year_mapping[variable_name]
@@ -123,7 +155,7 @@ def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit
                 value = None
             else:
                 try:
-                    value = int(value)
+                    value = round(value,2)
                 except (ValueError, TypeError):
                     value = None
             

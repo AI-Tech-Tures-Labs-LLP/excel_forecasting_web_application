@@ -16,48 +16,48 @@ class ProductDetail(models.Model):
     # item_status = models.CharField(max_length=50, verbose_name="Item Status") #Item Status
     
     # Store information
-    current_door_count = models.IntegerField(null=True, blank=True, verbose_name="Door Count") #Door Count
-    last_store_count = models.IntegerField(null=True, blank=True, verbose_name="Old Door Count") #Last Str Cnt
+    current_door_count = models.FloatField(null=True, blank=True, verbose_name="Door Count") #Door Count
+    last_store_count = models.FloatField(null=True, blank=True, verbose_name="Old Door Count") #Last Str Cnt
     door_count_updated = models.DateField(null=True, blank=True, verbose_name="Door Count Updated")    #Door Count Updated
-    store_model = models.IntegerField( null=True, blank=True, verbose_name="Model") #Store Model
-    com_model = models.IntegerField( null=True, blank=True, verbose_name="Com Model") 
+    store_model = models.FloatField( null=True, blank=True, verbose_name="Model") #Store Model
+    com_model = models.FloatField( null=True, blank=True, verbose_name="Com Model") 
     
     # Inventory and forecast fields
-    holiday_build_fc = models.IntegerField(null=True, blank=True, verbose_name="HolidayBuildFC")
-    macys_onhand = models.IntegerField(null=True, blank=True, verbose_name="MCYOH Units")
-    oo = models.IntegerField(null=True, blank=True, verbose_name="OO Units") #OO Units
-    in_transit = models.IntegerField(null=True, blank=True, verbose_name="nav OO") #nav OO
-    month_to_date_shipment = models.IntegerField(null=True, blank=True, verbose_name="MTD SHIPMENTS") #MTD SHIPMENTS 
-    lastweek_shipment = models.IntegerField(null=True, blank=True, verbose_name="LW Shipments") #LW Shipments
-    planned_weeks_of_stock = models.IntegerField(null=True, blank=True, verbose_name="Wks of Stock OH")  #Wks of Stock OH
-    weeks_of_projection = models.IntegerField(null=True, blank=True, verbose_name="Wks of on Proj") #Wks of on Proj
-    last_4weeks_shipment = models.IntegerField(null=True, blank=True, verbose_name="Last 3Wks Ships") #Last 3Wks Ships
+    holiday_build_fc = models.FloatField(null=True, blank=True, verbose_name="HolidayBuildFC")
+    macys_onhand = models.FloatField(null=True, blank=True, verbose_name="MCYOH Units")
+    oo = models.FloatField(null=True, blank=True, verbose_name="OO Units") #OO Units
+    in_transit = models.FloatField(null=True, blank=True, verbose_name="nav OO") #nav OO
+    month_to_date_shipment = models.FloatField(null=True, blank=True, verbose_name="MTD SHIPMENTS") #MTD SHIPMENTS 
+    lastweek_shipment = models.FloatField(null=True, blank=True, verbose_name="LW Shipments") #LW Shipments
+    planned_weeks_of_stock = models.FloatField(null=True, blank=True, verbose_name="Wks of Stock OH")  #Wks of Stock OH
+    weeks_of_projection = models.FloatField(null=True, blank=True, verbose_name="Wks of on Proj") #Wks of on Proj
+    last_4weeks_shipment = models.FloatField(null=True, blank=True, verbose_name="Last 3Wks Ships") #Last 3Wks Ships
     
 
     # Vendor information
     vendor_name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Vendor Name") #Vendor Name
-    min_order = models.IntegerField(null=True, blank=True, verbose_name="Min Order") #Min Order
+    min_order = models.FloatField(null=True, blank=True, verbose_name="Min Order") #Min Order
     
     # Projection fields
-    rl_total = models.IntegerField(null=True, blank=True, verbose_name="Proj") #Proj	
-    net_projection = models.IntegerField(null=True, blank=True, verbose_name="Net Proj")  #Net Proj
-    unalloc_order = models.IntegerField(null=True, blank=True, verbose_name="Unalloc Orders") #Unalloc Orders
+    rl_total = models.FloatField(null=True, blank=True, verbose_name="Proj") #Proj	
+    net_projection = models.FloatField(null=True, blank=True, verbose_name="Net Proj")  #Net Proj
+    unalloc_order = models.FloatField(null=True, blank=True, verbose_name="Unalloc Orders") #Unalloc Orders
     
     # Distribution center fields
-    ma_bin = models.IntegerField(null=True, blank=True, verbose_name="RLJ OH")
-    fldc = models.IntegerField(null=True, blank=True, verbose_name="FLDC")
-    wip_quantity = models.IntegerField(null=True, blank=True, verbose_name="WIP")
+    ma_bin = models.FloatField(null=True, blank=True, verbose_name="RLJ OH")
+    fldc = models.FloatField(null=True, blank=True, verbose_name="FLDC")
+    wip_quantity = models.FloatField(null=True, blank=True, verbose_name="WIP")
     
     # Status fields
     md_status = models.CharField(max_length=50, null=True, blank=True, verbose_name="MD Status MZ1")
     replanishment_flag = models.CharField(max_length=100, null=True, blank=True, verbose_name="Repl Flag")
     mcom_replanishment = models.CharField(max_length=100, null=True, blank=True, verbose_name="MCOM RPL")
-    pool_stock = models.IntegerField(null=True, blank=True, verbose_name="Pool Stock")
+    pool_stock = models.FloatField(null=True, blank=True, verbose_name="Pool Stock")
     
     # Date fields
     first_reciept_date = models.DateField(null=True, blank=True, verbose_name="1st Rec Date")
     last_reciept_date = models.DateField(null=True, blank=True, verbose_name="Last Rec Date")
-    item_age = models.IntegerField(null=True, blank=True, verbose_name="Item Age")
+    item_age = models.FloatField(null=True, blank=True, verbose_name="Item Age")
     first_live_date = models.DateField(null=True, blank=True, verbose_name="1st Live")
     
     # Cost and retail fields
@@ -71,25 +71,25 @@ class ProductDetail(models.Model):
     
     # KPI fields
     kpi_data_updated = models.CharField(max_length=50, null=True, blank=True, verbose_name="KPI Data Updated")
-    kpi_door_count = models.IntegerField(null=True, blank=True, verbose_name="KPI Door count")
+    kpi_door_count = models.FloatField(null=True, blank=True, verbose_name="KPI Door count")
     
     # Sales fields
     # standard_sale = models.DecimalField(max_digits=12, null=True, blank=True, verbose_name="STD SALES")
     # last_year_standard_sale = models.DecimalField(max_digits=12, null=True, blank=True, verbose_name="LY STD SALES")
     
     # Location fields
-    out_of_stock_location = models.IntegerField(null=True, blank=True, verbose_name="OOS Locs")
-    suspended_location_count = models.IntegerField(null=True, blank=True, verbose_name="Suspended Loc Count")
+    out_of_stock_location = models.FloatField(null=True, blank=True, verbose_name="OOS Locs")
+    suspended_location_count = models.FloatField(null=True, blank=True, verbose_name="Suspended Loc Count")
     live_site = models.CharField(max_length=50, null=True, blank=True, verbose_name="Live Site")
     
     # Product categorization fields
     masterstyle_description = models.CharField(max_length=200, null=True, blank=True, verbose_name="Masterstyle Desc")
-    masterstyle_id = models.IntegerField(null=True, blank=True, verbose_name="MstrSt ID")
+    masterstyle_id = models.FloatField(null=True, blank=True, verbose_name="MstrSt ID")
 
-    department_id = models.IntegerField( null=True, blank=True, verbose_name="Dpt ID")
+    department_id = models.FloatField( null=True, blank=True, verbose_name="Dpt ID")
     department_description = models.CharField(max_length=100, null=True, blank=True, verbose_name="Dpt Desc")
     
-    subclass_id = models.IntegerField( null=True, blank=True, verbose_name="SC ID")
+    subclass_id = models.FloatField( null=True, blank=True, verbose_name="SC ID")
     subclass_decription = models.CharField(max_length=100, null=True, blank=True, verbose_name="SC Desc")
     
     webid_description = models.CharField(max_length=200, null=True, blank=True, verbose_name="Prod Desc")
@@ -139,6 +139,31 @@ class MonthlyForecast(models.Model):
         ('MCOM_PTD_LY_Sales', 'MCOM PTD Last Year Sales'),
         ('OO_Total_Units', 'OO Total Units'),
         ('OO_MCOM_Total_Units', 'OO MCOM Total Units'),
+
+        ('LY_store_unit_sales', 'LY Store Unit Sales'),
+        ('LY_store_EOM_OH', 'LY Store EOM OH'),
+        ('LY_COM_to_TTL', 'LY COM to TTL Sales'),
+        ('LY_COM_to_TTL_OH', 'LY COM to TTL OH'),
+        ('LY_omni_sell_through', 'LY Omni Sell Through'),
+        ('LY_store_sell_through', 'LY Store Sell Through'),
+        ('LY_omni_turn', 'LY Omni Turn'),
+        ('LY_store_turn', 'LY Store Turn'),
+        ('LY_Omni_AUR_Diff_Own', 'LY Omni AUR Diff Own'),
+
+        ('TY_store_unit_sales', 'TY Store Unit Sales'),
+        ('TY_store_EOM_OH', 'TY Store EOM OH'),
+        ('TY_COM_to_TTL', 'TY COM to TTL Sales'),
+        ('TY_COM_to_TTL_OH', 'TY COM to TTL OH'),
+        ('TY_Omni_AUR_Diff_Own', 'TY Omni AUR Diff Own'),
+        ('TY_Omni_sell_through', 'TY Omni Sell Through'),
+        ('TY_store_sell_through', 'TY Store Sell Through'),
+        ('TY_omni_turn', 'TY Omni Turn'),
+        ('TY_store_turn', 'TY Store Turn'),
+        ('TY_store_unit_sales_diff', 'TY Store Unit Sales Diff'),
+        ('TY_com_unit_sales_diff', 'TY COM Unit Sales Diff'),
+        ('TY_store_eom_oh_diff', 'TY Store EOM OH Diff'),
+
+
     ]
 
     product = models.ForeignKey(ProductDetail, on_delete=models.CASCADE, verbose_name="Product")
@@ -146,18 +171,18 @@ class MonthlyForecast(models.Model):
     year = models.PositiveIntegerField()
 
     # Separate fields for each month
-    jan = models.IntegerField(null=True, blank=True, verbose_name="January")
-    feb = models.IntegerField(null=True, blank=True, verbose_name="February")
-    mar = models.IntegerField(null=True, blank=True, verbose_name="March")
-    apr = models.IntegerField(null=True, blank=True, verbose_name="April")
-    may = models.IntegerField(null=True, blank=True, verbose_name="May")
-    jun = models.IntegerField(null=True, blank=True, verbose_name="June")
-    jul = models.IntegerField(null=True, blank=True, verbose_name="July")
-    aug = models.IntegerField(null=True, blank=True, verbose_name="August")
-    sep = models.IntegerField(null=True, blank=True, verbose_name="September")
-    oct = models.IntegerField(null=True, blank=True, verbose_name="October")
-    nov = models.IntegerField(null=True, blank=True, verbose_name="November")
-    dec = models.IntegerField(null=True, blank=True, verbose_name="December")
+    jan = models.FloatField(null=True, blank=True, verbose_name="January")
+    feb = models.FloatField(null=True, blank=True, verbose_name="February")
+    mar = models.FloatField(null=True, blank=True, verbose_name="March")
+    apr = models.FloatField(null=True, blank=True, verbose_name="April")
+    may = models.FloatField(null=True, blank=True, verbose_name="May")
+    jun = models.FloatField(null=True, blank=True, verbose_name="June")
+    jul = models.FloatField(null=True, blank=True, verbose_name="July")
+    aug = models.FloatField(null=True, blank=True, verbose_name="August")
+    sep = models.FloatField(null=True, blank=True, verbose_name="September")
+    oct = models.FloatField(null=True, blank=True, verbose_name="October")
+    nov = models.FloatField(null=True, blank=True, verbose_name="November")
+    dec = models.FloatField(null=True, blank=True, verbose_name="December")
 
     class Meta:
         unique_together = ['product', 'variable_name', 'year']
@@ -174,7 +199,7 @@ class MonthlyForecast(models.Model):
 class StoreForecast(models.Model):
     category = models.CharField(max_length=100)
     pid = models.CharField(max_length=100)
-    lead_time = models.IntegerField()
+    lead_time = models.FloatField()
     leadtime_holiday_adjustment = models.BooleanField()
     month_12_fc_index = models.FloatField()
     loss = models.FloatField()
@@ -185,19 +210,19 @@ class StoreForecast(models.Model):
     trend_index_difference = models.FloatField()
     red_box_item = models.BooleanField()
     forecasting_method = models.CharField(max_length=100)
-    door_count = models.IntegerField()
+    door_count = models.FloatField()
     average_com_oh = models.FloatField()
-    fldc = models.IntegerField()
+    fldc = models.FloatField()
     birthstone = models.CharField(max_length=100)
     birthstone_month = models.CharField(max_length=100,null=True, blank=True)
     considered_birthstone_required_quantity = models.BooleanField()
     forecast_month = models.CharField(max_length=10)
     forecast_month_required_quantity = models.FloatField()
-    forecast_month_planned_oh = models.IntegerField()
+    forecast_month_planned_oh = models.FloatField()
     next_forecast_month = models.CharField(max_length=10)
     next_forecast_month_required_quantity = models.FloatField()
-    next_forecast_month_planned_oh = models.IntegerField()
-    added_qty_macys_soq = models.IntegerField()
+    next_forecast_month_planned_oh = models.FloatField()
+    added_qty_macys_soq = models.FloatField()
     forecast_month_planned_shipment = models.FloatField()
     next_forecast_month_planned_shipment = models.FloatField()
     total_added_qty = models.FloatField()
@@ -227,7 +252,7 @@ class StoreForecast(models.Model):
 class ComForecast(models.Model):
     category = models.CharField(max_length=100)
     pid = models.CharField(max_length=100)
-    lead_time = models.IntegerField()
+    lead_time = models.FloatField()
     leadtime_holiday_adjustment = models.BooleanField()
     selected_months = models.JSONField()
     com_month_12_fc_index = models.FloatField()
@@ -238,19 +263,19 @@ class ComForecast(models.Model):
     red_box_item = models.BooleanField()
     forecasting_method = models.CharField(max_length=100)
     minimum_required_oh_for_com = models.FloatField()
-    fldc = models.IntegerField()
+    fldc = models.FloatField()
     forecast_month = models.CharField(max_length=10)
     forecast_month_required_quantity = models.FloatField()
-    forecast_month_planned_oh = models.IntegerField()
+    forecast_month_planned_oh = models.FloatField()
     next_forecast_month = models.CharField(max_length=10)
     next_forecast_month_required_quantity = models.FloatField()
-    next_forecast_month_planned_oh = models.IntegerField()
-    added_qty_macys_soq = models.IntegerField()
+    next_forecast_month_planned_oh = models.FloatField()
+    added_qty_macys_soq = models.FloatField()
     vdf_status = models.BooleanField()
-    vdf_added_qty = models.IntegerField()
+    vdf_added_qty = models.FloatField()
     forecast_month_planned_shipment = models.FloatField()
-    next_forecast_month_planned_shipment = models.IntegerField()
-    total_added_qty = models.IntegerField()
+    next_forecast_month_planned_shipment = models.FloatField()
+    total_added_qty = models.FloatField()
     vendor = models.CharField(max_length=255, null=True, blank=True)
     Valentine_day = models.BooleanField(default=False)
     Mothers_day = models.BooleanField(default=False)
@@ -276,7 +301,7 @@ class ComForecast(models.Model):
 class OmniForecast(models.Model):
     category = models.CharField(max_length=100)
     pid = models.CharField(max_length=100)
-    lead_time = models.IntegerField()
+    lead_time = models.FloatField()
     leadtime_holiday_adjustment = models.BooleanField()
     selected_months = models.JSONField()
     com_month_12_fc_index = models.FloatField()
@@ -285,7 +310,7 @@ class OmniForecast(models.Model):
     red_box_item = models.BooleanField()
     
     minimum_required_oh_for_com = models.FloatField()
-    com_fldc = models.IntegerField()
+    com_fldc = models.FloatField()
     forecast_month = models.CharField(max_length=10)
     
     next_forecast_month = models.CharField(max_length=10)
@@ -295,14 +320,14 @@ class OmniForecast(models.Model):
     store_month_12_fc_index_loss = models.FloatField()
     store_trend = models.FloatField(null=True, blank=True)
     store_inventory_maintained = models.BooleanField()
-    door_count = models.IntegerField()
-    store_fldc = models.IntegerField()
+    door_count = models.FloatField()
+    store_fldc = models.FloatField()
     birthstone = models.CharField(max_length=100)
     birthstone_month = models.CharField(max_length=100,null=True, blank=True)
     considered_birthstone_required_quantity = models.BooleanField()
-    forecast_month_planned_oh = models.IntegerField()
-    next_forecast_month_planned_oh = models.IntegerField()
-    added_qty_macys_soq = models.IntegerField()
+    forecast_month_planned_oh = models.FloatField()
+    next_forecast_month_planned_oh = models.FloatField()
+    added_qty_macys_soq = models.FloatField()
     forecast_month_planned_shipment = models.FloatField()
     next_forecast_month_planned_shipment = models.FloatField()
     total_added_qty = models.FloatField()
@@ -333,3 +358,21 @@ class OmniForecast(models.Model):
     next_forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
     class Meta:
         unique_together = ('category', 'pid', 'forecast_month')
+
+
+class ForecastNote(models.Model):
+    pid = models.CharField(max_length=100, verbose_name="Product ID")
+    note = models.TextField(null=True, blank=True, verbose_name="Note Description")
+    assigned_to = models.CharField(max_length=100, null=True, blank=True, verbose_name="Assigned To")
+    reviewed = models.BooleanField(default=False, verbose_name="Reviewed")  # New field
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['pid']),
+        ]
+
+    def __str__(self):
+        return f"{self.pid} - {self.assigned_to} - {'Reviewed' if self.reviewed else 'Not Reviewed'}"

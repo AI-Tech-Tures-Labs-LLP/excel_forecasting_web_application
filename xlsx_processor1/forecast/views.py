@@ -14,8 +14,8 @@ from rest_framework import status, viewsets
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
 
-from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast
-from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer
+from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote
+from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer
 from .service.exportExcel import process_data
 
 def make_zip_and_delete(folder_path):
@@ -217,9 +217,21 @@ class ForecastViewSet(ViewSet):
                 omni_qs = omni_qs.filter(red_box_item__in=red_box_flags)
             response["omni_products"] = OmniForecastSerializer(omni_qs, many=True).data
 
+        all_pids = set()
+        for key in ["store_products", "com_products", "omni_products"]:
+            for item in response.get(key, []):
+                all_pids.add(item["pid"])
+
+        # Fetch notes for those pids
+        notes = ForecastNote.objects.filter(pid__in=all_pids)
+        response["forecast_notes"] = ForecastNoteSerializer(notes, many=True).data
+
         return Response(response)
 
 
+class ForecastNoteViewSet(viewsets.ModelViewSet):
+    queryset = ForecastNote.objects.all().order_by('-updated_at')
+    serializer_class = ForecastNoteSerializer
 
 
 class StoreForecastViewSet(viewsets.ReadOnlyModelViewSet):

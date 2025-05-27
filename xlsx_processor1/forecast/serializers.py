@@ -1,4 +1,4 @@
-from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast
+from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote
 from rest_framework import serializers
 import math
 # Serializer for ProductDetail
@@ -34,6 +34,15 @@ class FloatHandlingSerializerMixin:
                     ret[field_name] = None
         
         return ret
+
+
+
+class ForecastNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ForecastNote
+        fields = '__all__'
+
+
 
 class StoreForecastSerializer(FloatHandlingSerializerMixin, serializers.ModelSerializer):
     class Meta:
