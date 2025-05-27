@@ -1806,6 +1806,8 @@ function ProductSelector() {
       const categories = [
         ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
       ];
+      console.log("Categoriessssssssssssssssssssss:",categories);
+      
       const birthstones = [
         ...new Set(allProducts.map((p) => p.birthstone).filter(Boolean)),
       ];
@@ -1817,18 +1819,18 @@ function ProductSelector() {
       ].map((val) => (val ? "Active" : "Inactive"));
 
       // Filter categories based on forecast selection if available
-      let filteredCategories = categories;
-      if (forecastSession?.selectedCategories) {
-        const selectedCategoryNames = forecastSession.selectedCategories.map(
-          (cat) => cat.name
-        );
-        filteredCategories = categories.filter((cat) =>
-          selectedCategoryNames.includes(cat)
-        );
-      }
+      // let filteredCategories = categories;
+      // if (forecastSession?.selectedCategories) {
+      //   const selectedCategoryNames = forecastSession.selectedCategories.map(
+      //     (cat) => cat.name
+      //   );
+      //   filteredCategories = categories.filter((cat) =>
+      //     selectedCategoryNames.includes(cat)
+      //   );
+      // }
 
       setAvailableFilters({
-        categories: filteredCategories,
+        categories: categories,
         birthstones: [...new Set(birthstones)],
         red_box_items: [...new Set(redBoxItems)],
         vdf_statuses: [...new Set(vdfStatuses)],

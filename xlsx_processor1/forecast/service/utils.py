@@ -6,7 +6,11 @@ import numpy as np
 from datetime import datetime, timedelta
 from forecast.service.staticVariable import *
 
-
+from statistics import mean
+from decimal import Decimal, ROUND_HALF_UP
+ 
+def round_half_up(value, digits):
+    return float(Decimal(str(value)).quantize(Decimal('1.' + '0' * digits), rounding=ROUND_HALF_UP))
 
 def count_ttl_com_sale(LY_Unit_Sales, LY_MCOM_Unit_Sales):
     All_LY_Unit_Sales_list = [LY_Unit_Sales[month] for month in MONTHS]
@@ -1136,16 +1140,29 @@ def calculate_store_sell_through(TY_Unit_Sales, TY_MCOM_Unit_Sales, TY_OH_Units,
  
     return result
 def calculate_turn(TY_Unit_Sales, TY_OH_Units):
-    result = {}
-    for key in TY_Unit_Sales:
-        sales = TY_Unit_Sales[key]
-        oh_units = TY_OH_Units.get(key, 0)  # Default to 0 if key is missing
  
-        # Avoid division by zero and return 0 in such cases
-        if oh_units != 0:
-            result[key] = sales / oh_units
+ 
+    months = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']
+    result = {}
+    cumulative_sales = []
+    cumulative_oh = []
+ 
+    for month in months:
+        sales = TY_Unit_Sales.get(month, 0)
+        oh_units = TY_OH_Units.get(month, 0)
+ 
+        cumulative_sales.append(sales)
+        cumulative_oh.append(oh_units)
+        print(month,sales,oh_units)
+        if month == 'FEB':
+            turn = sales / oh_units if oh_units != 0 else 0
         else:
-            result[key] = 0
+            non_zero_oh = [val for val in cumulative_oh if val != 0]
+            avg_oh = mean(non_zero_oh) if non_zero_oh else 0
+            total_sales = sum(cumulative_sales)
+            turn = total_sales / avg_oh if avg_oh != 0 else 0
+ 
+        result[month] = round_half_up(turn, 1)
  
     return result
 def calculate_diff(TY_store_unit_sales, LY_store_unit_sales):
