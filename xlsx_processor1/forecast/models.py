@@ -333,3 +333,21 @@ class OmniForecast(models.Model):
     next_forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
     class Meta:
         unique_together = ('category', 'pid', 'forecast_month')
+
+
+class ForecastNote(models.Model):
+    pid = models.CharField(max_length=100, verbose_name="Product ID")
+    note = models.TextField(null=True, blank=True, verbose_name="Note Description")
+    assigned_to = models.CharField(max_length=100, null=True, blank=True, verbose_name="Assigned To")
+    reviewed = models.BooleanField(default=False, verbose_name="Reviewed")  # New field
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['pid']),
+        ]
+
+    def __str__(self):
+        return f"{self.pid} - {self.assigned_to} - {'Reviewed' if self.reviewed else 'Not Reviewed'}"
