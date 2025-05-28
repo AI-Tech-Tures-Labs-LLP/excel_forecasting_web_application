@@ -2,7 +2,7 @@ from django.urls import path,include
 from .views import UploadXlsxAPIView,DownloadFileAPIView
 
 from rest_framework.routers import DefaultRouter
-from .views import ProductDetailViewSet, StoreForecastViewSet, ComForecastViewSet, OmniForecastViewSet, ForecastViewSet, ForecastNoteViewSet, DownloadForecastSummaryExcel
+from .views import ProductDetailViewSet, StoreForecastViewSet, ComForecastViewSet, OmniForecastViewSet, ForecastViewSet, ForecastNoteViewSet, DownloadForecastSummaryExcel, download_category_sheet
 
 router = DefaultRouter()
 router.register(r'api/product', ProductDetailViewSet, basename='product-detail-forecast')
@@ -18,5 +18,6 @@ urlpatterns = [
     path('upload/', UploadXlsxAPIView.as_view(), name='upload_xlsx'),
     path('api/download/', DownloadFileAPIView.as_view(), name='download_file'),
     path('export-summary/', DownloadForecastSummaryExcel.as_view(), name="export-summary"),
+    path('download-category/', download_category_sheet, name='download_category_sheet'),
 
 ]
