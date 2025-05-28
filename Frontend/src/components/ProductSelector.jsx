@@ -2615,6 +2615,1169 @@
 // export default ProductSelector;
 
 // Updated ProductSelector.jsx with Notes as Table Columns
+// import React, { useEffect, useState, useMemo } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import {
+//   ChevronDown,
+//   Filter,
+//   X,
+//   Eye,
+//   Package,
+//   Store,
+//   Globe,
+//   FileDown,
+//   ArrowLeft,
+//   Search,
+//   Grid,
+//   List,
+//   MoreVertical,
+//   CheckCircle,
+//   Clock,
+//   User,
+//   FileText,
+//   Plus,
+// } from "lucide-react";
+// import { useNavigate } from "react-router-dom";
+// import ProductDetailsView from "./ProductDetailsView";
+// import NotesModal from "./NotesModal"; // Keep modal for adding/editing notes
+
+// // Import Redux actions and selectors
+// import {
+//   fetchProducts,
+//   setSelectedProductType,
+//   setSelectedProduct,
+//   clearSelectedProduct,
+//   selectCurrentProducts,
+//   selectProductsLoading,
+//   selectSelectedProductType,
+//   selectSelectedProduct,
+//   selectStoreProducts,
+//   selectComProducts,
+//   selectOmniProducts,
+// } from "../redux/productSlice";
+
+// import { setCurrentView, addToast, selectCurrentView } from "../redux/uiSlice";
+
+// import { selectCurrentSession } from "../redux/forecastSlice";
+
+// function ProductSelector() {
+//   const dispatch = useDispatch();
+//   const navigate = useNavigate();
+
+//   // ALL HOOKS MUST BE CALLED AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
+//   // Redux state - ALL selectors must be here
+//   const products = useSelector(selectCurrentProducts);
+//   const loading = useSelector(selectProductsLoading);
+//   const selectedProductType = useSelector(selectSelectedProductType);
+//   const currentView = useSelector(selectCurrentView);
+//   const forecastSession = useSelector(selectCurrentSession);
+//   const selectedProduct = useSelector(selectSelectedProduct);
+
+//   // Individual product type selectors for correct counts
+//   const storeProducts = useSelector(selectStoreProducts);
+//   const comProducts = useSelector(selectComProducts);
+//   const omniProducts = useSelector(selectOmniProducts);
+
+//   // Local state
+//   const [selectedFilters, setSelectedFilters] = useState({
+//     category: [],
+//     birthstone: [],
+//     red_box_item: [],
+//     vdf_status: [],
+//   });
+
+//   const [searchQuery, setSearchQuery] = useState("");
+//   const [viewMode, setViewMode] = useState("table");
+//   const [currentPage, setCurrentPage] = useState(1);
+//   const [selectedProductsList, setSelectedProductsList] = useState(new Set());
+//   const [bulkActionMode, setBulkActionMode] = useState(false);
+//   const [availableFilters, setAvailableFilters] = useState({
+//     categories: [],
+//     birthstones: [],
+//     red_box_items: [],
+//     vdf_statuses: [],
+//   });
+
+//   // Notes modal state
+//   const [notesModal, setNotesModal] = useState({
+//     isOpen: false,
+//     productId: null,
+//     productName: "",
+//   });
+
+//   // Product notes state - to store note data for each product
+//   const [productNotesData, setProductNotesData] = useState({}); // { productId: { notes: [], latestNote: {}, assignedTo: '', status: '' } }
+
+//   const itemsPerPage = 50;
+//   const sortBy = "pid";
+//   const sortOrder = "asc";
+
+//   // Product type configuration
+//   const productTypeConfig = {
+//     store: {
+//       icon: Store,
+//       label: "Store Products",
+//       color: "blue",
+//     },
+//     com: {
+//       icon: Package,
+//       label: "COM Products",
+//       color: "green",
+//     },
+//     omni: {
+//       icon: Globe,
+//       label: "Omni Products",
+//       color: "purple",
+//     },
+//   };
+
+//   // Initialize data and filters
+//   useEffect(() => {
+//     const initializeData = async () => {
+//       try {
+//         // Load available filters
+//         await loadAvailableFilters();
+
+//         // Load products with current filters
+//         dispatch(
+//           fetchProducts({
+//             productType: selectedProductType,
+//             filters: selectedFilters,
+//           })
+//         );
+//       } catch (error) {
+//         dispatch(
+//           addToast({
+//             type: "error",
+//             message: "Failed to initialize data",
+//             duration: 5000,
+//           })
+//         );
+//       }
+//     };
+
+//     initializeData();
+//   }, [dispatch, selectedProductType]);
+
+//   // Refetch products when filters change
+//   useEffect(() => {
+//     if (Object.keys(availableFilters).length > 0) {
+//       dispatch(
+//         fetchProducts({
+//           productType: selectedProductType,
+//           filters: selectedFilters,
+//         })
+//       );
+//     }
+//   }, [dispatch, selectedProductType, selectedFilters, availableFilters]);
+
+//   // Load forecast data from session
+//   useEffect(() => {
+//     if (forecastSession?.selectedCategories) {
+//       const selectedCategoryNames = forecastSession.selectedCategories.map(
+//         (cat) => cat.name
+//       );
+//       setSelectedFilters((prev) => ({
+//         ...prev,
+//         category: selectedCategoryNames,
+//       }));
+//     }
+//   }, [forecastSession]);
+
+//   // Load product notes data when products change
+//   useEffect(() => {
+//     if (products.length > 0) {
+//       loadProductNotesData();
+//     }
+//   }, [products]);
+
+//   // Load comprehensive product notes data
+//   const loadProductNotesData = async () => {
+//     try {
+//       const productIds = products.map((p) => p.pid);
+//       const uniqueIds = [...new Set(productIds)];
+
+//       // Fetch notes for all products at once
+//       const response = await fetch(
+//         `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`
+//       );
+//       const allNotes = await response.json();
+
+//       // Process notes data per product
+//       const notesData = {};
+//       const notes = allNotes.results || allNotes;
+
+//       uniqueIds.forEach((pid) => {
+//         const productNotes = notes.filter((note) => note.pid === pid);
+
+//         if (productNotes.length > 0) {
+//           // Sort notes by creation date (most recent first)
+//           const sortedNotes = productNotes.sort(
+//             (a, b) => new Date(b.created_at) - new Date(a.created_at)
+//           );
+//           const latestNote = sortedNotes[0];
+
+//           // Determine overall status based on notes
+//           const hasUnreviewed = productNotes.some((note) => !note.reviewed);
+//           const allReviewed = productNotes.every((note) => note.reviewed);
+
+//           let status = "No Status";
+//           if (hasUnreviewed) {
+//             status = "Pending Review";
+//           } else if (allReviewed && productNotes.length > 0) {
+//             status = "Reviewed";
+//           }
+
+//           notesData[pid] = {
+//             notes: sortedNotes,
+//             latestNote: latestNote,
+//             assignedTo: latestNote.assigned_to || "Unassigned",
+//             status: status,
+//             count: productNotes.length,
+//             hasUnreviewed: hasUnreviewed,
+//           };
+//         } else {
+//           notesData[pid] = {
+//             notes: [],
+//             latestNote: null,
+//             assignedTo: "Unassigned",
+//             status: "No Notes",
+//             count: 0,
+//             hasUnreviewed: false,
+//           };
+//         }
+//       });
+
+//       setProductNotesData(notesData);
+//     } catch (error) {
+//       console.error("Error loading product notes data:", error);
+//     }
+//   };
+
+//   // Memoized filtered and sorted products
+//   const processedProducts = useMemo(() => {
+//     let filteredProducts = [...products];
+
+//     // Apply search filter
+//     if (searchQuery) {
+//       filteredProducts = filteredProducts.filter(
+//         (product) =>
+//           product.pid?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//           product.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+//           product.birthstone?.toLowerCase().includes(searchQuery.toLowerCase())
+//       );
+//     }
+
+//     // Apply sorting
+//     filteredProducts.sort((a, b) => {
+//       let aValue = a[sortBy];
+//       let bValue = b[sortBy];
+
+//       // Handle null/undefined values
+//       if (aValue == null) aValue = "";
+//       if (bValue == null) bValue = "";
+
+//       // Convert to strings for comparison
+//       aValue = String(aValue).toLowerCase();
+//       bValue = String(bValue).toLowerCase();
+
+//       if (sortOrder === "asc") {
+//         return aValue.localeCompare(bValue);
+//       } else {
+//         return bValue.localeCompare(aValue);
+//       }
+//     });
+
+//     return filteredProducts;
+//   }, [products, searchQuery, sortBy, sortOrder]);
+
+//   // Pagination calculations
+//   const totalPages = Math.ceil(processedProducts.length / itemsPerPage);
+//   const startIndex = (currentPage - 1) * itemsPerPage;
+//   const endIndex = startIndex + itemsPerPage;
+//   const currentProducts = processedProducts.slice(startIndex, endIndex);
+
+//   // Load available filter options
+//   const loadAvailableFilters = async () => {
+//     try {
+//       const response = await fetch(
+//         `${import.meta.env.VITE_API_BASE_URL}/forecast/query/filter_products/`
+//       );
+//       const data = await response.json();
+
+//       const allProducts = [
+//         ...(data.store_products || []),
+//         ...(data.com_products || []),
+//         ...(data.omni_products || []),
+//       ];
+
+//       // Extract unique values for each filter
+//       const categories = [
+//         ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
+//       ];
+
+//       const birthstones = [
+//         ...new Set(allProducts.map((p) => p.birthstone).filter(Boolean)),
+//       ];
+//       const redBoxItems = [
+//         ...new Set(allProducts.map((p) => p.red_box_item)),
+//       ].map((val) => (val ? "Yes" : "No"));
+//       const vdfStatuses = [
+//         ...new Set(allProducts.map((p) => p.vdf_status)),
+//       ].map((val) => (val ? "Active" : "Inactive"));
+
+//       setAvailableFilters({
+//         categories: categories,
+//         birthstones: [...new Set(birthstones)],
+//         red_box_items: [...new Set(redBoxItems)],
+//         vdf_statuses: [...new Set(vdfStatuses)],
+//       });
+//     } catch (error) {
+//       console.error("Error loading filter options:", error);
+//       dispatch(
+//         addToast({
+//           type: "error",
+//           message: "Failed to load filter options",
+//           duration: 5000,
+//         })
+//       );
+//     }
+//   };
+
+//   // Handle product type change
+//   const handleProductTypeChange = (productType) => {
+//     dispatch(setSelectedProductType(productType));
+//     setCurrentPage(1);
+//     setSelectedProductsList(new Set());
+//   };
+
+//   // Handle filter changes
+//   const handleFilterChange = (filterKey, value, checked) => {
+//     const currentValues = selectedFilters[filterKey] || [];
+//     const newValues = checked
+//       ? [...currentValues, value]
+//       : currentValues.filter((item) => item !== value);
+
+//     setSelectedFilters((prev) => ({
+//       ...prev,
+//       [filterKey]: newValues,
+//     }));
+//     setCurrentPage(1);
+//   };
+
+//   // Handle search
+//   const handleSearch = (query) => {
+//     setSearchQuery(query);
+//     setCurrentPage(1);
+//   };
+
+//   // Handle view details
+//   const handleViewDetails = (product) => {
+//     dispatch(setSelectedProduct(product));
+//     dispatch(setCurrentView("details"));
+//   };
+
+//   // Handle back to selector
+//   const handleBackToSelector = () => {
+//     dispatch(clearSelectedProduct());
+//     dispatch(setCurrentView("selector"));
+//   };
+
+//   // Handle notes modal (for adding/editing notes)
+//   const handleOpenNotes = (product) => {
+//     setNotesModal({
+//       isOpen: true,
+//       productId: product.pid,
+//       productName: product.category || "",
+//     });
+//   };
+
+//   const handleCloseNotes = () => {
+//     setNotesModal({
+//       isOpen: false,
+//       productId: null,
+//       productName: "",
+//     });
+//     // Reload notes data after closing modal
+//     loadProductNotesData();
+//   };
+
+//   // Handle bulk selection
+//   const handleBulkSelect = (productId, checked) => {
+//     const newSelection = new Set(selectedProductsList);
+//     if (checked) {
+//       newSelection.add(productId);
+//     } else {
+//       newSelection.delete(productId);
+//     }
+//     setSelectedProductsList(newSelection);
+//   };
+
+//   // Handle select all
+//   const handleSelectAll = (checked) => {
+//     if (checked) {
+//       const allIds = new Set(currentProducts.map((p) => p.pid));
+//       setSelectedProductsList(allIds);
+//     } else {
+//       setSelectedProductsList(new Set());
+//     }
+//   };
+
+//   // Clear all filters
+//   const clearAllFilters = () => {
+//     setSelectedFilters({
+//       category: [],
+//       birthstone: [],
+//       red_box_item: [],
+//       vdf_status: [],
+//     });
+//     setSearchQuery("");
+//   };
+
+//   // Format cell values based on column type
+//   const formatCellValue = (value, columnKey) => {
+//     // Handle boolean values for status/item columns
+//     if (
+//       columnKey.includes("status") ||
+//       columnKey === "red_box_item" ||
+//       columnKey === "vdf_status"
+//     ) {
+//       if (value === true || value === "true") {
+//         return (
+//           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+//             {columnKey === "vdf_status" ? "Active" : "Yes"}
+//           </span>
+//         );
+//       } else if (value === false || value === "false") {
+//         return (
+//           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+//             {columnKey === "vdf_status" ? "Inactive" : "No"}
+//           </span>
+//         );
+//       }
+//     }
+
+//     // Handle birthstone column
+//     if (columnKey === "birthstone") {
+//       if (value && value !== "") {
+//         return (
+//           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+//             {value}
+//           </span>
+//         );
+//       }
+//       return <span className="text-gray-400">-</span>;
+//     }
+
+//     // Handle numeric values
+//     if (typeof value === "number") {
+//       if (columnKey.includes("trend") || columnKey.includes("index")) {
+//         return (
+//           <span className="font-medium">{parseFloat(value).toFixed(2)}</span>
+//         );
+//       }
+//       return <span className="font-medium">{value.toLocaleString()}</span>;
+//     }
+
+//     // Handle null/undefined values
+//     if (value === null || value === undefined || value === "") {
+//       return <span className="text-gray-400">-</span>;
+//     }
+
+//     // Default string formatting
+//     return String(value);
+//   };
+
+//   // Format notes column content
+//   const formatNotesColumn = (product) => {
+//     const notesData = productNotesData[product.pid];
+
+//     if (!notesData || notesData.count === 0) {
+//       return (
+//         <div className="text-center">
+//           <button
+//             onClick={() => handleOpenNotes(product)}
+//             className="text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1"
+//             title="Add note"
+//           >
+//             <Plus size={16} />
+//             <span className="text-xs">0 notes</span>
+//           </button>
+//         </div>
+//       );
+//     }
+
+//     const latestNote = notesData.latestNote;
+//     return (
+//       <div className="max-w-xs">
+//         <div className="flex items-center gap-2 mb-1">
+//           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+//             {notesData.count} {notesData.count === 1 ? "note" : "notes"}
+//           </span>
+//         </div>
+//         <div
+//           className="text-xs text-gray-800 truncate cursor-pointer hover:text-indigo-600"
+//           title={latestNote.note}
+//           onClick={() => handleOpenNotes(product)}
+//         >
+//           {latestNote.note}
+//         </div>
+//         <div className="text-xs text-gray-500 mt-1">
+//           Click to view all notes
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   // Format assigned to column
+//   const formatAssignedToColumn = (product) => {
+//     const notesData = productNotesData[product.pid];
+
+//     if (!notesData || notesData.count === 0) {
+//       return <span className="text-gray-400">-</span>;
+//     }
+
+//     return (
+//       <div className="flex items-center gap-1">
+//         <User size={14} className="text-gray-400" />
+//         <span className="text-sm text-gray-700">{notesData.assignedTo}</span>
+//       </div>
+//     );
+//   };
+
+//   // Format status column
+//   const formatStatusColumn = (product) => {
+//     const notesData = productNotesData[product.pid];
+
+//     if (!notesData) {
+//       return <span className="text-gray-400">-</span>;
+//     }
+
+//     const getStatusBadge = (status, hasUnreviewed) => {
+//       switch (status) {
+//         case "Pending Review":
+//           return (
+//             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+//               <Clock size={12} className="mr-1" />
+//               Pending Review
+//             </span>
+//           );
+//         case "Reviewed":
+//           return (
+//             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+//               <CheckCircle size={12} className="mr-1" />
+//               Reviewed
+//             </span>
+//           );
+//         case "No Notes":
+//           return (
+//             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+//               No Notes
+//             </span>
+//           );
+//         default:
+//           return (
+//             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+//               {status}
+//             </span>
+//           );
+//       }
+//     };
+
+//     return getStatusBadge(notesData.status, notesData.hasUnreviewed);
+//   };
+
+//   // Get columns based on product type (updated with notes columns)
+//   const getColumnsForProductType = (productType) => {
+//     const baseColumns = [
+//       { key: "category", label: "Category", width: "w-32" },
+//       { key: "pid", label: "Product ID", width: "w-40" },
+//       { key: "forecast_month", label: "Forecast Month", width: "w-32" },
+//       { key: "lead_time", label: "Lead Time", width: "w-24" },
+//       { key: "red_box_item", label: "Red Box", width: "w-24" },
+//     ];
+
+//     if (productType === "store") {
+//       baseColumns.push(
+//         { key: "door_count", label: "Door Count", width: "w-28" },
+//         { key: "birthstone", label: "Birthstone", width: "w-28" },
+//         { key: "trend", label: "Trend", width: "w-24" },
+//         {
+//           key: "forecast_month_required_quantity",
+//           label: "Required Qty",
+//           width: "w-32",
+//         },
+//         { key: "total_added_qty", label: "Added Qty", width: "w-28" }
+//       );
+//     } else if (productType === "com") {
+//       baseColumns.push(
+//         { key: "vdf_status", label: "VDF Status", width: "w-28" },
+//         { key: "minimum_required_oh_for_com", label: "Min OH", width: "w-28" },
+//         {
+//           key: "forecast_month_required_quantity",
+//           label: "Required Qty",
+//           width: "w-32",
+//         },
+//         { key: "total_added_qty", label: "Added Qty", width: "w-28" }
+//       );
+//     } else if (productType === "omni") {
+//       baseColumns.push(
+//         { key: "door_count", label: "Door Count", width: "w-28" },
+//         { key: "birthstone", label: "Birthstone", width: "w-28" },
+//         { key: "com_trend", label: "COM Trend", width: "w-28" },
+//         {
+//           key: "store_month_12_fc_index",
+//           label: "Store FC Index",
+//           width: "w-32",
+//         },
+//         {
+//           key: "forecast_month_required_quantity",
+//           label: "Required Qty",
+//           width: "w-32",
+//         },
+//         { key: "total_added_qty", label: "Added Qty", width: "w-28" }
+//       );
+//     }
+
+//     // Add notes columns to all product types
+//     baseColumns.push(
+//       { key: "notes", label: "Notes", width: "w-48", isNotesColumn: true },
+//       {
+//         key: "assigned_to",
+//         label: "Assigned To",
+//         width: "w-32",
+//         isAssignedColumn: true,
+//       },
+//       { key: "status", label: "Status", width: "w-32", isStatusColumn: true }
+//     );
+
+//     return baseColumns;
+//   };
+
+//   // Get the correct count for each product type
+//   const getProductCount = (productType) => {
+//     switch (productType) {
+//       case "store":
+//         return storeProducts.length;
+//       case "com":
+//         return comProducts.length;
+//       case "omni":
+//         return omniProducts.length;
+//       default:
+//         return 0;
+//     }
+//   };
+
+//   // Check if filters have active values
+//   const hasActiveFilters =
+//     Object.values(selectedFilters).some(
+//       (filterArray) => filterArray.length > 0
+//     ) || searchQuery.length > 0;
+
+//   // CONDITIONAL RETURN MUST BE AFTER ALL HOOKS
+//   // Show details view if in details mode - NO HOOKS INSIDE THIS CONDITION
+//   if (currentView === "details") {
+//     return (
+//       <ProductDetailsView
+//         productId={selectedProduct?.pid}
+//         onBack={handleBackToSelector}
+//       />
+//     );
+//   }
+
+//   return (
+//     <>
+//       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+//         {/* Header */}
+//         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 p-6">
+//           <div className="flex justify-between items-start">
+//             <div>
+//               <div className="flex items-center gap-3 mb-2">
+//                 <button
+//                   onClick={() => navigate("/forecast")}
+//                   className="text-white opacity-80 hover:opacity-100 flex items-center gap-2"
+//                 >
+//                   <ArrowLeft size={16} />
+//                   Back to Forecast
+//                 </button>
+//                 {forecastSession?.downloadUrl && (
+//                   <a
+//                     href={forecastSession.downloadUrl}
+//                     className="text-white opacity-80 hover:opacity-100 flex items-center gap-2 ml-4"
+//                     download
+//                   >
+//                     <FileDown size={16} />
+//                     Download Forecast
+//                   </a>
+//                 )}
+//               </div>
+//               <h1 className="text-2xl font-bold text-white">
+//                 Product Selector
+//               </h1>
+//               <p className="text-indigo-100 mt-1">
+//                 Filter and explore products with notes management
+//               </p>
+//             </div>
+
+//             {/* View controls */}
+//             <div className="flex items-center gap-2">
+//               <button
+//                 onClick={() =>
+//                   setViewMode(viewMode === "table" ? "grid" : "table")
+//                 }
+//                 className="text-white opacity-80 hover:opacity-100 p-2 rounded-lg hover:bg-white/10"
+//               >
+//                 {viewMode === "table" ? <Grid size={18} /> : <List size={18} />}
+//               </button>
+//               <button
+//                 onClick={() => setBulkActionMode(!bulkActionMode)}
+//                 className={`p-2 rounded-lg transition-colors ${
+//                   bulkActionMode
+//                     ? "bg-white/20 text-white"
+//                     : "text-white opacity-80 hover:opacity-100 hover:bg-white/10"
+//                 }`}
+//               >
+//                 <MoreVertical size={18} />
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+
+//         <div className="p-6">
+//           {/* Forecast Information Banner */}
+//           {forecastSession && (
+//             <div className="mb-6 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+//               <div className="flex justify-between items-start">
+//                 <div>
+//                   <h3 className="text-sm font-medium text-indigo-800 mb-2">
+//                     Active Forecast Session
+//                   </h3>
+//                   <div className="text-sm text-indigo-700 space-y-1">
+//                     <p>
+//                       <strong>Categories:</strong>{" "}
+//                       {forecastSession.selectedCategories
+//                         ?.map((cat) => `${cat.name} (${cat.value})`)
+//                         .join(", ")}
+//                     </p>
+//                     <p>
+//                       <strong>Period:</strong> {forecastSession.monthFrom} to{" "}
+//                       {forecastSession.monthTo} ({forecastSession.percentage}%)
+//                     </p>
+//                     <p>
+//                       <strong>Generated:</strong>{" "}
+//                       {new Date(forecastSession.timestamp).toLocaleString()}
+//                     </p>
+//                   </div>
+//                 </div>
+//               </div>
+//             </div>
+//           )}
+
+//           {/* Search Bar */}
+//           <div className="mb-6">
+//             <div className="relative">
+//               <Search
+//                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+//                 size={20}
+//               />
+//               <input
+//                 type="text"
+//                 placeholder="Search products by ID, category, or birthstone..."
+//                 value={searchQuery}
+//                 onChange={(e) => handleSearch(e.target.value)}
+//                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+//               />
+//             </div>
+//           </div>
+
+//           {/* Product Type Tabs */}
+//           <div className="border-b border-gray-200 mb-6">
+//             <nav className="-mb-px flex space-x-8">
+//               {Object.entries(productTypeConfig).map(([type, config]) => {
+//                 const IconComponent = config.icon;
+
+//                 return (
+//                   <button
+//                     key={type}
+//                     onClick={() => handleProductTypeChange(type)}
+//                     className={`flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+//                       selectedProductType === type
+//                         ? "border-indigo-500 text-indigo-600"
+//                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+//                     }`}
+//                   >
+//                     <IconComponent size={18} />
+//                     {config.label}
+//                     <span className="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+//                       {getProductCount(type)}
+//                     </span>
+//                   </button>
+//                 );
+//               })}
+//             </nav>
+//           </div>
+
+//           {/* Filters Section */}
+//           <div className="bg-gray-50 rounded-lg p-4 mb-6">
+//             <div className="space-y-4">
+//               <div className="flex items-center gap-2 mb-4">
+//                 <Filter size={16} className="text-gray-600" />
+//                 <span className="text-sm font-medium text-gray-700">
+//                   Filters:
+//                 </span>
+//                 {hasActiveFilters && (
+//                   <button
+//                     onClick={clearAllFilters}
+//                     className="ml-auto text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+//                   >
+//                     Clear All Filters
+//                   </button>
+//                 )}
+//               </div>
+
+//               {/* Category Filter */}
+//               {availableFilters.categories.length > 0 && (
+//                 <div className="flex flex-wrap items-center gap-2">
+//                   <label className="text-xs text-gray-600 font-medium min-w-fit">
+//                     Categories:
+//                   </label>
+//                   <div className="flex flex-wrap gap-2">
+//                     {availableFilters.categories.map((option) => (
+//                       <label
+//                         key={option}
+//                         className="inline-flex items-center gap-1 text-sm"
+//                       >
+//                         <input
+//                           type="checkbox"
+//                           checked={
+//                             selectedFilters.category?.includes(option) || false
+//                           }
+//                           onChange={(e) =>
+//                             handleFilterChange(
+//                               "category",
+//                               option,
+//                               e.target.checked
+//                             )
+//                           }
+//                           className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+//                         />
+//                         <span className="text-gray-700">{option}</span>
+//                       </label>
+//                     ))}
+//                   </div>
+//                   {selectedFilters.category?.length > 0 && (
+//                     <button
+//                       onClick={() =>
+//                         setSelectedFilters((prev) => ({
+//                           ...prev,
+//                           category: [],
+//                         }))
+//                       }
+//                       className="text-gray-400 hover:text-gray-600 p-1"
+//                       title="Clear category filters"
+//                     >
+//                       <X size={14} />
+//                     </button>
+//                   )}
+//                 </div>
+//               )}
+
+//               {/* Additional filters... (same as before) */}
+//             </div>
+//           </div>
+
+//           {/* Products Display */}
+//           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+//             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+//               <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+//                 {React.createElement(
+//                   productTypeConfig[selectedProductType].icon,
+//                   { size: 20 }
+//                 )}
+//                 {productTypeConfig[selectedProductType].label}
+//               </h3>
+//               <div className="flex items-center gap-4">
+//                 <span className="text-sm text-gray-500">
+//                   {processedProducts.length} products found
+//                 </span>
+//                 {loading && (
+//                   <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+//                 )}
+//               </div>
+//             </div>
+
+//             {loading ? (
+//               <div className="flex justify-center items-center py-12">
+//                 <div className="text-center">
+//                   <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+//                   <p className="text-gray-600">Loading products...</p>
+//                 </div>
+//               </div>
+//             ) : currentProducts.length === 0 ? (
+//               <div className="text-center py-12 text-gray-500">
+//                 <Package size={64} className="mx-auto mb-4 text-gray-300" />
+//                 <h3 className="text-lg font-medium text-gray-900 mb-2">
+//                   No Products Found
+//                 </h3>
+//                 <p className="mb-4">
+//                   {hasActiveFilters || searchQuery
+//                     ? "No products match the current filters or search query."
+//                     : "No products available for this category."}
+//                 </p>
+//                 {(hasActiveFilters || searchQuery) && (
+//                   <button
+//                     onClick={clearAllFilters}
+//                     className="text-indigo-600 hover:text-indigo-800 font-medium"
+//                   >
+//                     Clear all filters and search
+//                   </button>
+//                 )}
+//               </div>
+//             ) : (
+//               <div className="overflow-x-auto">
+//                 <table className="min-w-full divide-y divide-gray-200">
+//                   <thead className="bg-gray-50">
+//                     <tr>
+//                       {getColumnsForProductType(selectedProductType).map(
+//                         (column) => (
+//                           <th
+//                             key={column.key}
+//                             className={`${column.width} px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider`}
+//                           >
+//                             {column.label}
+//                           </th>
+//                         )
+//                       )}
+//                       <th className="w-24 px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
+//                         Actions
+//                       </th>
+//                     </tr>
+//                   </thead>
+//                   <tbody className="bg-white divide-y divide-gray-200">
+//                     {currentProducts.map((product, index) => (
+//                       <tr
+//                         key={`${product.pid}-${index}`}
+//                         className="hover:bg-gray-50 transition-colors"
+//                       >
+//                         {getColumnsForProductType(selectedProductType).map(
+//                           (column) => (
+//                             <td
+//                               key={column.key}
+//                               className="px-4 py-3 text-sm text-gray-900"
+//                             >
+//                               {column.isNotesColumn
+//                                 ? formatNotesColumn(product)
+//                                 : column.isAssignedColumn
+//                                 ? formatAssignedToColumn(product)
+//                                 : column.isStatusColumn
+//                                 ? formatStatusColumn(product)
+//                                 : formatCellValue(
+//                                     product[column.key],
+//                                     column.key
+//                                   )}
+//                             </td>
+//                           )
+//                         )}
+//                         <td className="px-4 py-3 text-center">
+//                           <button
+//                             onClick={() => handleViewDetails(product)}
+//                             className="text-indigo-600 hover:text-indigo-900 inline-flex items-center text-sm font-medium transition-colors"
+//                             title="View Details"
+//                           >
+//                             <Eye size={14} className="mr-1" />
+//                             View
+//                           </button>
+//                         </td>
+//                       </tr>
+//                     ))}
+//                   </tbody>
+//                 </table>
+//               </div>
+//             )}
+//           </div>
+
+//           {/* Pagination */}
+//           {totalPages > 1 && (
+//             <div className="mt-6 flex items-center justify-between">
+//               <div className="text-sm text-gray-500">
+//                 Showing {startIndex + 1} to{" "}
+//                 {Math.min(endIndex, processedProducts.length)} of{" "}
+//                 {processedProducts.length} products
+//               </div>
+//               <div className="flex items-center gap-2">
+//                 <button
+//                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+//                   disabled={currentPage === 1}
+//                   className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+//                 >
+//                   Previous
+//                 </button>
+
+//                 {/* Page numbers */}
+//                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
+//                   const pageNum = Math.max(1, currentPage - 2) + i;
+//                   if (pageNum > totalPages) return null;
+
+//                   return (
+//                     <button
+//                       key={pageNum}
+//                       onClick={() => setCurrentPage(pageNum)}
+//                       className={`px-3 py-1 border rounded text-sm ${
+//                         currentPage === pageNum
+//                           ? "border-indigo-500 bg-indigo-50 text-indigo-600"
+//                           : "border-gray-300 hover:bg-gray-50"
+//                       }`}
+//                     >
+//                       {pageNum}
+//                     </button>
+//                   );
+//                 })}
+
+//                 <button
+//                   onClick={() =>
+//                     setCurrentPage(Math.min(totalPages, currentPage + 1))
+//                   }
+//                   disabled={currentPage === totalPages}
+//                   className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+//                 >
+//                   Next
+//                 </button>
+//               </div>
+//             </div>
+//           )}
+
+//           {/* Active Filters Summary */}
+//           {hasActiveFilters && (
+//             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+//               <h4 className="text-sm font-medium text-blue-800 mb-2">
+//                 Active Filters:
+//               </h4>
+//               <div className="flex flex-wrap gap-2">
+//                 {Object.entries(selectedFilters).map(
+//                   ([filterKey, filterValues]) =>
+//                     filterValues.length > 0 && (
+//                       <div key={filterKey} className="flex flex-wrap gap-1">
+//                         {filterValues.map((value) => (
+//                           <span
+//                             key={`${filterKey}-${value}`}
+//                             className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
+//                           >
+//                             {filterKey.replace("_", " ")}: {value}
+//                             <button
+//                               onClick={() =>
+//                                 handleFilterChange(filterKey, value, false)
+//                               }
+//                               className="text-blue-600 hover:text-blue-800"
+//                             >
+//                               <X size={12} />
+//                             </button>
+//                           </span>
+//                         ))}
+//                       </div>
+//                     )
+//                 )}
+//                 {searchQuery && (
+//                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+//                     search: {searchQuery}
+//                     <button
+//                       onClick={() => setSearchQuery("")}
+//                       className="text-blue-600 hover:text-blue-800"
+//                     >
+//                       <X size={12} />
+//                     </button>
+//                   </span>
+//                 )}
+//               </div>
+//             </div>
+//           )}
+
+//           {/* Notes Summary Cards */}
+//           <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+//             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+//               <div className="flex items-center justify-between">
+//                 <div>
+//                   <p className="text-sm font-medium text-blue-800">
+//                     Total Products
+//                   </p>
+//                   <p className="text-2xl font-bold text-blue-900">
+//                     {processedProducts.length}
+//                   </p>
+//                 </div>
+//                 <Package className="text-blue-600" size={24} />
+//               </div>
+//             </div>
+
+//             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+//               <div className="flex items-center justify-between">
+//                 <div>
+//                   <p className="text-sm font-medium text-green-800">
+//                     With Notes
+//                   </p>
+//                   <p className="text-2xl font-bold text-green-900">
+//                     {
+//                       Object.values(productNotesData).filter(
+//                         (data) => data.count > 0
+//                       ).length
+//                     }
+//                   </p>
+//                 </div>
+//                 <FileText className="text-green-600" size={24} />
+//               </div>
+//             </div>
+
+//             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+//               <div className="flex items-center justify-between">
+//                 <div>
+//                   <p className="text-sm font-medium text-yellow-800">
+//                     Pending Review
+//                   </p>
+//                   <p className="text-2xl font-bold text-yellow-900">
+//                     {
+//                       Object.values(productNotesData).filter(
+//                         (data) => data.hasUnreviewed
+//                       ).length
+//                     }
+//                   </p>
+//                 </div>
+//                 <Clock className="text-yellow-600" size={24} />
+//               </div>
+//             </div>
+
+//             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+//               <div className="flex items-center justify-between">
+//                 <div>
+//                   <p className="text-sm font-medium text-purple-800">
+//                     Reviewed
+//                   </p>
+//                   <p className="text-2xl font-bold text-purple-900">
+//                     {
+//                       Object.values(productNotesData).filter(
+//                         (data) => data.status === "Reviewed"
+//                       ).length
+//                     }
+//                   </p>
+//                 </div>
+//                 <CheckCircle className="text-purple-600" size={24} />
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Notes Modal for adding/editing notes */}
+//       <NotesModal
+//         isOpen={notesModal.isOpen}
+//         onClose={handleCloseNotes}
+//         productId={notesModal.productId}
+//         productName={notesModal.productName}
+//       />
+//     </>
+//   );
+// }
+
+// export default ProductSelector;
+
+// Updated ProductSelector.jsx with simplified columns and status dropdown
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -2636,10 +3799,11 @@ import {
   User,
   FileText,
   Plus,
+  AlertCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import ProductDetailsView from "./ProductDetailsView";
-import NotesModal from "./NotesModal"; // Keep modal for adding/editing notes
+import NotesModal from "./NotesModal";
 
 // Import Redux actions and selectors
 import {
@@ -2657,15 +3821,13 @@ import {
 } from "../redux/productSlice";
 
 import { setCurrentView, addToast, selectCurrentView } from "../redux/uiSlice";
-
 import { selectCurrentSession } from "../redux/forecastSlice";
 
 function ProductSelector() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // ALL HOOKS MUST BE CALLED AT THE TOP - BEFORE ANY CONDITIONAL LOGIC
-  // Redux state - ALL selectors must be here
+  // Redux state
   const products = useSelector(selectCurrentProducts);
   const loading = useSelector(selectProductsLoading);
   const selectedProductType = useSelector(selectSelectedProductType);
@@ -2681,21 +3843,13 @@ function ProductSelector() {
   // Local state
   const [selectedFilters, setSelectedFilters] = useState({
     category: [],
-    birthstone: [],
-    red_box_item: [],
-    vdf_status: [],
+    status: [], // Added status filter
   });
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState("table");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedProductsList, setSelectedProductsList] = useState(new Set());
-  const [bulkActionMode, setBulkActionMode] = useState(false);
   const [availableFilters, setAvailableFilters] = useState({
     categories: [],
-    birthstones: [],
-    red_box_items: [],
-    vdf_statuses: [],
   });
 
   // Notes modal state
@@ -2705,12 +3859,10 @@ function ProductSelector() {
     productName: "",
   });
 
-  // Product notes state - to store note data for each product
-  const [productNotesData, setProductNotesData] = useState({}); // { productId: { notes: [], latestNote: {}, assignedTo: '', status: '' } }
+  // Product notes state
+  const [productNotesData, setProductNotesData] = useState({});
 
   const itemsPerPage = 50;
-  const sortBy = "pid";
-  const sortOrder = "asc";
 
   // Product type configuration
   const productTypeConfig = {
@@ -2731,14 +3883,18 @@ function ProductSelector() {
     },
   };
 
+  // Status options for dropdown
+  const statusOptions = [
+    { value: "reviewed", label: "Reviewed" },
+    { value: "not_reviewed", label: "Not Reviewed" },
+    { value: "pending", label: "Pending" },
+  ];
+
   // Initialize data and filters
   useEffect(() => {
     const initializeData = async () => {
       try {
-        // Load available filters
         await loadAvailableFilters();
-
-        // Load products with current filters
         dispatch(
           fetchProducts({
             productType: selectedProductType,
@@ -2797,13 +3953,11 @@ function ProductSelector() {
       const productIds = products.map((p) => p.pid);
       const uniqueIds = [...new Set(productIds)];
 
-      // Fetch notes for all products at once
       const response = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`
       );
       const allNotes = await response.json();
 
-      // Process notes data per product
       const notesData = {};
       const notes = allNotes.results || allNotes;
 
@@ -2811,21 +3965,19 @@ function ProductSelector() {
         const productNotes = notes.filter((note) => note.pid === pid);
 
         if (productNotes.length > 0) {
-          // Sort notes by creation date (most recent first)
           const sortedNotes = productNotes.sort(
             (a, b) => new Date(b.created_at) - new Date(a.created_at)
           );
           const latestNote = sortedNotes[0];
 
-          // Determine overall status based on notes
           const hasUnreviewed = productNotes.some((note) => !note.reviewed);
           const allReviewed = productNotes.every((note) => note.reviewed);
 
-          let status = "No Status";
-          if (hasUnreviewed) {
-            status = "Pending Review";
-          } else if (allReviewed && productNotes.length > 0) {
-            status = "Reviewed";
+          let status = "pending";
+          if (allReviewed && productNotes.length > 0) {
+            status = "reviewed";
+          } else if (hasUnreviewed) {
+            status = "not_reviewed";
           }
 
           notesData[pid] = {
@@ -2841,7 +3993,7 @@ function ProductSelector() {
             notes: [],
             latestNote: null,
             assignedTo: "Unassigned",
-            status: "No Notes",
+            status: "pending",
             count: 0,
             hasUnreviewed: false,
           };
@@ -2863,33 +4015,28 @@ function ProductSelector() {
       filteredProducts = filteredProducts.filter(
         (product) =>
           product.pid?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          product.birthstone?.toLowerCase().includes(searchQuery.toLowerCase())
+          product.category?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Apply sorting
-    filteredProducts.sort((a, b) => {
-      let aValue = a[sortBy];
-      let bValue = b[sortBy];
+    // Apply status filter
+    if (selectedFilters.status.length > 0) {
+      filteredProducts = filteredProducts.filter((product) => {
+        const productNotes = productNotesData[product.pid];
+        if (!productNotes) return selectedFilters.status.includes("pending");
+        return selectedFilters.status.includes(productNotes.status);
+      });
+    }
 
-      // Handle null/undefined values
-      if (aValue == null) aValue = "";
-      if (bValue == null) bValue = "";
-
-      // Convert to strings for comparison
-      aValue = String(aValue).toLowerCase();
-      bValue = String(bValue).toLowerCase();
-
-      if (sortOrder === "asc") {
-        return aValue.localeCompare(bValue);
-      } else {
-        return bValue.localeCompare(aValue);
-      }
-    });
+    // Apply category filter
+    if (selectedFilters.category.length > 0) {
+      filteredProducts = filteredProducts.filter((product) =>
+        selectedFilters.category.includes(product.category)
+      );
+    }
 
     return filteredProducts;
-  }, [products, searchQuery, sortBy, sortOrder]);
+  }, [products, searchQuery, selectedFilters, productNotesData]);
 
   // Pagination calculations
   const totalPages = Math.ceil(processedProducts.length / itemsPerPage);
@@ -2911,26 +4058,12 @@ function ProductSelector() {
         ...(data.omni_products || []),
       ];
 
-      // Extract unique values for each filter
       const categories = [
         ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
       ];
 
-      const birthstones = [
-        ...new Set(allProducts.map((p) => p.birthstone).filter(Boolean)),
-      ];
-      const redBoxItems = [
-        ...new Set(allProducts.map((p) => p.red_box_item)),
-      ].map((val) => (val ? "Yes" : "No"));
-      const vdfStatuses = [
-        ...new Set(allProducts.map((p) => p.vdf_status)),
-      ].map((val) => (val ? "Active" : "Inactive"));
-
       setAvailableFilters({
         categories: categories,
-        birthstones: [...new Set(birthstones)],
-        red_box_items: [...new Set(redBoxItems)],
-        vdf_statuses: [...new Set(vdfStatuses)],
       });
     } catch (error) {
       console.error("Error loading filter options:", error);
@@ -2948,7 +4081,6 @@ function ProductSelector() {
   const handleProductTypeChange = (productType) => {
     dispatch(setSelectedProductType(productType));
     setCurrentPage(1);
-    setSelectedProductsList(new Set());
   };
 
   // Handle filter changes
@@ -2983,7 +4115,7 @@ function ProductSelector() {
     dispatch(setCurrentView("selector"));
   };
 
-  // Handle notes modal (for adding/editing notes)
+  // Handle notes modal
   const handleOpenNotes = (product) => {
     setNotesModal({
       isOpen: true,
@@ -2998,260 +4130,65 @@ function ProductSelector() {
       productId: null,
       productName: "",
     });
-    // Reload notes data after closing modal
     loadProductNotesData();
-  };
-
-  // Handle bulk selection
-  const handleBulkSelect = (productId, checked) => {
-    const newSelection = new Set(selectedProductsList);
-    if (checked) {
-      newSelection.add(productId);
-    } else {
-      newSelection.delete(productId);
-    }
-    setSelectedProductsList(newSelection);
-  };
-
-  // Handle select all
-  const handleSelectAll = (checked) => {
-    if (checked) {
-      const allIds = new Set(currentProducts.map((p) => p.pid));
-      setSelectedProductsList(allIds);
-    } else {
-      setSelectedProductsList(new Set());
-    }
   };
 
   // Clear all filters
   const clearAllFilters = () => {
     setSelectedFilters({
       category: [],
-      birthstone: [],
-      red_box_item: [],
-      vdf_status: [],
+      status: [],
     });
     setSearchQuery("");
   };
 
-  // Format cell values based on column type
-  const formatCellValue = (value, columnKey) => {
-    // Handle boolean values for status/item columns
-    if (
-      columnKey.includes("status") ||
-      columnKey === "red_box_item" ||
-      columnKey === "vdf_status"
-    ) {
-      if (value === true || value === "true") {
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            {columnKey === "vdf_status" ? "Active" : "Yes"}
-          </span>
-        );
-      } else if (value === false || value === "false") {
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-            {columnKey === "vdf_status" ? "Inactive" : "No"}
-          </span>
-        );
-      }
-    }
-
-    // Handle birthstone column
-    if (columnKey === "birthstone") {
-      if (value && value !== "") {
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-            {value}
-          </span>
-        );
-      }
-      return <span className="text-gray-400">-</span>;
-    }
-
-    // Handle numeric values
-    if (typeof value === "number") {
-      if (columnKey.includes("trend") || columnKey.includes("index")) {
-        return (
-          <span className="font-medium">{parseFloat(value).toFixed(2)}</span>
-        );
-      }
-      return <span className="font-medium">{value.toLocaleString()}</span>;
-    }
-
-    // Handle null/undefined values
-    if (value === null || value === undefined || value === "") {
-      return <span className="text-gray-400">-</span>;
-    }
-
-    // Default string formatting
-    return String(value);
-  };
-
-  // Format notes column content
-  const formatNotesColumn = (product) => {
-    const notesData = productNotesData[product.pid];
-
-    if (!notesData || notesData.count === 0) {
-      return (
-        <div className="text-center">
-          <button
-            onClick={() => handleOpenNotes(product)}
-            className="text-gray-400 hover:text-indigo-600 transition-colors flex items-center gap-1"
-            title="Add note"
-          >
-            <Plus size={16} />
-            <span className="text-xs">0 notes</span>
-          </button>
-        </div>
-      );
-    }
-
-    const latestNote = notesData.latestNote;
-    return (
-      <div className="max-w-xs">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            {notesData.count} {notesData.count === 1 ? "note" : "notes"}
-          </span>
-        </div>
-        <div
-          className="text-xs text-gray-800 truncate cursor-pointer hover:text-indigo-600"
-          title={latestNote.note}
-          onClick={() => handleOpenNotes(product)}
-        >
-          {latestNote.note}
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Click to view all notes
-        </div>
-      </div>
-    );
-  };
-
-  // Format assigned to column
-  const formatAssignedToColumn = (product) => {
-    const notesData = productNotesData[product.pid];
-
-    if (!notesData || notesData.count === 0) {
-      return <span className="text-gray-400">-</span>;
-    }
-
-    return (
-      <div className="flex items-center gap-1">
-        <User size={14} className="text-gray-400" />
-        <span className="text-sm text-gray-700">{notesData.assignedTo}</span>
-      </div>
-    );
-  };
-
-  // Format status column
-  const formatStatusColumn = (product) => {
+  // Format status display
+  const formatStatusDisplay = (product) => {
     const notesData = productNotesData[product.pid];
 
     if (!notesData) {
-      return <span className="text-gray-400">-</span>;
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+          <Clock size={12} className="mr-1" />
+          Pending
+        </span>
+      );
     }
 
-    const getStatusBadge = (status, hasUnreviewed) => {
-      switch (status) {
-        case "Pending Review":
-          return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-              <Clock size={12} className="mr-1" />
-              Pending Review
-            </span>
-          );
-        case "Reviewed":
-          return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <CheckCircle size={12} className="mr-1" />
-              Reviewed
-            </span>
-          );
-        case "No Notes":
-          return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-              No Notes
-            </span>
-          );
-        default:
-          return (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-              {status}
-            </span>
-          );
-      }
-    };
-
-    return getStatusBadge(notesData.status, notesData.hasUnreviewed);
+    switch (notesData.status) {
+      case "reviewed":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <CheckCircle size={12} className="mr-1" />
+            Reviewed
+          </span>
+        );
+      case "not_reviewed":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            <AlertCircle size={12} className="mr-1" />
+            Not Reviewed
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            <Clock size={12} className="mr-1" />
+            Pending
+          </span>
+        );
+    }
   };
 
-  // Get columns based on product type (updated with notes columns)
-  const getColumnsForProductType = (productType) => {
-    const baseColumns = [
-      { key: "category", label: "Category", width: "w-32" },
-      { key: "pid", label: "Product ID", width: "w-40" },
-      { key: "forecast_month", label: "Forecast Month", width: "w-32" },
-      { key: "lead_time", label: "Lead Time", width: "w-24" },
-      { key: "red_box_item", label: "Red Box", width: "w-24" },
-    ];
+  // Format assigned to display
+  const formatAssignedToDisplay = (product) => {
+    const notesData = productNotesData[product.pid];
+    return notesData?.assignedTo || "Unassigned";
+  };
 
-    if (productType === "store") {
-      baseColumns.push(
-        { key: "door_count", label: "Door Count", width: "w-28" },
-        { key: "birthstone", label: "Birthstone", width: "w-28" },
-        { key: "trend", label: "Trend", width: "w-24" },
-        {
-          key: "forecast_month_required_quantity",
-          label: "Required Qty",
-          width: "w-32",
-        },
-        { key: "total_added_qty", label: "Added Qty", width: "w-28" }
-      );
-    } else if (productType === "com") {
-      baseColumns.push(
-        { key: "vdf_status", label: "VDF Status", width: "w-28" },
-        { key: "minimum_required_oh_for_com", label: "Min OH", width: "w-28" },
-        {
-          key: "forecast_month_required_quantity",
-          label: "Required Qty",
-          width: "w-32",
-        },
-        { key: "total_added_qty", label: "Added Qty", width: "w-28" }
-      );
-    } else if (productType === "omni") {
-      baseColumns.push(
-        { key: "door_count", label: "Door Count", width: "w-28" },
-        { key: "birthstone", label: "Birthstone", width: "w-28" },
-        { key: "com_trend", label: "COM Trend", width: "w-28" },
-        {
-          key: "store_month_12_fc_index",
-          label: "Store FC Index",
-          width: "w-32",
-        },
-        {
-          key: "forecast_month_required_quantity",
-          label: "Required Qty",
-          width: "w-32",
-        },
-        { key: "total_added_qty", label: "Added Qty", width: "w-28" }
-      );
-    }
-
-    // Add notes columns to all product types
-    baseColumns.push(
-      { key: "notes", label: "Notes", width: "w-48", isNotesColumn: true },
-      {
-        key: "assigned_to",
-        label: "Assigned To",
-        width: "w-32",
-        isAssignedColumn: true,
-      },
-      { key: "status", label: "Status", width: "w-32", isStatusColumn: true }
-    );
-
-    return baseColumns;
+  // Get added qty (simplified - you may need to adjust based on your data structure)
+  const getAddedQty = (product) => {
+    return product.total_added_qty || product.added_qty_macys_soq || 0;
   };
 
   // Get the correct count for each product type
@@ -3274,8 +4211,7 @@ function ProductSelector() {
       (filterArray) => filterArray.length > 0
     ) || searchQuery.length > 0;
 
-  // CONDITIONAL RETURN MUST BE AFTER ALL HOOKS
-  // Show details view if in details mode - NO HOOKS INSIDE THIS CONDITION
+  // Show details view if in details mode
   if (currentView === "details") {
     return (
       <ProductDetailsView
@@ -3315,30 +4251,8 @@ function ProductSelector() {
                 Product Selector
               </h1>
               <p className="text-indigo-100 mt-1">
-                Filter and explore products with notes management
+                Simplified view with essential columns
               </p>
-            </div>
-
-            {/* View controls */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  setViewMode(viewMode === "table" ? "grid" : "table")
-                }
-                className="text-white opacity-80 hover:opacity-100 p-2 rounded-lg hover:bg-white/10"
-              >
-                {viewMode === "table" ? <Grid size={18} /> : <List size={18} />}
-              </button>
-              <button
-                onClick={() => setBulkActionMode(!bulkActionMode)}
-                className={`p-2 rounded-lg transition-colors ${
-                  bulkActionMode
-                    ? "bg-white/20 text-white"
-                    : "text-white opacity-80 hover:opacity-100 hover:bg-white/10"
-                }`}
-              >
-                <MoreVertical size={18} />
-              </button>
             </div>
           </div>
         </div>
@@ -3363,10 +4277,6 @@ function ProductSelector() {
                       <strong>Period:</strong> {forecastSession.monthFrom} to{" "}
                       {forecastSession.monthTo} ({forecastSession.percentage}%)
                     </p>
-                    <p>
-                      <strong>Generated:</strong>{" "}
-                      {new Date(forecastSession.timestamp).toLocaleString()}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -3382,7 +4292,7 @@ function ProductSelector() {
               />
               <input
                 type="text"
-                placeholder="Search products by ID, category, or birthstone..."
+                placeholder="Search products by ID or category..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -3395,7 +4305,6 @@ function ProductSelector() {
             <nav className="-mb-px flex space-x-8">
               {Object.entries(productTypeConfig).map(([type, config]) => {
                 const IconComponent = config.icon;
-
                 return (
                   <button
                     key={type}
@@ -3435,54 +4344,73 @@ function ProductSelector() {
                 )}
               </div>
 
-              {/* Category Filter */}
-              {availableFilters.categories.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category Filter */}
+                {availableFilters.categories.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="text-xs text-gray-600 font-medium min-w-fit">
+                      Categories:
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {availableFilters.categories.map((option) => (
+                        <label
+                          key={option}
+                          className="inline-flex items-center gap-1 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={
+                              selectedFilters.category?.includes(option) ||
+                              false
+                            }
+                            onChange={(e) =>
+                              handleFilterChange(
+                                "category",
+                                option,
+                                e.target.checked
+                              )
+                            }
+                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                          />
+                          <span className="text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Status Filter */}
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="text-xs text-gray-600 font-medium min-w-fit">
-                    Categories:
+                    Status:
                   </label>
                   <div className="flex flex-wrap gap-2">
-                    {availableFilters.categories.map((option) => (
+                    {statusOptions.map((option) => (
                       <label
-                        key={option}
+                        key={option.value}
                         className="inline-flex items-center gap-1 text-sm"
                       >
                         <input
                           type="checkbox"
                           checked={
-                            selectedFilters.category?.includes(option) || false
+                            selectedFilters.status?.includes(option.value) ||
+                            false
                           }
                           onChange={(e) =>
                             handleFilterChange(
-                              "category",
-                              option,
+                              "status",
+                              option.value,
                               e.target.checked
                             )
                           }
                           className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                         />
-                        <span className="text-gray-700">{option}</span>
+                        <span className="text-gray-700">{option.label}</span>
                       </label>
                     ))}
                   </div>
-                  {selectedFilters.category?.length > 0 && (
-                    <button
-                      onClick={() =>
-                        setSelectedFilters((prev) => ({
-                          ...prev,
-                          category: [],
-                        }))
-                      }
-                      className="text-gray-400 hover:text-gray-600 p-1"
-                      title="Clear category filters"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
                 </div>
-              )}
-
-              {/* Additional filters... (same as before) */}
+              </div>
             </div>
           </div>
 
@@ -3538,17 +4466,25 @@ function ProductSelector() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      {getColumnsForProductType(selectedProductType).map(
-                        (column) => (
-                          <th
-                            key={column.key}
-                            className={`${column.width} px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider`}
-                          >
-                            {column.label}
-                          </th>
-                        )
-                      )}
-                      <th className="w-24 px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Product ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assigned To
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Forecast Month
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Added Qty
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
@@ -3559,34 +4495,46 @@ function ProductSelector() {
                         key={`${product.pid}-${index}`}
                         className="hover:bg-gray-50 transition-colors"
                       >
-                        {getColumnsForProductType(selectedProductType).map(
-                          (column) => (
-                            <td
-                              key={column.key}
-                              className="px-4 py-3 text-sm text-gray-900"
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {product.pid}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div className="flex items-center gap-1">
+                            <User size={14} className="text-gray-400" />
+                            <span>{formatAssignedToDisplay(product)}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {product.forecast_month || "-"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {getAddedQty(product).toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {formatStatusDisplay(product)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleViewDetails(product)}
+                              className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                              title="View Details"
                             >
-                              {column.isNotesColumn
-                                ? formatNotesColumn(product)
-                                : column.isAssignedColumn
-                                ? formatAssignedToColumn(product)
-                                : column.isStatusColumn
-                                ? formatStatusColumn(product)
-                                : formatCellValue(
-                                    product[column.key],
-                                    column.key
-                                  )}
-                            </td>
-                          )
-                        )}
-                        <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => handleViewDetails(product)}
-                            className="text-indigo-600 hover:text-indigo-900 inline-flex items-center text-sm font-medium transition-colors"
-                            title="View Details"
-                          >
-                            <Eye size={14} className="mr-1" />
-                            View
-                          </button>
+                              <Eye size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleOpenNotes(product)}
+                              className="text-green-600 hover:text-green-900 transition-colors"
+                              title="Manage Notes"
+                            >
+                              <FileText size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -3613,7 +4561,6 @@ function ProductSelector() {
                   Previous
                 </button>
 
-                {/* Page numbers */}
                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
                   const pageNum = Math.max(1, currentPage - 2) + i;
                   if (pageNum > totalPages) return null;
@@ -3646,6 +4593,73 @@ function ProductSelector() {
             </div>
           )}
 
+          {/* Summary Cards */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-800">
+                    Total Products
+                  </p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {processedProducts.length}
+                  </p>
+                </div>
+                <Package className="text-blue-600" size={24} />
+              </div>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-800">Reviewed</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {
+                      Object.values(productNotesData).filter(
+                        (data) => data.status === "reviewed"
+                      ).length
+                    }
+                  </p>
+                </div>
+                <CheckCircle className="text-green-600" size={24} />
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-800">
+                    Not Reviewed
+                  </p>
+                  <p className="text-2xl font-bold text-red-900">
+                    {
+                      Object.values(productNotesData).filter(
+                        (data) => data.status === "not_reviewed"
+                      ).length
+                    }
+                  </p>
+                </div>
+                <AlertCircle className="text-red-600" size={24} />
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-800">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-900">
+                    {
+                      Object.values(productNotesData).filter(
+                        (data) => data.status === "pending"
+                      ).length
+                    }
+                  </p>
+                </div>
+                <Clock className="text-yellow-600" size={24} />
+              </div>
+            </div>
+          </div>
+
           {/* Active Filters Summary */}
           {hasActiveFilters && (
             <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -3662,7 +4676,10 @@ function ProductSelector() {
                             key={`${filterKey}-${value}`}
                             className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full"
                           >
-                            {filterKey.replace("_", " ")}: {value}
+                            {filterKey === "status"
+                              ? statusOptions.find((opt) => opt.value === value)
+                                  ?.label || value
+                              : `${filterKey}: ${value}`}
                             <button
                               onClick={() =>
                                 handleFilterChange(filterKey, value, false)
@@ -3690,77 +4707,6 @@ function ProductSelector() {
               </div>
             </div>
           )}
-
-          {/* Notes Summary Cards */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-800">
-                    Total Products
-                  </p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {processedProducts.length}
-                  </p>
-                </div>
-                <Package className="text-blue-600" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-800">
-                    With Notes
-                  </p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {
-                      Object.values(productNotesData).filter(
-                        (data) => data.count > 0
-                      ).length
-                    }
-                  </p>
-                </div>
-                <FileText className="text-green-600" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-800">
-                    Pending Review
-                  </p>
-                  <p className="text-2xl font-bold text-yellow-900">
-                    {
-                      Object.values(productNotesData).filter(
-                        (data) => data.hasUnreviewed
-                      ).length
-                    }
-                  </p>
-                </div>
-                <Clock className="text-yellow-600" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-purple-800">
-                    Reviewed
-                  </p>
-                  <p className="text-2xl font-bold text-purple-900">
-                    {
-                      Object.values(productNotesData).filter(
-                        (data) => data.status === "Reviewed"
-                      ).length
-                    }
-                  </p>
-                </div>
-                <CheckCircle className="text-purple-600" size={24} />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
