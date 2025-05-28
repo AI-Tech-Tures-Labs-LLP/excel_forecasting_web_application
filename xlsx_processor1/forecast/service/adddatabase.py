@@ -169,3 +169,62 @@ def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit
             year=year,
             defaults=monthly_values  # Updates all month fields at once
         )
+
+def save_rolling_forecasts(product, year, forecast_data_dict):
+    """
+    Save or update MonthlyForecast records for a given product and year.
+    Handles invalid numeric entries like '-' gracefully.
+    
+    Args:
+        product (ProductDetail): ProductDetail instance
+        year (int): Forecast year
+        forecast_data_dict (dict): {
+            "MacysProjectionReciepts": {"JAN": "100", "FEB": "-", ...},
+            ...
+        }
+    """
+    allowed_vars = {
+        'MacysProjectionReciepts',
+        'PlannedEOH',
+        'PlannedShipment',
+        'PlannedForecast',
+        'RecommendedForecast',
+        'ForecastByTrend',
+        'ForecastByIndex',
+        'PlannedSellThru',
+        'IndexPercentage',
+        'GrossProjection'
+    }
+
+    month_map = {
+        'JAN': 'jan', 'FEB': 'feb', 'MAR': 'mar', 'APR': 'apr',
+        'MAY': 'may', 'JUN': 'jun', 'JUL': 'jul', 'AUG': 'aug',
+        'SEP': 'sep', 'OCT': 'oct', 'NOV': 'nov', 'DEC': 'dec',
+    }
+
+    for variable, monthly_data in forecast_data_dict.items():
+        if variable not in allowed_vars:
+            continue
+
+        defaults = {}
+        for month_abbr, value in monthly_data.items():
+            month_field = month_map.get(month_abbr.upper())
+            if not month_field:
+                continue
+            try:
+                # Convert to float; skip if value is not a number
+                if value in (None, '', '-', '--'):
+                    continue
+                defaults[month_field] = float(value)
+            except (ValueError, TypeError):
+                # Log or skip invalid numeric entry
+                continue
+
+        # Only create/update if there's at least one valid month value
+        if defaults:
+            MonthlyForecast.objects.update_or_create(
+                product=product,
+                variable_name=variable,
+                year=year,
+                defaults=defaults
+            )

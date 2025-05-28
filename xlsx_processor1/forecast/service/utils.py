@@ -1182,3 +1182,29 @@ def calculate_diff(TY_store_unit_sales, LY_store_unit_sales):
                 # Handle potential division by zero by setting to 1 (as per IFERROR)
                 result[key] = 1
     return result
+
+def calculate_planned_sell_through(planned_fc, plan_oh):
+    result = {}
+    for key in planned_fc:
+        if key in plan_oh:  # Ensuring the key exists in both dictionaries
+            fc = planned_fc[key]
+            oh = plan_oh[key]
+            if (fc + oh) != 0:  # Avoid division by zero
+                result[key] = fc / (fc + oh)
+            else:
+                result[key] = None  # Handle division by zero, if any
+        else:
+            result[key] = None  # Handle missing keys in plan_oh
+    return result
+
+def find_STD(month_map,Month1,Month2):
+    abbr1 = month_map[Month1]
+    abbr2 = month_map[Month2]
+ 
+    # Find indices
+    start_index = MONTHS.index(abbr1)
+    end_index = MONTHS.index(abbr2)
+ 
+    # Slice the list
+    Std_PID = MONTHS[start_index:end_index + 1]
+    return Std_PID

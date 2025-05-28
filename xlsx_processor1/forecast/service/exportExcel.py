@@ -1,9 +1,9 @@
 # exportExcel.py
 # Standard library imports
-import json
 import os
 from multiprocessing import Pool, cpu_count
 from datetime import datetime
+from django.conf import settings
 
 # Third-party imports
 import numpy as np
@@ -23,7 +23,7 @@ from openpyxl.worksheet.datavalidation import DataValidation
 # Local application imports
 from .readInputExcel import readInputExcel
 from forecast.service import config
-from forecast.service.adddatabase import save_macys_projection_receipts, save_monthly_forecasts
+from forecast.service.adddatabase import save_macys_projection_receipts, save_monthly_forecasts, save_rolling_forecasts
 from forecast.models import MonthlyForecast, ProductDetail, StoreForecast, ComForecast, OmniForecast
 
 
@@ -507,7 +507,9 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         )
     print("OmniForecast data saved/updated successfully.")
     # Write to different sheets in one Excel file
-    with pd.ExcelWriter("forecast_summaryfor_april_4.xlsx", engine="openpyxl") as writer:
+    file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+
+    with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
         df_store.to_excel(writer, sheet_name="store", index=False)
         df_coms.to_excel(writer, sheet_name="coms", index=False)
         df_omni.to_excel(writer, sheet_name="omni", index=False)
@@ -793,7 +795,7 @@ def process_category(args):
 
         # Find the matching rows
         loader = VariableLoader(cross_ref)
-        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni= algorithm(loader,category,store,coms,omni,code)
+        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_eoh, planned_sell_thru= algorithm(loader,category,store,coms,omni,code)
         print("################################################################3")
 
         def safe_int(value):
@@ -985,7 +987,22 @@ def process_category(args):
         
         save_macys_projection_receipts(productmain, loader.matched_row, current_year)
         save_monthly_forecasts(productmain, current_year, months, loader.TY_Unit_Sales, loader.LY_Unit_Sales, loader.LY_OH_Units, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_Receipts, loader.TY_MCOM_Unit_Sales, loader.LY_MCOM_Unit_Sales, loader.TY_MCOM_OH_Units, loader.LY_MCOM_OH_Units, loader.PTD_TY_Sales, loader.LY_PTD_Sales, loader.MCOM_PTD_TY_Sales, loader.MCOM_PTD_LY_Sales, loader.OO_Total_Units, loader.OO_MCOM_Total_Units, loader.LY_store_unit_sales, loader.LY_store_EOM_OH, loader.LY_COM_to_TTL, loader.LY_COM_to_TTL_OH, loader.LY_omni_sell_through, loader.LY_store_sell_through, loader.LY_omni_turn, loader.LY_store_turn, loader.LY_Omni_AUR_Diff_Own, loader.TY_store_unit_sales, loader.TY_store_EOM_OH, loader.TY_COM_to_TTL, loader.TY_COM_to_TTL_OH, loader.TY_Omni_AUR_Diff_Own, loader.TY_Omni_sell_through, loader.TY_store_sell_through, loader.TY_omni_turn, loader.TY_store_turn, loader.TY_store_unit_sales_diff, loader.TY_com_unit_sales_diff, loader.TY_store_eom_oh_diff)
-
+        
+        forecast_data = { 
+            'IndexPercentage':loader.index_value,
+            'ForecastByIndex':fc_by_index,
+            'ForecastByTrend': fc_by_trend,
+            'RecommendedForecast': recommended_fc,
+            'PlannedForecast': planned_fc,
+            'PlannedShipment': planned_shp,
+            "PlannedEOH": planned_eoh,
+            'GrossProjection' : loader.gross_proj,
+            "MacysProjectionReciepts":loader.macys_proj_receipt,
+            'PlannedSellThru': planned_sell_thru
+            
+            
+        }
+        save_rolling_forecasts(productmain, current_year, forecast_data)
         print(f"Product {loader.pid_value} saved successfully")
 
 

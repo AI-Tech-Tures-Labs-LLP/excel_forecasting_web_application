@@ -13,6 +13,8 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework import status, viewsets
 from rest_framework.viewsets import ViewSet
 from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny
+
 
 from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote
 from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer
@@ -308,6 +310,14 @@ class ForecastViewSet(ViewSet):
         return Response(response)
 
 
+class DownloadForecastSummaryExcel(APIView):
+    permission_classes = [AllowAny]  # Adjust if needed
+
+    def get(self, request):
+        file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+        if os.path.exists(file_path):
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
+        return Response({"detail": "File not found."}, status=404)
 
 class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')

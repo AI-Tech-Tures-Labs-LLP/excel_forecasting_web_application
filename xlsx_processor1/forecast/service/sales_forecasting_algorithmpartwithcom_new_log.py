@@ -77,7 +77,11 @@ def algorithm(loader,category,store,coms,omni,code):
     selected_months=None 
     pid_omni_status=False
     VDF_status=False
-    
+    fc_by_index ={}
+    fc_by_trend ={}
+    recommended_fc={}
+    planned_oh={}
+    planned_sell_thru={}
     if pid_type=='store_pid':
         STD_index_value=calculate_std_index_value(loader.index_value,STD_PERIOD)
         logging.info(f'STD_index_value: {STD_index_value}')
@@ -555,7 +559,8 @@ def algorithm(loader,category,store,coms,omni,code):
         total_added_quantity = calculate_total_added_qty(total_gross_projection,in_transit, planned_shp)
 
         logging.info(f'total_added_quantity: {total_added_quantity}')
-
+        planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month, override_value=None)
+        planned_sell_thru = calculate_planned_sell_through(planned_fc, planned_oh)
         is_added_by_macys_SOQ = True if macy_additional_units > 0 else False
         is_below_min_order = True if total_added_quantity < loader.Min_order else False
         is_over_macys_SOQ = True if macys_proj_receipt_upto_next_month_after_forecast_month < sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month else False
@@ -759,5 +764,5 @@ def algorithm(loader,category,store,coms,omni,code):
         planned_fc={'FEB':0, 'MAR': 0, 'APR':0, 'MAY':0, 'JUN':0, 'JUL': 0, 'AUG': 0, 'SEP':0, 'OCT':0, 'NOV': 0, 'DEC':0, 'JAN':0}
         total_added_quantity=0
         logging.info(f'total_added_quantity: {total_added_quantity}')
-    return current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni
+    return current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru
 

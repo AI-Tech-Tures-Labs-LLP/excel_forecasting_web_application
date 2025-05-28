@@ -119,6 +119,8 @@ class MonthlyForecast(models.Model):
         ('PlannedForecast', 'Planned Forecast'),
         ('RecommendedForecast', 'Recommended Forecast'),
         ('ForecastByTrend', 'Forecast By Trend'),
+        ('ForecastByIndex','Forecast By Index'),
+        ('PlannedSellThru','Planned Sell Thru'),
         ('IndexPercentage', 'Index Percentage'),
         ('GrossProjection', 'Gross Projection'),
 

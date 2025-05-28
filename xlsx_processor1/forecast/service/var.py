@@ -1,5 +1,5 @@
-from .createDataframe import planning_df,Macys_Recpts,All_DATA,MCOM_Data,index_df
-from .staticVariable import  year_of_previous_month,last_year_of_previous_month,STD_PERIOD
+from forecast.service.createDataframe import planning_df,Macys_Recpts,All_DATA,MCOM_Data,index_df
+from forecast.service.staticVariable import  year_of_previous_month,last_year_of_previous_month,STD_PERIOD
 import pandas as pd
 from forecast.service.utils import calculate_store_unit_sales_and_OH,calculate_com_to_ttl_sales_and_OH,format_sales_data,calculate_omni_sell_through,calculate_store_sell_through,calculate_turn,calculate_diff
 class VariableLoader:
@@ -124,7 +124,7 @@ class VariableLoader:
         # Initialize dictionaries to store results
         planned_shp=[self.Nav_Feb,self.Nav_Mar,self.Nav_Apr,self.Nav_May,self.Nav_Jun,self.Nav_Jul,self.Nav_Aug,self.Nav_Sep,self.Nav_Oct,self.Nav_Nov,self.Nav_Dec,self.Nav_Jan]
         self.planned_shp={key:abs(planned_shp[i]) for i,key in enumerate(months)}
-
+        self.gross_proj={key:abs(planned_shp[i]) for i,key in enumerate(months)}
         self.TY_Unit_Sales = {month: 0 for month in months}
         self.LY_Unit_Sales = {month: 0 for month in months}
         self.LY_OH_Units = {month: 0 for month in months}
