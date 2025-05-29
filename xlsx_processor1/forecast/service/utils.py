@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from forecast.service.staticVariable import *
-
+from forecast.service.config import sheets
 from statistics import mean
 from decimal import Decimal, ROUND_HALF_UP
  
@@ -1208,3 +1208,14 @@ def find_STD(month_map,Month1,Month2):
     # Slice the list
     Std_PID = MONTHS[start_index:end_index + 1]
     return Std_PID
+
+def calculate_index_value(Current_FC_Index):
+    index_df_raw = sheets["Index"] 
+    index_df = index_df_raw.iloc[2:43, :16]
+    index_row_data = index_df.loc[index_df['INDEX'].astype(str).str.lower() == Current_FC_Index.lower()]
+ 
+    index_value = {}
+    # Loop through each month and fetch its value
+    for month in MONTHS:
+        index_value[month] = index_row_data[month].iloc[0] if not index_row_data.empty else 0
+    return index_value
