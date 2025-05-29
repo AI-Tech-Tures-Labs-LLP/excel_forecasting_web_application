@@ -394,3 +394,30 @@ class ForecastNote(models.Model):
 
     def __str__(self):
         return f"{self.pid} - {self.assigned_to} - {'Reviewed' if self.reviewed else 'Not Reviewed'}"
+
+class RetailInfo(models.Model):
+    year_of_previous_month = models.CharField(max_length=100, null=True, blank=True)
+    last_year_of_previous_month = models.CharField(max_length=100, null=True, blank=True)
+    season = models.CharField(max_length=100, null=True, blank=True)
+    current_month = models.CharField(max_length=20, null=True, blank=True)
+    current_month_number = models.IntegerField(null=True, blank=True)
+    previous_week_number = models.IntegerField(null=True, blank=True)
+    last_month_of_previous_month_numeric = models.IntegerField(null=True, blank=True)
+    rolling_method = models.CharField(max_length=50, null=True, blank=True)
+
+    # Weekly distribution fields
+    feb_weeks = models.IntegerField(null=True, blank=True)
+    mar_weeks = models.IntegerField(null=True, blank=True)
+    apr_weeks = models.IntegerField(null=True, blank=True)
+    may_weeks = models.IntegerField(null=True, blank=True)
+    jun_weeks = models.IntegerField(null=True, blank=True)
+    jul_weeks = models.IntegerField(null=True, blank=True)
+    aug_weeks = models.IntegerField(null=True, blank=True)
+    sep_weeks = models.IntegerField(null=True, blank=True)
+    oct_weeks = models.IntegerField(null=True, blank=True)
+    nov_weeks = models.IntegerField(null=True, blank=True)
+    dec_weeks = models.IntegerField(null=True, blank=True)
+    jan_weeks = models.IntegerField(null=True, blank=True)
+
+    def __str__(self):
+        return f"RetailInfo ({self.current_month} - {self.year_of_previous_month})"

@@ -19,13 +19,19 @@ from openpyxl.styles import (
 )
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.styles import Alignment
+from openpyxl.workbook.defined_name import DefinedName
+from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.utils import get_column_letter
+from openpyxl import load_workbook
+
 
 # Local application imports
 from .readInputExcel import readInputExcel
 from forecast.service import config
 from forecast.service.adddatabase import save_macys_projection_receipts, save_monthly_forecasts, save_rolling_forecasts
-from forecast.models import MonthlyForecast, ProductDetail, StoreForecast, ComForecast, OmniForecast
-
+from forecast.models import MonthlyForecast, ProductDetail, StoreForecast, ComForecast, OmniForecast, RetailInfo
+from forecast.service.staticVariable import omni_rename_map, com_rename_map, store_rename_map
 
 def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple):
     print("Input path:", input_path)
@@ -92,6 +98,31 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks,
         jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks,
         dec_weeks, jan_weeks
+    )
+
+    RetailInfo.objects.create(
+    year_of_previous_month=year_of_previous_month,
+    last_year_of_previous_month=last_year_of_previous_month,
+    season=season,
+    current_month=current_month,
+    current_month_number=current_month_number,
+    previous_week_number=previous_week_number,
+    last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
+    rolling_method=rolling_method,
+
+    feb_weeks=feb_weeks,
+    mar_weeks=mar_weeks,
+    apr_weeks=apr_weeks,
+    may_weeks=may_weeks,
+    jun_weeks=jun_weeks,
+    jul_weeks=jul_weeks,
+    aug_weeks=aug_weeks,
+    sep_weeks=sep_weeks,
+    oct_weeks=oct_weeks,
+    nov_weeks=nov_weeks,
+    dec_weeks=dec_weeks,
+    jan_weeks=jan_weeks
+
     )
 
     args_list = [
@@ -508,11 +539,47 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     print("OmniForecast data saved/updated successfully.")
     # Write to different sheets in one Excel file
     file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+    df_store_renamed = df_store.rename(columns=store_rename_map)
+    df_coms_renamed = df_coms.rename(columns=com_rename_map)
+    df_omni_renamed = df_omni.rename(columns=omni_rename_map)
+    # df_omni_renamed = df_omni.rename(columns=omni_rename_map)  # Optional if needed
+ 
+    # ---------------------------------------
+    # 3. Now filter the columns as in previous answer
+    # ---------------------------------------
+    df_store_filtered = df_store_renamed[[col for col in store_rename_map.values()]]
+    df_coms_filtered = df_coms_renamed[[col for col in com_rename_map.values()]]
+    df_omni_filtered = df_omni_renamed[[col for col in omni_rename_map.values()]]
+   
+    output_file = file_path
 
-    with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
-        df_store.to_excel(writer, sheet_name="store", index=False)
-        df_coms.to_excel(writer, sheet_name="coms", index=False)
-        df_omni.to_excel(writer, sheet_name="omni", index=False)
+    # Reopen and format
+    wb = load_workbook(output_file)
+    for sheet_name in wb.sheetnames:
+        ws = wb[sheet_name]
+ 
+        # --- Fix header row ---
+        for cell in ws[1]:
+            cell.alignment = Alignment(wrap_text=True, vertical='center', horizontal='center')
+ 
+        ws.row_dimensions[1].height = 30  # Set this to 25–35 for good look
+ 
+        # --- Adjust column width ---
+        for col in ws.columns:
+            max_length = 0
+            col_letter = get_column_letter(col[0].column)
+            for cell in col:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            ws.column_dimensions[col_letter].width = max_length + 2
+        # Save changes
+    with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+        df_store_filtered.to_excel(writer, sheet_name="store", index=False)
+        df_coms_filtered.to_excel(writer, sheet_name="coms", index=False)
+        df_omni_filtered.to_excel(writer, sheet_name="omni", index=False)
+ 
+
+    
     print("Data written to Excel file successfully.")    
 
 
