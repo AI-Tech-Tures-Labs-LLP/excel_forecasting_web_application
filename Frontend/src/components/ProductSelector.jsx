@@ -1346,6 +1346,7 @@
 // Complete ProductSelector.jsx with enhanced dropdown filters and separate notes column
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import productImage from "../assets/undefined.png"; // Adjust the path to your image
 import {
   ChevronDown,
   Filter,
@@ -1836,22 +1837,44 @@ function ProductSelector() {
     setCategoryDownloadModal((prev) => ({ ...prev, isDownloading: true }));
 
     try {
-      const categoriesParam =
-        categoryDownloadModal.selectedCategories.join(",");
-      const filePath = forecastSession?.filePath || ""; // You need to get the file path from your session
+      // Convert display names to file names by removing brackets and spaces
+      const processedCategories = categoryDownloadModal.selectedCategories.map(
+        (category) => {
+          // Remove brackets and extra spaces to match file names
+          return category.replace(/\s*\([^)]*\)/, "").replace(/\s+/g, "");
+        }
+      );
 
+      const categoriesParam = processedCategories.join(",");
+
+      // Get the output filename from localStorage forecast data
+      const forecastData = JSON.parse(
+        localStorage.getItem("forecastData") || "{}"
+      );
+      const outputFileName = forecastData.outputFileName || "";
+
+      console.log(
+        "Original categories:",
+        categoryDownloadModal.selectedCategories
+      );
+      console.log("Processed categories:", processedCategories);
+      console.log("Using output filename:", outputFileName);
+
+      // Use 'file_path' parameter to match backend
       const downloadUrl = `${
         import.meta.env.VITE_API_BASE_URL
-      }/forecast/download-category-sheet/?category=${encodeURIComponent(
+      }/forecast/download-category/?category=${encodeURIComponent(
         categoriesParam
-      )}&file_path=${encodeURIComponent(filePath)}`;
+      )}&file_path=${encodeURIComponent(outputFileName)}`;
+
+      console.log("Full download URL:", downloadUrl);
 
       // Create a temporary link to trigger download
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download =
-        categoryDownloadModal.selectedCategories.length === 1
-          ? `${categoryDownloadModal.selectedCategories[0]}.xlsx`
+        processedCategories.length === 1
+          ? `${processedCategories[0]}.xlsx`
           : "categories.zip";
       document.body.appendChild(link);
       link.click();
@@ -1860,7 +1883,7 @@ function ProductSelector() {
       dispatch(
         addToast({
           type: "success",
-          message: `Downloaded ${categoryDownloadModal.selectedCategories.length} category file(s)`,
+          message: `Downloaded ${processedCategories.length} category file(s)`,
           duration: 3000,
         })
       );
@@ -1951,28 +1974,15 @@ function ProductSelector() {
     }
   };
 
-  const generateMacysUrl = (product) => {
-    // Use marketing_id for the Macy's product link
-    const marketingId = product.marketing_id;
-    const webidDescription = product.webid_description;
-
-    if (!marketingId || !webidDescription) {
-      return "#"; // Return placeholder if either field is not available
-    }
-
-    // Convert webid_description to URL-friendly slug
-    const urlSlug = webidDescription
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "") // Remove special characters except spaces
-      .replace(/\s+/g, "-") // Replace spaces with hyphens
-      .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
-
-    return `https://www.macys.com/shop/product/${urlSlug}?ID=${marketingId}&intnl=true`;
+  const getMacysUrl = (product) => {
+    // Use the website field directly from the product data
+    return product.website || "#";
   };
 
   // Helper function to check if Macy's link can be generated
   const canGenerateMacysLink = (product) => {
-    return product.marketing_id && product.webid_description;
+    // Check if website field exists and is not empty
+    return product.website && product.website.trim() !== "";
   };
 
   // Format notes display in separate column
@@ -2503,6 +2513,9 @@ function ProductSelector() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Image
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Product ID
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2526,7 +2539,6 @@ function ProductSelector() {
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Macy's Link
                       </th>
-
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Details
                       </th>
@@ -2538,6 +2550,29 @@ function ProductSelector() {
                         key={`${product.pid}-${index}`}
                         className="hover:bg-gray-50 transition-colors"
                       >
+                        {" "}
+                        {/* New image column */}
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex-shrink-0 h-16 w-16">
+                            <img
+                              className="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm"
+                              src={productImage}
+                              alt={`Product ${product.pid}`}
+                              onError={(e) => {
+                                // Fallback in case image fails to load
+                                e.target.style.display = "none";
+                                e.target.nextSibling.style.display = "flex";
+                              }}
+                            />
+                            {/* Fallback icon if image fails */}
+                            <div
+                              className="h-16 w-16 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center hidden"
+                              style={{ display: "none" }}
+                            >
+                              <Package className="h-8 w-8 text-gray-400" />
+                            </div>
+                          </div>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           <div className="flex items-center">
                             <span className="font-mono">{product.pid}</span>
@@ -2580,11 +2615,13 @@ function ProductSelector() {
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           {canGenerateMacysLink(product) ? (
                             <a
-                              href={generateMacysUrl(product)}
+                              href={product.website}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-blue-600 hover:text-blue-900 transition-colors p-2 rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2"
-                              title={`View ${product.webid_description} on Macy's Website`}
+                              title={`View ${
+                                product.category || "Product"
+                              } on Macy's Website`}
                             >
                               <Globe size={16} />
                               <span className="text-sm font-medium">
@@ -2732,102 +2769,6 @@ function ProductSelector() {
               </div>
             </div>
           </div>
-
-          {/* Active Filters Summary */}
-          {hasActiveFilters && (
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="text-sm font-medium text-blue-800 mb-3">
-                Active Filters:
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(selectedFilters).map(
-                  ([filterKey, filterValue]) => {
-                    if (Array.isArray(filterValue) && filterValue.length > 0) {
-                      return filterValue.map((value) => (
-                        <span
-                          key={`${filterKey}-${value}`}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full border border-blue-200"
-                        >
-                          <span className="font-medium">
-                            {filterKey.replace("_", " ")}:
-                          </span>{" "}
-                          {value}
-                          <button
-                            onClick={() =>
-                              handleMultiSelectFilterChange(
-                                filterKey,
-                                value,
-                                false
-                              )
-                            }
-                            className="text-blue-600 hover:text-blue-800 ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      ));
-                    } else if (filterValue !== null && filterValue !== "") {
-                      const displayValue =
-                        filterValue === "true"
-                          ? "Yes"
-                          : filterValue === "false"
-                          ? "No"
-                          : filterValue;
-                      return (
-                        <span
-                          key={filterKey}
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full border border-blue-200"
-                        >
-                          <span className="font-medium">
-                            {filterKey === "valentine_day"
-                              ? "Valentine's Day"
-                              : filterKey === "mothers_day"
-                              ? "Mother's Day"
-                              : filterKey === "fathers_day"
-                              ? "Father's Day"
-                              : filterKey === "mens_day"
-                              ? "Men's Day"
-                              : filterKey === "womens_day"
-                              ? "Women's Day"
-                              : filterKey.replace("_", " ")}
-                            :
-                          </span>{" "}
-                          {displayValue}
-                          <button
-                            onClick={() =>
-                              handleSingleSelectFilterChange(filterKey, "")
-                            }
-                            className="text-blue-600 hover:text-blue-800 ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                          >
-                            <X size={12} />
-                          </button>
-                        </span>
-                      );
-                    }
-                    return null;
-                  }
-                )}
-                {searchQuery && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full border border-blue-200">
-                    <span className="font-medium">search:</span> {searchQuery}
-                    <button
-                      onClick={() => setSearchQuery("")}
-                      className="text-blue-600 hover:text-blue-800 ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                )}
-              </div>
-              <div className="mt-3 text-xs text-blue-600">
-                {Object.values(selectedFilters)
-                  .flat()
-                  .filter((v) => v !== null && v !== "").length +
-                  (searchQuery ? 1 : 0)}{" "}
-                filters applied
-              </div>
-            </div>
-          )}
 
           {/* Help Text */}
           <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
