@@ -1523,6 +1523,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [rollingMethod, setRollingMethod] = useState("YTD");
+  const [editableTrend, setEditableTrend] = useState("12.5");
+  const [editable12MonthFC, setEditable12MonthFC] = useState("1200");
 
   // Get current products list and product type from Redux
   const allProducts = useSelector(selectCurrentProducts);
@@ -3418,7 +3421,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                   {/* Static SELECT INDEX */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -3426,7 +3429,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </label>
                     <select
                       defaultValue="Grand Total"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       {[
                         "BT",
@@ -3475,6 +3478,24 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </select>
                   </div>
 
+                  {/* Rolling Method Dropdown - NEW */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Rolling Method
+                    </label>
+                    <select
+                      value={rollingMethod}
+                      onChange={(e) => setRollingMethod(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      <option value="YTD">YTD</option>
+                      <option value="Current MTH">Current MTH</option>
+                      <option value="SPRING">SPRING</option>
+                      <option value="FALL">FALL</option>
+                      <option value="LY FALL">LY FALL</option>
+                    </select>
+                  </div>
+
                   {/* Forecasting Method Dropdown */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -3482,7 +3503,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </label>
                     <select
                       defaultValue="FC by Index"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     >
                       {[
                         "FC by Index",
@@ -3498,24 +3519,33 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </select>
                   </div>
 
-                  {/* Static Trend */}
+                  {/* Editable Trend - UPDATED */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Trend
                     </label>
-                    <div className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-100">
-                      12.5
-                    </div>
+                    <input
+                      type="number"
+                      value={editableTrend}
+                      onChange={(e) => setEditableTrend(e.target.value)}
+                      step="0.1"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Enter trend value"
+                    />
                   </div>
 
-                  {/* Static 12 Month FC */}
+                  {/* Editable 12 Month FC - UPDATED */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       12 Month FC
                     </label>
-                    <div className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-100">
-                      1200
-                    </div>
+                    <input
+                      type="number"
+                      value={editable12MonthFC}
+                      onChange={(e) => setEditable12MonthFC(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Enter 12 month FC"
+                    />
                   </div>
                 </div>
               </div>
