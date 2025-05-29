@@ -2278,9 +2278,27 @@ function ProductSelector() {
             </div>
 
             {/* Right side actions */}
+
             <div className="flex items-center gap-3">
+              {/* Download sumary */}
+
+              {
+                <>
+                  <a href="http://localhost:8000/forecast/export-summary">
+                    <button
+                      className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20"
+                      title="Download Category Files"
+                    >
+                      <FileDown size={18} />
+                      <span className="hidden sm:inline">Download Summary</span>
+                      <span className="sm:hidden">Download</span>
+                    </button>
+                  </a>
+                </>
+              }
+
               {/* Download Button - More prominent */}
-              {forecastSession?.downloadUrl && (
+              {
                 <button
                   onClick={handleOpenCategoryDownload}
                   className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20"
@@ -2290,7 +2308,7 @@ function ProductSelector() {
                   <span className="hidden sm:inline">Download Categories</span>
                   <span className="sm:hidden">Download</span>
                 </button>
-              )}
+              }
 
               {/* Refresh Button */}
               <button
