@@ -577,7 +577,7 @@ def algorithm(loader,category,store,coms,omni,code):
         is_added_by_only_SOQ = True if total_added_quantity == macy_additional_units else False
         if pid_type=='store_pid':
             data_store = {
-            "category":f"{category}{code}",
+            "category":f"{category.strip()}{code}",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             "vendor":vendor,
@@ -637,7 +637,7 @@ def algorithm(loader,category,store,coms,omni,code):
             store.append(data_store)
         elif pid_type=='com_pid'and not pid_omni_status:
             data_com = {
-            "category":f"{category}{code}",
+            "category":f"{category.strip()}{code}",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             
@@ -697,7 +697,7 @@ def algorithm(loader,category,store,coms,omni,code):
             coms.append(data_com)
         elif pid_omni_status:
             data_omni= {
-            "category":f"{category}{code}",
+            "category":f"{category.strip()}{code}",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             "vendor":vendor,
