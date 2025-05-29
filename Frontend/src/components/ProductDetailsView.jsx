@@ -2152,7 +2152,7 @@
 
 // export default ProductDetailsView;
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
@@ -2198,6 +2198,7 @@ import {
 } from "../redux/productSlice";
 
 const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
+  const [lastChangedField, setLastChangedField] = useState(null);
   const [productData, setProductData] = useState(null);
   const [rollingForecastData, setRollingForecastData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2233,9 +2234,16 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [forecastingMethod, setForecastingMethod] = useState("FC by Index");
   const [hasControlChanges, setHasControlChanges] = useState(false);
 
+  const originalValuesRef = useRef(null);
+
+
+
   // Get current products list and product type from Redux
   const allProducts = useSelector(selectCurrentProducts);
   const selectedProductType = useSelector(selectSelectedProductType);
+
+
+
 
   // Find current product index and calculate navigation
   const currentProductIndex = useMemo(() => {
@@ -2264,6 +2272,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       )
       .slice(0, 10); // Limit to 10 results
   }, [allProducts, searchQuery]);
+
+  
 
   // NOW ALL useEffect HOOKS AFTER ALL STATE DECLARATIONS
   useEffect(() => {
@@ -2327,6 +2337,103 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       setEditableData(initialEditableData);
     }
   }, [rollingForecastData]);
+
+  // useEffect(() => {
+  //   if (
+  //     editableTrend &&
+  //     forecastingMethod &&
+  //     rollingMethod &&
+  //     editable12MonthFC &&
+  //     selectedIndex &&
+  //     !originalValuesRef.current // only set once
+  //   ) {
+  //     originalValuesRef.current = {
+  //       Trend: editableTrend,
+  //       Forecasting_Method: forecastingMethod,
+  //       Rolling_method: rollingMethod,
+  //       month_12_fc_index: editable12MonthFC,
+  //       Current_FC_Index: selectedIndex,
+  //     };
+  //   }
+
+  // }, [editableTrend, forecastingMethod, rollingMethod, editable12MonthFC, selectedIndex]);
+
+  useEffect(() => {
+    if (
+      editableTrend &&
+      forecastingMethod &&
+      rollingMethod &&
+      editable12MonthFC &&
+      selectedIndex &&
+      !originalValuesRef.current // only set once
+    ) {
+      originalValuesRef.current = {
+        Trend: parseFloat(editableTrend) || 0,
+        Forecasting_Method: forecastingMethod,
+        Rolling_method: rollingMethod,
+        month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+        Current_FC_Index: selectedIndex,
+      };
+    }
+  }, [editableTrend, forecastingMethod, rollingMethod, editable12MonthFC, selectedIndex]);
+
+
+  const handleFieldChange = (field, value) => {
+    if (!originalValuesRef.current) return;
+
+    switch (field) {
+      case "Trend":
+        setEditableTrend(value);
+        if (value !== originalValuesRef.current.Trend) {
+          setLastChangedField("Trend");
+        } else if (lastChangedField === "Trend") {
+          setLastChangedField(null);
+        }
+        break;
+
+      case "Forecasting_Method":
+        setForecastingMethod(value);
+        if (value !== originalValuesRef.current.Forecasting_Method) {
+          setLastChangedField("Forecasting_Method");
+        } else if (lastChangedField === "Forecasting_Method") {
+          setLastChangedField(null);
+        }
+        break;
+
+      case "Rolling_method":
+        setRollingMethod(value);
+        if (value !== originalValuesRef.current.Rolling_method) {
+          setLastChangedField("Rolling_method");
+        } else if (lastChangedField === "Rolling_method") {
+          setLastChangedField(null);
+        }
+        break;
+
+      case "month_12_fc_index":
+        setEditable12MonthFC(value);
+        if (value !== originalValuesRef.current.month_12_fc_index) {
+          setLastChangedField("month_12_fc_index");
+        } else if (lastChangedField === "month_12_fc_index") {
+          setLastChangedField(null);
+        }
+        break;
+
+      case "Current_FC_Index":
+        setSelectedIndex(value);
+        if (value !== originalValuesRef.current.Current_FC_Index) {
+          setLastChangedField("Current_FC_Index");
+        } else if (lastChangedField === "Current_FC_Index") {
+          setLastChangedField(null);
+        }
+        break;
+
+      default:
+        break;
+    }
+  };
+
+
+
 
   const handleCellChange = (rowType, month, value) => {
     setEditableData((prev) => ({
@@ -2401,21 +2508,48 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         contextData.Planned_sell_thru[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
       });
+      console.log("TREND",lastChangedField);
+      const getChangedFieldValue = () => {
+        switch (lastChangedField) {
+          case "Trend":
+            return parseFloat(editableTrend) || 0;
+          case "month_12_fc_index":
+            return parseFloat(editable12MonthFC) || 0;
+          case "Forecasting_Method":
+            return forecastingMethod;
+          case "Rolling_method":
+            return rollingMethod;
+          case "Current_FC_Index":
+            return selectedIndex;
+          default:
+            return null;
+        }
+      };
+
+
 
       // Use a control variable change to trigger recalculation
       const payload = {
-        changed_variable: "Trend", // or whichever control changed most recently
-        new_value: parseFloat(editableTrend) || 0,
+        changed_variable: lastChangedField, // or whichever control changed most recently
+        // new_value: parseFloat(editableTrend) || 0,
+        new_value: getChangedFieldValue(),
         context_data: contextData,
         pid: productId,
       };
 
       console.log("Applying control changes:", payload);
 
-      const response = await axios.post(
+      // const response = await axios.post(
+      //   `${
+      //     import.meta.env.VITE_API_BASE_URL
+      //   }/forecast/api/product/${productId}/`,
+      //   payload
+      // );
+
+       const response = await axios.post(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/${productId}/`,
+        }/forecast/api/product/recalculate_forecast/`,
         payload
       );
 
@@ -2469,6 +2603,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
         setHasControlChanges(false);
         setLastSubmittedData(payload);
+        setLastChangedField(null);
+        originalValuesRef.current = {
+          Trend: parseFloat(editableTrend) || 0,
+          Forecasting_Method: forecastingMethod,
+          Rolling_method: rollingMethod,
+          month_12_fc_index: editable12MonthFC,
+          Current_FC_Index: selectedIndex,
+        };
         alert("Forecast controls applied successfully!");
       }
     } catch (error) {
@@ -2508,6 +2650,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           : editableData.plannedShipments;
 
       // Build context_data from current rollingForecastData
+      console.log("editable12MonthFC-----------------",editable12MonthFC);
+      
       const contextData = {
         Rolling_method: rollingMethod || "YTD",
         Trend: parseFloat(editableTrend) || -0.29,
@@ -4604,8 +4748,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </label>
                     <select
                       value={selectedIndex}
-                      onChange={(e) => setSelectedIndex(e.target.value)}
+                      // onChange={(e) => {setSelectedIndex(e.target.value);setLastChangedField("Current_FC_Index");}}
+                      onChange={(e) => handleFieldChange("Current_FC_Index", e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      disabled={lastChangedField && lastChangedField !== "Current_FC_Index"}
                     >
                       {[
                         "BT",
@@ -4661,8 +4807,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </label>
                     <select
                       value={rollingMethod}
-                      onChange={(e) => setRollingMethod(e.target.value)}
+                      // onChange={(e) => {setRollingMethod(e.target.value);setLastChangedField("Rolling_method");}}
+                      onChange={(e) => handleFieldChange("Rolling_method", e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      disabled={lastChangedField && lastChangedField !== "Rolling_method"}
                     >
                       <option value="YTD">YTD</option>
                       <option value="Current MTH">Current MTH</option>
@@ -4679,8 +4827,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </label>
                     <select
                       value={forecastingMethod}
-                      onChange={(e) => setForecastingMethod(e.target.value)}
+                      // onChange={(e) => {setForecastingMethod(e.target.value);setLastChangedField("Forecasting_Method");}}
+                      onChange={(e) => handleFieldChange("Forecasting_Method", e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      disabled={lastChangedField && lastChangedField !== "Forecasting_Method"}
                     >
                       {[
                         "FC By Index",
@@ -4704,10 +4854,12 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     <input
                       type="number"
                       value={editableTrend}
-                      onChange={(e) => setEditableTrend(e.target.value)}
+                      // onChange={(e) => {setEditableTrend(e.target.value);setLastChangedField("Trend");}}
+                      onChange={(e) => handleFieldChange("Trend", e.target.value)}
                       step="0.1"
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Enter trend value"
+                      disabled={lastChangedField && lastChangedField !== "Trend"}
                     />
                   </div>
 
@@ -4719,9 +4871,11 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     <input
                       type="number"
                       value={editable12MonthFC}
-                      onChange={(e) => setEditable12MonthFC(e.target.value)}
+                      // onChange={(e) => {setEditable12MonthFC(e.target.value);setLastChangedField("month_12_fc_index");}}
+                      onChange={(e) => handleFieldChange("month_12_fc_index", e.target.value)}
                       className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Enter 12 month FC"
+                      disabled={lastChangedField && lastChangedField !== "month_12_fc_index"}
                     />
                   </div>
                 </div>
