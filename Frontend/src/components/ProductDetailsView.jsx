@@ -2292,7 +2292,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }
   }, [productId]);
 
-  // THIS useEffect NOW COMES AFTER selectedIndex IS DECLARED
   useEffect(() => {
     // This will trigger whenever control values change
     setHasControlChanges(true);
@@ -2925,17 +2924,25 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   // Function to handle product link click
-  const handleProductLinkClick = () => {
-    const productUrl = `${window.location.origin}/products/${productId}`;
-    navigator.clipboard
-      .writeText(productUrl)
-      .then(() => {
-        alert("Product link copied to clipboard!");
-      })
-      .catch(() => {
-        // Fallback: open in new tab
-        window.open(productUrl, "_blank");
-      });
+  const handleProductLinkClick = async () => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/forecast/api/product/${productId}/`
+      );
+      const externalLink = response.data?.product_details?.website;
+
+      //add external link to local storage
+      localStorage.setItem("externalLink", externalLink);
+
+      if (externalLink) {
+        window.open(externalLink, "_blank"); // Open in new tab
+      } else {
+        alert("No website link found for this product.");
+      }
+    } catch (error) {
+      console.error("Error fetching product link:", error);
+      alert("Failed to fetch product link.");
+    }
   };
 
   const handleSearchFocus = () => {
@@ -3831,13 +3838,13 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   return (
     <div
       key={productId}
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 h-100"
     >
       <div className="max-w-7xl mx-auto p-6 space-y-8">
         {/* Enhanced Header Section with Search and Navigation */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-8 py-6">
-            <div className="flex items-center gap-4 mb-4">
+       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
+  <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-10 py-6 min-h-[200px] relative">
+    <div className="flex items-center gap-4 mb-4">
               <button
                 onClick={onBack}
                 className="flex items-center gap-2 text-white opacity-90 hover:opacity-100 transition-opacity"
@@ -3847,7 +3854,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               </button>
             </div>
 
-            {/* Product Title and Navigation */}
             {/* Product Title and Navigation */}
             <div className="flex items-center justify-between">
               <div className="flex-1">
@@ -4673,7 +4679,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           >
             <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
               <BarChart3 className="text-indigo-600" size={20} />
-              Product Variables
+             Forcast Algorithm Variables
             </h3>
             <ChevronDown
               size={20}
