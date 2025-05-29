@@ -1837,22 +1837,44 @@ function ProductSelector() {
     setCategoryDownloadModal((prev) => ({ ...prev, isDownloading: true }));
 
     try {
-      const categoriesParam =
-        categoryDownloadModal.selectedCategories.join(",");
-      const filePath = forecastSession?.filePath || ""; // You need to get the file path from your session
+      // Convert display names to file names by removing brackets and spaces
+      const processedCategories = categoryDownloadModal.selectedCategories.map(
+        (category) => {
+          // Remove brackets and extra spaces to match file names
+          return category.replace(/\s*\([^)]*\)/, "").replace(/\s+/g, "");
+        }
+      );
 
+      const categoriesParam = processedCategories.join(",");
+
+      // Get the output filename from localStorage forecast data
+      const forecastData = JSON.parse(
+        localStorage.getItem("forecastData") || "{}"
+      );
+      const outputFileName = forecastData.outputFileName || "";
+
+      console.log(
+        "Original categories:",
+        categoryDownloadModal.selectedCategories
+      );
+      console.log("Processed categories:", processedCategories);
+      console.log("Using output filename:", outputFileName);
+
+      // Use 'file_path' parameter to match backend
       const downloadUrl = `${
         import.meta.env.VITE_API_BASE_URL
-      }/forecast/download-category-sheet/?category=${encodeURIComponent(
+      }/forecast/download-category/?category=${encodeURIComponent(
         categoriesParam
-      )}&file_path=${encodeURIComponent(filePath)}`;
+      )}&file_path=${encodeURIComponent(outputFileName)}`;
+
+      console.log("Full download URL:", downloadUrl);
 
       // Create a temporary link to trigger download
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download =
-        categoryDownloadModal.selectedCategories.length === 1
-          ? `${categoryDownloadModal.selectedCategories[0]}.xlsx`
+        processedCategories.length === 1
+          ? `${processedCategories[0]}.xlsx`
           : "categories.zip";
       document.body.appendChild(link);
       link.click();
@@ -1861,7 +1883,7 @@ function ProductSelector() {
       dispatch(
         addToast({
           type: "success",
-          message: `Downloaded ${categoryDownloadModal.selectedCategories.length} category file(s)`,
+          message: `Downloaded ${processedCategories.length} category file(s)`,
           duration: 3000,
         })
       );
