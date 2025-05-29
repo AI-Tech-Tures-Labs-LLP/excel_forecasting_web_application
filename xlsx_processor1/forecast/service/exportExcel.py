@@ -795,16 +795,19 @@ def process_category(args):
                 cell.number_format = number_format
     # Open the source workbook
     
-    for row_num, row_data in enumerate(index_df.values, start=1):
+    for col_num, col_name in enumerate(index_df.columns, start=1):
+        ws_index.cell(row=3, column=col_num, value=col_name)
+
+    # Step 2: Write data starting from row 4
+    for row_num, row_data in enumerate(index_df.values, start=4):
         for col_num, value in enumerate(row_data, start=1):
             ws_index.cell(row=row_num, column=col_num, value=value)
 
-    # Step 5: Apply Percentage Formatting to B4:P41
+    # Step 3: Apply Percentage Formatting to B4:P41 (i.e., Feb to Dec + Jan)
     for row in ws_index.iter_rows(min_row=4, max_row=41, min_col=2, max_col=16):
         for cell in row:
             if isinstance(cell.value, (int, float)) and 0 <= cell.value <= 1:
                 cell.number_format = '0.00%'  # Format as percentage
-
 
     # Step 6: Apply Filters to A3:P3
     ws_index.auto_filter.ref = "A3:P3"
@@ -1093,7 +1096,13 @@ def process_category(args):
                 "last_project_review_date": parse_date(loader.Last_Proj_Review_Date),
                 "macy_spring_projection_note": safe_str(loader.Macys_Spring_Proj_Notes),
                 "planner_response": safe_str(loader.Planner_Response),
-                "website": website_link
+                "website": website_link,
+
+                "rolling_method" : rolling_method,
+                "std_trend" : std_trend,
+                "STD_index_value" : STD_index_value,
+                "month_12_fc_index" : month_12_fc_index,
+                "forecasting_method" : forecasting_method
             }
         )
 

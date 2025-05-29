@@ -1210,7 +1210,11 @@ def find_STD(month_map,Month1,Month2):
     return Std_PID
 
 def calculate_index_value(Current_FC_Index):
-    index_df_raw = sheets["Index"] 
+
+    print("Current_FC_index",Current_FC_Index)
+    if sheets:
+        index_df_raw = sheets["Index"] 
+    print("Current_FC_index",Current_FC_Index)
     index_df = index_df_raw.iloc[2:43, :16]
     index_row_data = index_df.loc[index_df['INDEX'].astype(str).str.lower() == Current_FC_Index.lower()]
  
@@ -1218,4 +1222,6 @@ def calculate_index_value(Current_FC_Index):
     # Loop through each month and fetch its value
     for month in MONTHS:
         index_value[month] = index_row_data[month].iloc[0] if not index_row_data.empty else 0
+    print("Index value :",index_value)
+
     return index_value

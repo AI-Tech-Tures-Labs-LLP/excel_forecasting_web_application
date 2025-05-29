@@ -173,7 +173,6 @@ class ProductDetailViewSet(viewsets.ViewSet):
         })
     
     
-
     @action(detail=False, methods=["post"])
     def recalculate_forecast(self, request):
         """
