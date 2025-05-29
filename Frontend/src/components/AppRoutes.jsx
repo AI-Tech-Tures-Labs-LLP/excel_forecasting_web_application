@@ -4,6 +4,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 // Import components
 import LandingPage from "../components/LandingPage";
 import XLSXUploader from "../components/XLSXUploader";
+import FileUploadStep from "../components/FileUploadStep";
 import Forecast from "../components/Forecast";
 import ProductSelector from "../components/ProductSelector";
 import Navbar from "../components/Navbar";
@@ -21,6 +22,9 @@ const AppRoutes = () => {
         <Routes>
           {/* Landing page is the root route */}
           <Route path="/" element={<LandingPage />} />
+          
+          {/* File Upload Step - between landing and forecast */}
+          <Route path="/file-upload" element={<FileUploadStep />} />
           
           {/* Pricing tool */}
           <Route path="/pricing" element={<XLSXUploader />} />
