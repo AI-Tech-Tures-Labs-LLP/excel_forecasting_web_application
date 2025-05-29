@@ -14,7 +14,8 @@ from forecast.service.utils import (
     calculate_planned_fc,
     calculate_planned_oh_partial,
     calculate_index_value,
-    calculate_planned_sell_through
+    calculate_planned_sell_through,
+    calculate_fc_by_average
 )
 
 from forecast.models import RetailInfo, MonthlyForecast
@@ -25,13 +26,15 @@ try:
 except ObjectDoesNotExist:
     retail = None
 
-def get_forecast_variables(product, year=2025):
+def get_forecast_variables(product, year=2025,last_year =2024):
     # List of required variable names
     variable_keys = [
         "TY_Unit_Sales",
-        "LY_Unit_Sales",
         "TY_OH_Units",
-        "TY_Receipts",
+        "TY_Receipts"
+    ]
+    variable_keys_last_year = [
+        "LY_Unit_Sales",
         "LY_OH_Units"
     ]
 
@@ -40,6 +43,11 @@ def get_forecast_variables(product, year=2025):
         product=product,
         year=year,
         variable_name__in=variable_keys
+    )
+    forecasts_last_year = MonthlyForecast.objects.filter(
+        product=product,
+        year=last_year,
+        variable_name__in=variable_keys_last_year
     )
 
     # Map each variable_name to its monthly data
@@ -51,13 +59,28 @@ def get_forecast_variables(product, year=2025):
         }
         for fc in forecasts
     }
+        # Map each variable_name to its monthly data
+    forecast_map_last = {
+        fc.variable_name: {
+            "JAN": fc.jan, "FEB": fc.feb, "MAR": fc.mar, "APR": fc.apr,
+            "MAY": fc.may, "JUN": fc.jun, "JUL": fc.jul, "AUG": fc.aug,
+            "SEP": fc.sep, "OCT": fc.oct, "NOV": fc.nov, "DEC": fc.dec
+        }
+        for fc in forecasts_last_year
+    }
 
     # Assign to individual variables
     TY_Unit_Sales = forecast_map.get("TY_Unit_Sales", {})
-    LY_Unit_Sales = forecast_map.get("LY_Unit_Sales", {})
+    LY_Unit_Sales = forecast_map_last.get("LY_Unit_Sales", {})
     TY_OH_Units   = forecast_map.get("TY_OH_Units", {})
     TY_Receipts   = forecast_map.get("TY_Receipts", {})
-    LY_OH_Units   = forecast_map.get("LY_OH_Units", {})
+    LY_OH_Units   = forecast_map_last.get("LY_OH_Units", {})
+
+    print("TY_Unit_Sales:", TY_Unit_Sales)
+    print("LY_Unit_Sales:", LY_Unit_Sales)
+    print("TY_OH_Units:", TY_OH_Units)
+    print("TY_Receipts:", TY_Receipts)
+    print("LY_OH_Units:", LY_OH_Units)
 
     return TY_Unit_Sales, LY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units
 
@@ -130,6 +153,8 @@ def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Un
     row_43 = LY_OH_Units
     row_37 = TY_Receipts
     row_21 = TY_OH_Units
+    print("row_43:", row_43)
+
 
     return {
         "Index_value": {
@@ -150,7 +175,7 @@ def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Un
         },
         "Recommended_FC": {
             "function": get_recommended_forecast,
-            "params": lambda ctx: [ctx["Forecasting_Method"], ctx["FC_by_Index"], ctx["FC_by_Trend"], ctx["FC_by_Average"]]
+            "params": lambda ctx: [ctx["Forecasting_Method"], ctx["FC_by_Index"], ctx["FC_by_Trend"], None]
         },
         "Planned_FC": {
             "function": calculate_planned_fc,
@@ -172,6 +197,7 @@ def recalculate_all(changed_var, new_value, context_data, pid):
     deps = dependencies()
     order = build_dependency_order(deps, changed_var)
     context_data[changed_var] = new_value
+    context_data
     TY_Unit_Sales, LY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units = get_forecast_variables(pid)
     retail = RetailInfo.objects.latest('id')
     last_month_of_previous_month_numeric = retail.last_month_of_previous_month_numeric

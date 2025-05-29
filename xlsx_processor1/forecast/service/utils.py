@@ -391,10 +391,12 @@ def contains_no_longer_red_box(text):
     return any(re.search(pattern, text) for pattern in patterns)
  
  
-def get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by_average):
+def get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by_average=None):
     """
     Return recommended forecast based on selected forecasting method.
     """
+    fc_by_average = calculate_fc_by_average(fc_by_index, fc_by_trend)
+    print(fc_by_average)
     # Select forecast based on method
     if forecasting_method == "FC By Index":
         recommended_fc = fc_by_index
@@ -402,7 +404,8 @@ def get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by
         recommended_fc = fc_by_trend
     else:
         recommended_fc = fc_by_average
- 
+    print(recommended_fc)
+  
     return recommended_fc
  
  
@@ -411,14 +414,21 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
     Calculate planned forecast based on selection type and rules.
     """
     planned_fc = {}
+    print(row_43)
+    print("Calculating planned forecast...",planned_fc)
  
     # Iterate through each retail month
     for idx, col in enumerate(MONTHS):
+        print(f"Processing month: {col}")
+       
         J4 = row_4[idx]
+        print(f"J4 value for {col}: {J4}")
         J17 = row_17[col]
+        print(f"J17 value for {col}: {J17}")
         J43 = row_43[col]
+        print(f"J43 value for {col}: {J43}")
         J9 = row_9[col]
- 
+        print(f"Values for {col} - J4: {J4}, J17: {J17}, J43: {J43}, J9: {J9}")
         # Apply logic based on V1 value
         if V1 == "YTD" and J4 <= K1:
             planned_fc[col] = J17
@@ -432,6 +442,7 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
             planned_fc[col] = J43
         else:
             planned_fc[col] = J9
+    print("Planned forecast calculated:", planned_fc)
  
     return planned_fc
  
