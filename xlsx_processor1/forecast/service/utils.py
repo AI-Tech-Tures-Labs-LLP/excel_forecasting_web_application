@@ -391,10 +391,12 @@ def contains_no_longer_red_box(text):
     return any(re.search(pattern, text) for pattern in patterns)
  
  
-def get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by_average):
+def get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by_average=None):
     """
     Return recommended forecast based on selected forecasting method.
     """
+    fc_by_average = calculate_fc_by_average(fc_by_index, fc_by_trend)
+    print(fc_by_average)
     # Select forecast based on method
     if forecasting_method == "FC By Index":
         recommended_fc = fc_by_index
@@ -402,7 +404,8 @@ def get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by
         recommended_fc = fc_by_trend
     else:
         recommended_fc = fc_by_average
- 
+    print(recommended_fc)
+  
     return recommended_fc
  
  
@@ -411,14 +414,21 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
     Calculate planned forecast based on selection type and rules.
     """
     planned_fc = {}
+    print(row_43)
+    print("Calculating planned forecast...",planned_fc)
  
     # Iterate through each retail month
     for idx, col in enumerate(MONTHS):
+        print(f"Processing month: {col}")
+       
         J4 = row_4[idx]
+        print(f"J4 value for {col}: {J4}")
         J17 = row_17[col]
+        print(f"J17 value for {col}: {J17}")
         J43 = row_43[col]
+        print(f"J43 value for {col}: {J43}")
         J9 = row_9[col]
- 
+        print(f"Values for {col} - J4: {J4}, J17: {J17}, J43: {J43}, J9: {J9}")
         # Apply logic based on V1 value
         if V1 == "YTD" and J4 <= K1:
             planned_fc[col] = J17
@@ -432,6 +442,7 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
             planned_fc[col] = J43
         else:
             planned_fc[col] = J9
+    print("Planned forecast calculated:", planned_fc)
  
     return planned_fc
  
@@ -1211,13 +1222,61 @@ def find_STD(month_map,Month1,Month2):
 
 def calculate_index_value(Current_FC_Index):
 
-    print("Current_FC_index",Current_FC_Index)
-    if sheets:
-        index_df_raw = sheets["Index"] 
-    print("Current_FC_index",Current_FC_Index)
-    index_df = index_df_raw.iloc[2:43, :16]
-    index_row_data = index_df.loc[index_df['INDEX'].astype(str).str.lower() == Current_FC_Index.lower()]
- 
+    # print("Current_FC_index",Current_FC_Index)
+    # if sheets:
+    #     index_df_raw = sheets["Index"] 
+    # print("Current_FC_index",Current_FC_Index)
+    # index_df = index_df_raw.iloc[2:43, :16]
+
+    data = [
+        ["Amy", 22.85, 3.05, 5.80, 8.47, 4.61, 3.22, 3.26, 4.27, 4.33, 13.75, 24.00, 2.39, 31.69, 52.84, 15.09],
+        ["Anklet", 5.89, 7.40, 11.07, 12.12, 9.70, 9.81, 6.33, 6.55, 5.49, 9.90, 14.39, 1.34, 24.37, 52.47, 28.18],
+        ["Aqua", 7.74, 23.34, 7.31, 7.22, 4.16, 3.02, 3.80, 4.13, 3.26, 10.45, 24.95, 0.60, 38.39, 49.62, 14.22],
+        ["Bridal", 15.63, 5.55, 8.43, 4.71, 5.18, 3.47, 12.34, 6.51, 9.09, 13.64, 14.36, 1.09, 29.61, 59.41, 31.41],
+        ["BT", 5.81, 4.63, 4.78, 6.97, 5.22, 4.52, 4.02, 4.41, 4.35, 18.26, 36.80, 0.23, 15.23, 72.36, 17.31],
+        ["Citrine", 6.23, 3.38, 4.16, 6.74, 4.29, 3.13, 4.59, 5.48, 7.09, 30.21, 23.85, 0.83, 13.78, 74.36, 20.29],
+        ["Cross", 7.00, 7.14, 10.37, 8.10, 7.05, 4.85, 5.92, 6.38, 6.24, 11.47, 24.49, 0.98, 24.51, 59.35, 23.39],
+        ["CZ", 7.54, 7.25, 7.37, 7.94, 7.43, 6.20, 6.21, 6.74, 5.98, 11.16, 24.13, 2.06, 22.16, 60.41, 25.13],
+        ["Dia", 12.65, 3.34, 7.00, 8.19, 4.83, 3.54, 8.04, 6.05, 7.66, 13.46, 23.34, 1.91, 22.99, 62.09, 25.29],
+        ["Ear", 4.23, 11.15, 13.35, 11.15, 8.70, 8.02, 5.76, 5.76, 3.18, 11.76, 14.88, 2.08, 28.72, 49.36, 22.72],
+        ["EMER", 7.37, 4.65, 10.22, 16.17, 6.03, 4.56, 4.53, 4.36, 3.88, 13.25, 23.62, 1.38, 22.23, 54.19, 17.32],
+        ["Garnet", 9.32, 3.56, 5.16, 8.15, 5.23, 3.74, 3.25, 3.93, 4.02, 11.56, 29.78, 12.29, 18.04, 56.29, 14.95],
+        ["Gem", 8.44, 5.73, 9.66, 9.26, 9.91, 4.21, 4.58, 5.80, 6.03, 11.67, 21.65, 3.06, 23.83, 53.94, 20.62],
+        ["GEM EAR", 9.28, 4.60, 6.86, 7.19, 5.90, 4.31, 6.23, 8.32, 7.74, 13.93, 23.71, 1.92, 20.74, 64.24, 26.60],
+        ["Gold Chain", 6.86, 5.37, 9.56, 7.22, 8.11, 4.26, 5.98, 5.79, 8.78, 16.54, 21.65, -0.0012, 21.79, 63.00, 24.81],
+        ["GOLD EAR", 8.74, 4.79, 6.36, 10.99, 7.11, 4.22, 6.21, 8.94, 7.70, 11.48, 22.88, 0.59, 19.88, 61.43, 27.07],
+        ["Heart", 10.62, 5.12, 6.34, 7.70, 5.70, 4.85, 5.02, 5.40, 5.07, 12.92, 29.44, 1.82, 22.08, 62.70, 20.34],
+        ["Heavy Gold Chain", 5.08, 6.53, 10.86, 6.66, 11.62, 4.15, 6.90, 6.93, 8.94, 13.20, 19.37, -0.0023, 22.47, 59.48, 26.91],
+        ["Jade", 8.41, 6.93, 6.93, 6.05, 5.40, 4.75, 4.92, 8.19, 9.41, 10.32, 25.39, 3.31, 22.26, 62.98, 27.26],
+        ["KIDS", 6.81, 7.53, 8.19, 5.87, 7.45, 6.49, 7.02, 7.27, 6.55, 14.81, 19.78, 2.23, 22.53, 61.92, 27.33],
+        ["Locket", 6.25, 5.74, 9.43, 9.75, 5.10, 3.51, 4.27, 5.86, 5.48, 12.11, 32.70, -0.0019, 21.41, 63.93, 19.12],
+        ["Mens Gold Bracelet", 9.84, 6.41, 10.98, 6.41, 11.10, 3.89, 10.30, 4.35, 10.41, 8.58, 17.62, 0.11, 27.23, 55.15, 28.95],
+        ["Mens Misc", 13.03, 7.46, 15.74, 7.46, 7.19, 5.97, 7.87, 8.14, 5.97, 8.68, 11.80, 0.68, 36.23, 48.44, 27.95],
+        ["Mens Silver chain", 6.39, 5.76, 7.39, 6.54, 10.19, 4.91, 5.75, 6.00, 6.59, 12.58, 27.55, 0.35, 19.54, 63.38, 23.25],
+        ["Mom", 4.57, 2.86, 11.62, 25.00, 2.62, 3.02, 2.97, 3.36, 3.04, 8.82, 31.24, 0.87, 19.06, 52.46, 12.40],
+        ["MOP", 12.60, 6.75, 5.63, 3.97, 4.63, 7.15, 5.49, 7.57, 6.08, 12.85, 24.87, 2.41, 24.98, 64.01, 26.29],
+        ["Neck", 8.95, 4.84, 8.37, 6.92, 6.18, 6.21, 5.20, 7.19, 7.60, 18.80, 18.73, 1.03, 22.15, 63.72, 26.19],
+        ["Onyx", 9.97, 8.35, 9.30, 6.99, 6.19, 4.40, 5.13, 6.79, 6.58, 11.96, 22.80, 1.55, 27.62, 57.64, 22.89],
+        ["Opal", 5.22, 3.34, 4.85, 7.18, 5.06, 4.26, 3.99, 9.53, 17.41, 11.71, 26.33, 1.12, 13.41, 73.23, 35.20],
+        ["Pearl", 6.69, 6.08, 7.85, 7.63, 6.12, 4.43, 5.71, 7.17, 7.80, 11.90, 26.99, 1.63, 20.62, 64.00, 25.11],
+        ["Peridot", 5.26, 2.56, 4.58, 7.26, 5.18, 6.66, 28.67, 4.86, 2.82, 7.36, 23.83, 0.98, 12.40, 74.19, 43.00],
+        ["Religious", 7.00, 7.14, 10.37, 8.10, 7.05, 4.85, 5.92, 6.38, 6.24, 11.47, 24.49, 0.98, 24.51, 59.35, 23.39],
+        ["Ring", 10.53, 7.05, 11.23, 6.87, 6.90, 5.01, 6.35, 7.36, 7.20, 13.40, 17.73, 0.37, 28.81, 57.05, 25.92],
+        ["Ruby", 7.06, 4.73, 6.19, 7.50, 8.40, 13.45, 5.24, 4.89, 3.72, 13.73, 22.76, 2.33, 17.98, 63.79, 27.30],
+        ["Saph", 6.09, 3.98, 6.21, 6.71, 5.06, 3.49, 5.63, 17.06, 4.90, 14.20, 25.76, 0.92, 16.28, 71.03, 31.07],
+        ["Womens Silver Chain", 6.11, 5.77, 6.71, 6.28, 7.21, 6.00, 6.41, 6.88, 6.45, 16.68, 23.28, 2.22, 18.59, 65.70, 25.75],
+        ["Wrist", 5.83, 5.80, 8.17, 7.01, 6.88, 5.01, 6.18, 6.76, 7.13, 14.30, 24.76, 2.17, 19.79, 64.15, 25.08],
+        ["Grand Total", 7.36, 5.92, 7.72, 8.00, 7.18, 5.29, 6.15, 6.93, 6.82, 13.79, 23.44, 1.41, 21.00, 62.41, 25.18]
+    ]
+    columns= [
+        "Index", "FEB", 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT','NOV', 'DEC', 'JAN',
+        "STD Index", "F6MTH", "F4MTH"
+    ]
+    # Append remaining data
+    df_full = pd.DataFrame(data, columns=columns)
+    index_row_data = df_full.loc[df_full['Index'].astype(str).str.lower() == Current_FC_Index.lower()]
+    print("Index row data :",index_row_data)
+    
     index_value = {}
     # Loop through each month and fetch its value
     for month in MONTHS:
