@@ -65,8 +65,8 @@ def get_forecast_variables(product, year=2025):
 
 def dependencies():
     return {
-        "Index" : ["current_fc_index"],
-        "FC_by_Index": ["Index", "month_12_fc_index"],
+        "Index_value" : ["Current_FC_Index"],
+        "FC_by_Index": ["Index_value", "month_12_fc_index"],
         "FC_by_Trend": ["Trend"],
         "FC_by_Average": ["FC_by_Index", "FC_by_Trend"],
         "Recommended_FC": ["Forecasting_Method", "FC_by_Index", "FC_by_Trend", "FC_by_Average"],

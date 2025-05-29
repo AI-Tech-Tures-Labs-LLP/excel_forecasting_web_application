@@ -9,7 +9,7 @@ return_QA_df = config.return_QA_df
 # index_df = sheets["Index"].iloc[:41, :16]
 index_df_raw = sheets["Index"]  # Equivalent to usecols="A:P", nrows=41
 
-index_df = index_df_raw.iloc[2:43, :16]   # 2 because header=2 => start at 3rd row, and 41 rows total
+index_df = index_df_raw.iloc[1:43, :16]   # 2 because header=2 => start at 3rd row, and 41 rows total
 return_QA_df = return_QA_df.rename(columns={
     'Item #': 'PID',
     'Expected Return Period': 'Expected Return',

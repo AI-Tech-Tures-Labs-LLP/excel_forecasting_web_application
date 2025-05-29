@@ -105,6 +105,14 @@ class ProductDetail(models.Model):
     planner_response = models.TextField(null=True, blank=True, verbose_name="Planner Response")
     website = models.CharField(max_length=1000, null=True, blank=True, verbose_name="Website")
     
+    rolling_method = models.CharField(max_length=50, null=True, blank=True, verbose_name="Rolling Method")
+    std_trend = models.FloatField(null=True, blank=True, verbose_name="STD Trend")
+    STD_index_value = models.JSONField(null=True, blank=True, verbose_name="STD Index Value")  # Assuming dict-like data
+    month_12_fc_index = models.FloatField(null=True, blank=True, verbose_name="12 Month FC Index")
+    forecasting_method = models.CharField(max_length=100, null=True, blank=True, verbose_name="Forecasting Method")
+
+    def __str__(self):
+        return f"{self.product_id} - {self.product_description}"
     def __str__(self):
         return f"{self.product_id} - {self.product_description}"
 
@@ -431,3 +439,4 @@ class RetailInfo(models.Model):
 
     def __str__(self):
         return f"RetailInfo ({self.current_month} - {self.year_of_previous_month})"
+    
