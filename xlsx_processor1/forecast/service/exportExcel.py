@@ -67,7 +67,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
     std_period = [m.upper() for m in selected_months]
 
-    st.CURRENT_MONTH_SALES_PERCENTAGES = percentage
+    st.CURRENT_MONTH_SALES_PERCENTAGES = float(percentage)
     st.STD_PERIOD = std_period
     from forecast.service.createDataframe import report_grouping_df,index_df
     print("Report Grouping DataFrame:", report_grouping_df.head())
@@ -641,7 +641,7 @@ def process_category(args):
     index_df,sheets,return_QA_df, category, code, num_products, static_data, file_path,std_period,percentage = args
     import forecast.service.staticVariable as st
 
-    st.CURRENT_MONTH_SALES_PERCENTAGES = percentage
+    st.CURRENT_MONTH_SALES_PERCENTAGES = float(percentage)
     st.STD_PERIOD = std_period
 
     print(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")

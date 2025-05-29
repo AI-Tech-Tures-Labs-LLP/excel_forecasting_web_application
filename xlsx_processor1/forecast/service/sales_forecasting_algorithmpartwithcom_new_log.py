@@ -78,7 +78,7 @@ def algorithm(loader,category,store,coms,omni,code):
     ttl_com_sale = count_ttl_com_sale(loader.LY_Unit_Sales,loader.LY_MCOM_Unit_Sales)
     logging.info(f'count_ttl_com_sale: {ttl_com_sale}')
     STD_index_value_original=calculate_std_index_value(loader.index_value,STD_PERIOD)
-    month_12_fc_index_original=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value)
+    month_12_fc_index_original=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value_original)
     std_trend_original=calculate_std_trend(loader.STD_TY_Unit_Sales_list, loader.STD_LY_Unit_Sales_list)
  
 
@@ -91,6 +91,7 @@ def algorithm(loader,category,store,coms,omni,code):
     recommended_fc={}
     planned_oh={}
     planned_sell_thru={}
+    STD_index_value = 0
     if pid_type=='store_pid':
         STD_index_value=calculate_std_index_value(loader.index_value,STD_PERIOD)
         logging.info(f'STD_index_value: {STD_index_value}')
