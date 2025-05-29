@@ -183,23 +183,38 @@ def calculate_std_trend(std_ty_unit_sales_list, std_ly_unit_sales_list):
  
 def calculate_fc_by_trend(s1, k1,f8, row4_values, row17_values, row39_values):
     fc_by_trend = {}
+    print("Calculating forecast by trend...")
+    print(f"Input values: s1={s1}, k1={k1}, f8={f8}")
+    print(f"Row4 values: {row4_values}")
+    print(f"Row17 values: {row17_values}")
+    print(f"Row39 values: {row39_values}")
+
     for month,row4, row17, row39 in zip(MONTHS,row4_values, row17_values, row39_values):
+        print(f"Processing month: {month}, row4={row4}, row17={row17}, row39={row39}")
         if s1 == 12 and k1 == 12:
             result = round(row17 + row17 * f8, 0)
+            print(f"Month: {month}, Result: {result} (s1=12, k1=12)")
         elif s1 == 12 and row4 < 7:
             result = round(row39 + row39 * f8, 0)
+            print(f"Month: {month}, Result: {result} (s1=12, row4<7)")
         elif s1 > 6 and row4 < 7:
             result = round(row17 + row17 * f8, 0)
+            print(f"Month: {month}, Result: {result} (s1>6, row4<7)")
         elif s1 < 7 and row4 > 6:
             result = round(row39 + row39 * f8, 0)
+            print(f"Month: {month}, Result: {result} (s1<7, row4>6)")
         elif s1 < 7 and row4 < 7:
             result = round(row39 + row39 * f8, 0)
+            print(f"Month: {month}, Result: {result} (s1<7, row4<7)")
         elif s1 > 6 and row4 > 6:
             result = round(row39 + row39 * f8, 0)
+            print(f"Month: {month}, Result: {result} (s1>6, row4>6)")
         else:
             result = None  # Fallback case
  
         fc_by_trend[month] = result
+
+    print(f"Forecast by trend calculated: {fc_by_trend}")
  
     return fc_by_trend
 

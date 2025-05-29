@@ -167,7 +167,7 @@ def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Un
         },
         "FC_by_Trend": {
             "function": calculate_fc_by_trend,
-            "params": lambda ctx: [s1, k1,ctx["Trend"], row_4, row_17, row_39]
+            "params": lambda ctx: [s1, k1,ctx["Trend"], row_4, list(row_17.values()), list(row_39.values())]
         },
         "FC_by_Average": {
             "function": calculate_fc_by_average,
