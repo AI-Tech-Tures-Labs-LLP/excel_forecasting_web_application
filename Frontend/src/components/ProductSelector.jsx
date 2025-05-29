@@ -2076,6 +2076,31 @@ function ProductSelector() {
 
   // Show details view if in details mode
   if (currentView === "details") {
+    const handleNavigateToProduct = (productId) => {
+      console.log("ProductSelector: Navigating to product:", productId);
+
+      // Find the product in the current products list
+      const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
+      const targetProduct = allProducts.find((p) => p.pid === productId);
+
+      if (targetProduct) {
+        dispatch(setSelectedProduct(targetProduct));
+        // currentView stays as "details" so we stay in details view
+      } else {
+        console.error("Product not found:", productId);
+      }
+    };
+
+    // Show details view if in details mode
+    if (currentView === "details") {
+      return (
+        <ProductDetailsView
+          productId={selectedProduct?.pid}
+          onBack={handleBackToSelector}
+          onNavigateToProduct={handleNavigateToProduct} // ADD THIS LINE
+        />
+      );
+    }
     return (
       <ProductDetailsView
         productId={selectedProduct?.pid}
