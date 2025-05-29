@@ -103,6 +103,7 @@ class ProductDetail(models.Model):
     last_project_review_date = models.DateField(null=True, blank=True, verbose_name="Last Proj Review Date")
     macy_spring_projection_note = models.TextField(null=True, blank=True, verbose_name="Macy's Spring Proj Notes")
     planner_response = models.TextField(null=True, blank=True, verbose_name="Planner Response")
+    website = models.CharField(max_length=1000, null=True, blank=True, verbose_name="Website")
     
     def __str__(self):
         return f"{self.product_id} - {self.product_description}"
@@ -249,6 +250,9 @@ class StoreForecast(models.Model):
     Added_only_to_balance_macys_SOQ = models.BooleanField(default=False)
     Need_to_review_first = models.BooleanField(default=False)
     RLJ = models.CharField(max_length=100, null=True, blank=True)
+    STD_index_value_original = models.FloatField(null=True, blank=True)
+    month_12_fc_index_original = models.FloatField(null=True, blank=True)
+    std_trend_original = models.FloatField(null=True, blank=True)
 
 
 
@@ -304,6 +308,9 @@ class ComForecast(models.Model):
     Added_only_to_balance_macys_SOQ = models.BooleanField(default=False)
     Need_to_review_first = models.BooleanField(default=False)
     RLJ = models.CharField(max_length=100, null=True, blank=True)
+    STD_index_value_original = models.FloatField(null=True, blank=True)
+    month_12_fc_index_original = models.FloatField(null=True, blank=True)
+    std_trend_original = models.FloatField(null=True, blank=True)
 
 
     
@@ -374,6 +381,9 @@ class OmniForecast(models.Model):
     next_forecast_month_required_quantity_store = models.FloatField(null=True, blank=True)
     forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
     next_forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
+    STD_index_value_original = models.FloatField(null=True, blank=True)
+    month_12_fc_index_original = models.FloatField(null=True, blank=True)
+    std_trend_original = models.FloatField(null=True, blank=True)
     class Meta:
         unique_together = ('category', 'pid', 'forecast_month')
 

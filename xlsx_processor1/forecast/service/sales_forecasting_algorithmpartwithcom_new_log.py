@@ -9,9 +9,12 @@ logging.basicConfig(filename=r'log_file_all1.log', level=logging.INFO,
 def algorithm(loader,category,store,coms,omni,code):
    
     from forecast.service.getretailinfo import current_month,year_of_previous_month,season,previous_week_number
-    from forecast.service.staticVariable import month_week_dict,CURRENT_DATE
+    from forecast.service.staticVariable import month_week_dict,CURRENT_DATE,CURRENT_MONTH_SALES_PERCENTAGES,STD_PERIOD
     from forecast.service.createDataframe import return_QA_df,master_sheet,vendor_sheet, birthstone_sheet
-    
+
+    print("****************************************************************************************************************",CURRENT_MONTH_SALES_PERCENTAGES)
+    print("****************************************************************************************************************",STD_PERIOD)
+
     vendor = get_vendor_by_pid(loader.pid_value, master_sheet)
     country, lead_time = get_vendor_details(vendor, vendor_sheet)
     logging.info(f'pid: {loader.pid_value}')
@@ -74,6 +77,12 @@ def algorithm(loader,category,store,coms,omni,code):
     check_no_red_box = contains_no_longer_red_box(loader.Planner_Response)
     ttl_com_sale = count_ttl_com_sale(loader.LY_Unit_Sales,loader.LY_MCOM_Unit_Sales)
     logging.info(f'count_ttl_com_sale: {ttl_com_sale}')
+    STD_index_value_original=calculate_std_index_value(loader.index_value,STD_PERIOD)
+    month_12_fc_index_original=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value_original)
+    std_trend_original=calculate_std_trend(loader.STD_TY_Unit_Sales_list, loader.STD_LY_Unit_Sales_list)
+ 
+
+
     selected_months=None 
     pid_omni_status=False
     VDF_status=False
@@ -82,6 +91,7 @@ def algorithm(loader,category,store,coms,omni,code):
     recommended_fc={}
     planned_oh={}
     planned_sell_thru={}
+    STD_index_value = 0
     if pid_type=='store_pid':
         STD_index_value=calculate_std_index_value(loader.index_value,STD_PERIOD)
         logging.info(f'STD_index_value: {STD_index_value}')
@@ -482,8 +492,7 @@ def algorithm(loader,category,store,coms,omni,code):
    
             planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
             logging.info(f'final planned_oh before holiday check: {planned_oh}')
-
-
+            std_trend=std_trend_original
     if pid_type!='Not forecast':
         week_of_forecast_month = get_week_of_month(forecast_date)
         logging.info(f'week_of_forecast_month: {week_of_forecast_month}')
@@ -579,6 +588,9 @@ def algorithm(loader,category,store,coms,omni,code):
             "Womens_day":False,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
+            "STD_index_value_original":STD_index_value_original,
+            "month_12_fc_index_original": month_12_fc_index_original,
+            "std_trend_original":std_trend_original,
             "month_12_fc_index":month_12_fc_index_original,
             "loss":loss,
             "month_12_fc_index_(loss)":month_12_fc_index,
@@ -618,8 +630,9 @@ def algorithm(loader,category,store,coms,omni,code):
             "Below_min_order":is_below_min_order,
             "Over_macys_SOQ":is_over_macys_SOQ,
             "Added_only_to_balance_macys_SOQ":is_added_by_only_SOQ,
-            "Need_to_review_first":is_need_to_review_first,
- 
+            "Need_to_review_first":is_need_to_review_first
+
+            
         }
             store.append(data_store)
         elif pid_type=='com_pid'and not pid_omni_status:
@@ -636,6 +649,9 @@ def algorithm(loader,category,store,coms,omni,code):
             "Womens_day":False,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
+            "STD_index_value_original":STD_index_value_original,
+            "month_12_fc_index_original": month_12_fc_index_original,
+            "std_trend_original":std_trend_original,
             "selected_months":selected_months,
             "com_month_12_fc_index":new_com_month_12_fc_index,
             "com trend":com_std_trend,
@@ -676,6 +692,7 @@ def algorithm(loader,category,store,coms,omni,code):
             "Over_macys_SOQ":is_over_macys_SOQ,
             "Added_only_to_balance_macys_SOQ":is_added_by_only_SOQ,
             "Need_to_review_first":is_need_to_review_first
+
             }
             coms.append(data_com)
         elif pid_omni_status:
@@ -691,6 +708,9 @@ def algorithm(loader,category,store,coms,omni,code):
             "Womens_day":False,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
+            "STD_index_value_original":STD_index_value_original,
+            "month_12_fc_index_original": month_12_fc_index_original,
+            "std_trend_original":std_trend_original,
             "selected_months":selected_months,
             "Com month_12_fc_index":new_com_month_12_fc_index,
             "com trend":new_com_std_trend,
@@ -750,7 +770,8 @@ def algorithm(loader,category,store,coms,omni,code):
             "Below_min_order":is_below_min_order,
             "Over_macys_SOQ":is_over_macys_SOQ,
             "Added_only_to_balance_macys_SOQ":is_added_by_only_SOQ,
-            "Need_to_review_first":is_need_to_review_first 
+            "Need_to_review_first":is_need_to_review_first,
+                        
             }
             omni.append(data_omni)
         else:

@@ -23,7 +23,7 @@ from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, 
 from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer
 from .service.exportExcel import process_data
 from forecast.service.rollingfc import recalculate_all
-
+from forecast.service.adddatabase import save_forecast_data
 
 def make_zip_and_delete(folder_path):
     folder_path = os.path.normpath(folder_path)
@@ -172,6 +172,8 @@ class ProductDetailViewSet(viewsets.ViewSet):
             "monthly_forecast": MonthlyForecastSerializer(MonthlyForecast.objects.filter(product=product), many=True).data
         })
     
+    
+
     @action(detail=False, methods=["post"])
     def recalculate_forecast(self, request):
         """
@@ -202,6 +204,8 @@ class ProductDetailViewSet(viewsets.ViewSet):
 
         try:
             updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), pid)
+            save_forecast_data(pid, updated_context)
+            print("Rolling 12 FC updated to Database ")
             return Response({"updated_context": updated_context})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -6,7 +6,8 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'xlsx_processor1.settings')
 django.setup()
 
-from forecast.models import MonthlyForecast
+from forecast.models import MonthlyForecast, ProductDetail
+from datetime import datetime
 import pandas as pd
 
 
@@ -227,4 +228,43 @@ def save_rolling_forecasts(product, year, forecast_data_dict):
                 variable_name=variable,
                 year=year,
                 defaults=defaults
+            )
+
+
+def save_forecast_data(pid, updated_context):
+        # Fetch related product
+        product = ProductDetail.objects.get(product_id=pid)
+        year = datetime.now().year  # You can change this if needed
+
+        month_keys = {
+            "JAN": "jan", "FEB": "feb", "MAR": "mar", "APR": "apr",
+            "MAY": "may", "JUN": "jun", "JUL": "jul", "AUG": "aug",
+            "SEP": "sep", "OCT": "oct", "NOV": "nov", "DEC": "dec"
+        }
+
+        field_map = {
+            "Planned_EOH": "PlannedEOH",
+            "Planned_Shipments": "PlannedShipment",
+            "Planned_FC": "PlannedForecast",
+            "Recommended_FC": "RecommendedForecast",
+            "FC_by_Trend": "ForecastByTrend",
+            "FC_by_Index": "ForecastByIndex",
+            "Planned_sell_thru": "PlannedSellThru",
+            "Index_value": "IndexPercentage",
+        }
+
+        for key, var_name in field_map.items():
+            data = updated_context.get(key)
+            if not data:
+                continue
+
+            # Map month values
+            forecast_data = {month_keys[mon]: val for mon, val in data.items() if mon in month_keys}
+            
+            # Create or update the entry
+            MonthlyForecast.objects.update_or_create(
+                product=product,
+                variable_name=var_name,
+                year=year,
+                defaults=forecast_data
             )

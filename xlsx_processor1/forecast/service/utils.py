@@ -1190,7 +1190,7 @@ def calculate_planned_sell_through(planned_fc, plan_oh):
             fc = planned_fc[key]
             oh = plan_oh[key]
             if (fc + oh) != 0:  # Avoid division by zero
-                result[key] = fc / (fc + oh)
+                result[key] = round(fc / (fc + oh))
             else:
                 result[key] = None  # Handle division by zero, if any
         else:
