@@ -1979,9 +1979,30 @@ function ProductSelector() {
     return product.website || "#";
   };
 
+  const handleMacysRedirect = async (pid) => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/forecast/api/product/${pid}/`
+      );
+      const website = response.data?.product_details?.website;
+
+      if (website && website.trim() !== "") {
+        window.open(website, "_blank");
+      } else {
+        alert("No website link available for this product.");
+      }
+    } catch (error) {
+      console.error("Error fetching Macy's link:", error);
+      alert("Failed to retrieve Macy's product link.");
+    }
+  };
+
   // Helper function to check if Macy's link can be generated
   const canGenerateMacysLink = (product) => {
     // Check if website field exists and is not empty
+
+    console.log("Product pid:", product.pid);
+
     return product.website && product.website.trim() !== "";
   };
 
@@ -2537,9 +2558,6 @@ function ProductSelector() {
                         Status
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Macy's Link
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Details
                       </th>
                     </tr>
@@ -2611,28 +2629,6 @@ function ProductSelector() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatStatusDisplay(product)}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                          {canGenerateMacysLink(product) ? (
-                            <a
-                              href={product.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-900 transition-colors p-2 rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2"
-                              title={`View ${
-                                product.category || "Product"
-                              } on Macy's Website`}
-                            >
-                              <Globe size={16} />
-                              <span className="text-sm font-medium">
-                                View Online
-                              </span>
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 text-sm">
-                              No Link
-                            </span>
-                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button

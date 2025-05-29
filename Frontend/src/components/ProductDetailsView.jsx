@@ -2781,17 +2781,25 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   // Function to handle product link click
-  const handleProductLinkClick = () => {
-    const productUrl = `${window.location.origin}/products/${productId}`;
-    navigator.clipboard
-      .writeText(productUrl)
-      .then(() => {
-        alert("Product link copied to clipboard!");
-      })
-      .catch(() => {
-        // Fallback: open in new tab
-        window.open(productUrl, "_blank");
-      });
+  const handleProductLinkClick = async () => {
+    try {
+      const response = await axios.get(
+        `http://127.0.0.1:8000/forecast/api/product/${productId}/`
+      );
+      const externalLink = response.data?.product_details?.website;
+
+      //add external link to local storage
+      localStorage.setItem("externalLink", externalLink);
+
+      if (externalLink) {
+        window.open(externalLink, "_blank"); // Open in new tab
+      } else {
+        alert("No website link found for this product.");
+      }
+    } catch (error) {
+      console.error("Error fetching product link:", error);
+      alert("Failed to fetch product link.");
+    }
   };
 
   const handleSearchFocus = () => {
