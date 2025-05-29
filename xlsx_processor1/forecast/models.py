@@ -103,6 +103,7 @@ class ProductDetail(models.Model):
     last_project_review_date = models.DateField(null=True, blank=True, verbose_name="Last Proj Review Date")
     macy_spring_projection_note = models.TextField(null=True, blank=True, verbose_name="Macy's Spring Proj Notes")
     planner_response = models.TextField(null=True, blank=True, verbose_name="Planner Response")
+    website = models.CharField(max_length=1000, null=True, blank=True, verbose_name="Website")
     
     def __str__(self):
         return f"{self.product_id} - {self.product_description}"
