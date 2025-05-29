@@ -18,9 +18,12 @@ from forecast.service.utils import (
 )
 
 from forecast.models import RetailInfo, MonthlyForecast
+from django.core.exceptions import ObjectDoesNotExist
 
-retail = RetailInfo.objects.latest('id')  # or use .get(id=...) or .filter(...).first()
-
+try:
+    retail = RetailInfo.objects.latest('id')
+except ObjectDoesNotExist:
+    retail = None
 
 def get_forecast_variables(product, year=2025):
     # List of required variable names

@@ -1448,6 +1448,13 @@ function ProductSelector() {
 
   // Special days dropdown state
   const [specialDaysDropdownOpen, setSpecialDaysDropdownOpen] = useState(false);
+  // Category download modal state
+  const [categoryDownloadModal, setCategoryDownloadModal] = useState({
+    isOpen: false,
+    selectedCategories: [],
+    availableCategories: [],
+    isDownloading: false,
+  });
 
   const itemsPerPage = 50;
 
@@ -1691,6 +1698,10 @@ function ProductSelector() {
         red_box_items: redBoxItems,
         vdf_statuses: vdfStatuses,
       });
+      setCategoryDownloadModal((prev) => ({
+        ...prev,
+        availableCategories: categories.sort(),
+      }));
     } catch (error) {
       console.error("Error loading filter options:", error);
       dispatch(
@@ -1770,6 +1781,105 @@ function ProductSelector() {
     loadProductNotesData();
   };
 
+  const handleOpenCategoryDownload = () => {
+    setCategoryDownloadModal((prev) => ({
+      ...prev,
+      isOpen: true,
+      selectedCategories: [],
+    }));
+  };
+
+  const handleCloseCategoryDownload = () => {
+    setCategoryDownloadModal((prev) => ({
+      ...prev,
+      isOpen: false,
+      selectedCategories: [],
+      isDownloading: false,
+    }));
+  };
+
+  const handleCategorySelectionChange = (category, checked) => {
+    setCategoryDownloadModal((prev) => ({
+      ...prev,
+      selectedCategories: checked
+        ? [...prev.selectedCategories, category]
+        : prev.selectedCategories.filter((cat) => cat !== category),
+    }));
+  };
+
+  const handleSelectAllCategories = () => {
+    setCategoryDownloadModal((prev) => ({
+      ...prev,
+      selectedCategories: [...prev.availableCategories],
+    }));
+  };
+
+  const handleDeselectAllCategories = () => {
+    setCategoryDownloadModal((prev) => ({
+      ...prev,
+      selectedCategories: [],
+    }));
+  };
+
+  const handleDownloadSelectedCategories = async () => {
+    if (categoryDownloadModal.selectedCategories.length === 0) {
+      dispatch(
+        addToast({
+          type: "error",
+          message: "Please select at least one category to download",
+          duration: 3000,
+        })
+      );
+      return;
+    }
+
+    setCategoryDownloadModal((prev) => ({ ...prev, isDownloading: true }));
+
+    try {
+      const categoriesParam =
+        categoryDownloadModal.selectedCategories.join(",");
+      const filePath = forecastSession?.filePath || ""; // You need to get the file path from your session
+
+      const downloadUrl = `${
+        import.meta.env.VITE_API_BASE_URL
+      }/forecast/download-category-sheet/?category=${encodeURIComponent(
+        categoriesParam
+      )}&file_path=${encodeURIComponent(filePath)}`;
+
+      // Create a temporary link to trigger download
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download =
+        categoryDownloadModal.selectedCategories.length === 1
+          ? `${categoryDownloadModal.selectedCategories[0]}.xlsx`
+          : "categories.zip";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      dispatch(
+        addToast({
+          type: "success",
+          message: `Downloaded ${categoryDownloadModal.selectedCategories.length} category file(s)`,
+          duration: 3000,
+        })
+      );
+
+      handleCloseCategoryDownload();
+    } catch (error) {
+      console.error("Error downloading categories:", error);
+      dispatch(
+        addToast({
+          type: "error",
+          message: "Failed to download category files",
+          duration: 5000,
+        })
+      );
+    } finally {
+      setCategoryDownloadModal((prev) => ({ ...prev, isDownloading: false }));
+    }
+  };
+
   // Clear all filters
   const clearAllFilters = () => {
     setSelectedFilters({
@@ -1839,6 +1949,30 @@ function ProductSelector() {
           </span>
         );
     }
+  };
+
+  const generateMacysUrl = (product) => {
+    // Use marketing_id for the Macy's product link
+    const marketingId = product.marketing_id;
+    const webidDescription = product.webid_description;
+
+    if (!marketingId || !webidDescription) {
+      return "#"; // Return placeholder if either field is not available
+    }
+
+    // Convert webid_description to URL-friendly slug
+    const urlSlug = webidDescription
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "") // Remove special characters except spaces
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/^-+|-+$/g, ""); // Remove leading/trailing hyphens
+
+    return `https://www.macys.com/shop/product/${urlSlug}?ID=${marketingId}&intnl=true`;
+  };
+
+  // Helper function to check if Macy's link can be generated
+  const canGenerateMacysLink = (product) => {
+    return product.marketing_id && product.webid_description;
   };
 
   // Format notes display in separate column
@@ -2076,6 +2210,31 @@ function ProductSelector() {
 
   // Show details view if in details mode
   if (currentView === "details") {
+    const handleNavigateToProduct = (productId) => {
+      console.log("ProductSelector: Navigating to product:", productId);
+
+      // Find the product in the current products list
+      const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
+      const targetProduct = allProducts.find((p) => p.pid === productId);
+
+      if (targetProduct) {
+        dispatch(setSelectedProduct(targetProduct));
+        // currentView stays as "details" so we stay in details view
+      } else {
+        console.error("Product not found:", productId);
+      }
+    };
+
+    // Show details view if in details mode
+    if (currentView === "details") {
+      return (
+        <ProductDetailsView
+          productId={selectedProduct?.pid}
+          onBack={handleBackToSelector}
+          onNavigateToProduct={handleNavigateToProduct} // ADD THIS LINE
+        />
+      );
+    }
     return (
       <ProductDetailsView
         productId={selectedProduct?.pid}
@@ -2112,16 +2271,15 @@ function ProductSelector() {
             <div className="flex items-center gap-3">
               {/* Download Button - More prominent */}
               {forecastSession?.downloadUrl && (
-                <a
-                  href={forecastSession.downloadUrl}
+                <button
+                  onClick={handleOpenCategoryDownload}
                   className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20"
-                  download
-                  title="Download Forecast Report"
+                  title="Download Category Files"
                 >
                   <FileDown size={18} />
-                  <span className="hidden sm:inline">Download Forecast</span>
+                  <span className="hidden sm:inline">Download Categories</span>
                   <span className="sm:hidden">Download</span>
-                </a>
+                </button>
               )}
 
               {/* Refresh Button */}
@@ -2351,7 +2509,7 @@ function ProductSelector() {
                         Category
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Assigned To
+                        Tagged To
                       </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Notes
@@ -2365,6 +2523,10 @@ function ProductSelector() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
                       </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Macy's Link
+                      </th>
+
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Details
                       </th>
@@ -2414,6 +2576,26 @@ function ProductSelector() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatStatusDisplay(product)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          {canGenerateMacysLink(product) ? (
+                            <a
+                              href={generateMacysUrl(product)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-900 transition-colors p-2 rounded-lg hover:bg-blue-50 flex items-center justify-center gap-2"
+                              title={`View ${product.webid_description} on Macy's Website`}
+                            >
+                              <Globe size={16} />
+                              <span className="text-sm font-medium">
+                                View Online
+                              </span>
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 text-sm">
+                              No Link
+                            </span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button
@@ -2685,6 +2867,107 @@ function ProductSelector() {
         productId={notesModal.productId}
         productName={notesModal.productName}
       />
+      {/* Category Download Modal */}
+      {categoryDownloadModal.isOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Select Categories to Download
+              </h3>
+              <button
+                onClick={handleCloseCategoryDownload}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {categoryDownloadModal.availableCategories.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Package size={48} className="mx-auto mb-3 text-gray-300" />
+                <p>No categories available for download</p>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4 flex gap-2">
+                  <button
+                    onClick={handleSelectAllCategories}
+                    className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200"
+                  >
+                    Select All
+                  </button>
+                  <button
+                    onClick={handleDeselectAllCategories}
+                    className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  >
+                    Deselect All
+                  </button>
+                </div>
+
+                <div className="space-y-2 mb-6 max-h-60 overflow-y-auto">
+                  {categoryDownloadModal.availableCategories.map((category) => (
+                    <label
+                      key={category}
+                      className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={categoryDownloadModal.selectedCategories.includes(
+                          category
+                        )}
+                        onChange={(e) =>
+                          handleCategorySelectionChange(
+                            category,
+                            e.target.checked
+                          )
+                        }
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                      <span className="text-sm text-gray-700">{category}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">
+                    {categoryDownloadModal.selectedCategories.length} categories
+                    selected
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCloseCategoryDownload}
+                      className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDownloadSelectedCategories}
+                      disabled={
+                        categoryDownloadModal.selectedCategories.length === 0 ||
+                        categoryDownloadModal.isDownloading
+                      }
+                      className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      {categoryDownloadModal.isDownloading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <FileDown size={16} />
+                          Download
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
