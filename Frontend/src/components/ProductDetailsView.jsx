@@ -2187,7 +2187,8 @@ import {
   Save,
   RefreshCw,
   FileText,
-  Settings, // Add this for notes
+  Settings,
+  ExternalLink, // Add this for notes
 } from "lucide-react";
 
 // Import selectors
@@ -2414,7 +2415,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       const response = await axios.post(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/recalculate_forecast/`,
+        }/forecast/api/product/${productId}/`,
         payload
       );
 
@@ -2641,6 +2642,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     });
     alert("Values saved successfully!");
   };
+
   const fetchProductDetails = async () => {
     console.log("Fetching details for product:", productId);
     setLoading(true);
@@ -2776,6 +2778,20 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
     setSearchQuery("");
     setShowSearchDropdown(false);
+  };
+
+  // Function to handle product link click
+  const handleProductLinkClick = () => {
+    const productUrl = `${window.location.origin}/products/${productId}`;
+    navigator.clipboard
+      .writeText(productUrl)
+      .then(() => {
+        alert("Product link copied to clipboard!");
+      })
+      .catch(() => {
+        // Fallback: open in new tab
+        window.open(productUrl, "_blank");
+      });
   };
 
   const handleSearchFocus = () => {
@@ -3688,14 +3704,28 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             </div>
 
             {/* Product Title and Navigation */}
+            {/* Product Title and Navigation */}
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-white mb-2">
-                  Product Details: {cardData?.productId}
-                </h1>
-                <p className="text-indigo-100">
-                  Comprehensive forecast and performance analytics
-                </p>
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">
+                      Product Details: {cardData?.productId}
+                    </h1>
+                    <p className="text-indigo-100">
+                      Comprehensive forecast and performance analytics
+                    </p>
+                  </div>
+                  {/* ADD THIS PRODUCT LINK BUTTON */}
+                  <button
+                    onClick={handleProductLinkClick}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
+                    title="Copy product link"
+                  >
+                    <ExternalLink size={18} />
+                    <span className="hidden sm:inline">Link</span>
+                  </button>
+                </div>
               </div>
 
               {/* Navigation Controls */}
