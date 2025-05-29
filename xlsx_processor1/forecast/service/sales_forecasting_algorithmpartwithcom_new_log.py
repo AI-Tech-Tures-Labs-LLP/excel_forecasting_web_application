@@ -492,8 +492,7 @@ def algorithm(loader,category,store,coms,omni,code):
    
             planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
             logging.info(f'final planned_oh before holiday check: {planned_oh}')
-
-
+            std_trend=std_trend_original
     if pid_type!='Not forecast':
         week_of_forecast_month = get_week_of_month(forecast_date)
         logging.info(f'week_of_forecast_month: {week_of_forecast_month}')
