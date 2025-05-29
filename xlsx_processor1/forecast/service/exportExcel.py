@@ -993,7 +993,7 @@ def process_category(args):
 
         months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         current_year = datetime.now().year 
-
+        website_link = f"http://www.macys.com/shop/product/{loader.Prod_Desc}?ID={loader.Mktg_ID}"
         
         ProductDetail.objects.update_or_create(
             product_id=loader.pid_value,
@@ -1085,12 +1085,15 @@ def process_category(args):
                 # Marketing fields
                 "v2c": safe_str(loader.V2C),
                 "marketing_id": safe_str(loader.Mktg_ID),
+                
+
                 "std_store_return": safe_float(loader.STD_Store_Rtn),
 
                 # Planning fields
                 "last_project_review_date": parse_date(loader.Last_Proj_Review_Date),
                 "macy_spring_projection_note": safe_str(loader.Macys_Spring_Proj_Notes),
-                "planner_response": safe_str(loader.Planner_Response)
+                "planner_response": safe_str(loader.Planner_Response),
+                "website": website_link
             }
         )
 
