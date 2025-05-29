@@ -22,6 +22,8 @@ from rest_framework.permissions import AllowAny
 from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote
 from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer
 from .service.exportExcel import process_data
+from forecast.service.rollingfc import recalculate_all
+
 
 def make_zip_and_delete(folder_path):
     folder_path = os.path.normpath(folder_path)
@@ -169,6 +171,42 @@ class ProductDetailViewSet(viewsets.ViewSet):
             "product_details": product_serializer.data,
             "monthly_forecast": MonthlyForecastSerializer(MonthlyForecast.objects.filter(product=product), many=True).data
         })
+    
+    @action(detail=False, methods=["post"])
+    def recalculate_forecast(self, request):
+        """
+        POST /products/recalculate_forecast/
+
+        {
+          "changed_variable": "Planned_FC",
+          "new_value": 150,
+          "context_data": {
+            "Forecasting_Method": "avg",
+            "Index": 100,
+            "12_month_FC": 200,
+            ...
+          },
+          "pid": "P123"
+        }
+        """
+        changed_variable = request.data.get("changed_variable")
+        new_value = request.data.get("new_value")
+        context_data = request.data.get("context_data")
+        pid = request.data.get("pid")
+        print("Changed Variable:", changed_variable)
+        print("New Value:", new_value)
+        print("Context Keys:", context_data.keys())
+        print("PID:", pid)
+        if not all([changed_variable, context_data, pid]):
+            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), pid)
+            return Response({"updated_context": updated_context})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
 
 
 
@@ -366,6 +404,7 @@ def download_category_sheet(request):
     """
     category_param = request.GET.get('category')
     file_path = request.GET.get('file_path','')
+
     if not category_param:
         return JsonResponse({'error': 'Category parameter is required'}, status=400)
     
