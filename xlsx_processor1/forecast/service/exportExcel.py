@@ -25,16 +25,43 @@ from .readInputExcel import readInputExcel
 from forecast.service import config
 from forecast.service.adddatabase import save_macys_projection_receipts, save_monthly_forecasts, save_rolling_forecasts
 from forecast.models import MonthlyForecast, ProductDetail, StoreForecast, ComForecast, OmniForecast
-
+import calendar
 
 def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple):
     print("Input path:", input_path)
     readInputExcel(input_path)
 
-    global CURRENT_MONTH_SALES_PERCENTAGES
+    import forecast.service.staticVariable as st
 
-    CURRENT_MONTH_SALES_PERCENTAGES = percentage
+    # Map full month name to 3-letter uppercase abbreviation
+    def get_month_abbr(month_name):
+        try:
+            month_index = list(calendar.month_name).index(month_name.capitalize())
+            return calendar.month_abbr[month_index].upper()  # e.g., "November" → "NOV"
+        except ValueError:
+            raise ValueError(f"Invalid month name: {month_name}")
 
+    # Convert input to abbreviations
+    month_from_abbr = get_month_abbr(month_from)
+    month_to_abbr = get_month_abbr(month_to)
+
+    # Generate STD_PERIOD from month_from_abbr to month_to_abbr
+    all_months = list(calendar.month_abbr)[1:]  # ['Jan', ..., 'Dec']
+    month_map = {m.upper(): i+1 for i, m in enumerate(all_months)}  # 'JAN' -> 1
+
+    start_idx = month_map[month_from_abbr]
+    end_idx = month_map[month_to_abbr]
+
+    # Handle wrap-around (e.g., NOV to FEB)
+    if start_idx <= end_idx:
+        selected_months = all_months[start_idx-1:end_idx]
+    else:
+        selected_months = all_months[start_idx-1:] + all_months[:end_idx]
+
+    std_period = [m.upper() for m in selected_months]
+
+    st.CURRENT_MONTH_SALES_PERCENTAGES = percentage
+    st.STD_PERIOD = std_period
     from forecast.service.createDataframe import report_grouping_df,index_df
     print("Report Grouping DataFrame:", report_grouping_df.head())
     
@@ -95,7 +122,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     )
 
     args_list = [
-        (index_df, config.sheets, config.return_QA_df,category, code, num_products, static_data, file_path)
+        (index_df, config.sheets, config.return_QA_df,category, code, num_products, static_data, file_path,std_period,percentage)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -190,8 +217,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
             'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
             'average_store_sale_thru' : row['average_store_sale_thru'],
-            'macy_SOQ_percentage' : row['Macy_SOQ_percentage']
-            
+            'macy_SOQ_percentage' : row['Macy_SOQ_percentage'],
+            'STD_index_value_original': row['STD_index_value_original'],
+            'month_12_fc_index_original': row['month_12_fc_index_original'],
+            'std_trend_original': row['std_trend_original']
         }
         for _, row in df_store.iterrows()
     ]
@@ -246,7 +275,11 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
             'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
             'average_store_sale_thru' : row['average_store_sale_thru'],
-            'macy_SOQ_percentage' : row['Macy_SOQ_percentage']  
+            'macy_SOQ_percentage' : row['Macy_SOQ_percentage'],
+            'STD_index_value_original': row['STD_index_value_original'],
+            'month_12_fc_index_original': row['month_12_fc_index_original'],
+            'std_trend_original': row['std_trend_original']
+
         }
         for _, row in df_coms.iterrows()
     ]
@@ -321,7 +354,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
             'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
             'average_store_sale_thru' : row['average_store_sale_thru'],
-            'macy_SOQ_percentage' : row['Macy_SOQ_percentage']
+            'macy_SOQ_percentage' : row['Macy_SOQ_percentage'],
+            'STD_index_value_original': row['STD_index_value_original'],
+            'month_12_fc_index_original': row['month_12_fc_index_original'],
+            'std_trend_original': row['std_trend_original']
         }
         for _, row in df_omni.iterrows()
     ]
@@ -379,7 +415,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
                 'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
                 'average_store_sale_thru' : instance['average_store_sale_thru'],
-                'macy_SOQ_percentage' : instance['macy_SOQ_percentage']
+                'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
+                'STD_index_value_original': instance['STD_index_value_original'],
+                'month_12_fc_index_original': instance['month_12_fc_index_original'],
+                'std_trend_original': instance['std_trend_original']
             }
         )
     print("StoreForecast data saved/updated successfully.")
@@ -433,7 +472,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
                 'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
                 'average_store_sale_thru' : instance['average_store_sale_thru'],
-                'macy_SOQ_percentage' : instance['macy_SOQ_percentage']
+                'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
+                'STD_index_value_original': instance['STD_index_value_original'],
+                'month_12_fc_index_original': instance['month_12_fc_index_original'],
+                'std_trend_original': instance['std_trend_original']
             }
         )
     print("ComForecast data saved/updated successfully.")
@@ -502,7 +544,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
                 'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
                 'average_store_sale_thru' : instance['average_store_sale_thru'],
-                'macy_SOQ_percentage' : instance['macy_SOQ_percentage']
+                'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
+                'STD_index_value_original': instance['STD_index_value_original'],
+                'month_12_fc_index_original': instance['month_12_fc_index_original'],
+                'std_trend_original': instance['std_trend_original']
             }
         )
     print("OmniForecast data saved/updated successfully.")
@@ -518,15 +563,23 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
 def process_category(args):
     
+
     from forecast.service.sales_forecasting_algorithmpartwithcom_new_log import algorithm
     print("Importing algorithm...")
-    from forecast.service.staticVariable import month_data, STD_PERIOD, month_col_map, H_VALUES, ALL_VALUES, MONTHLY_VALUES
+    from forecast.service.staticVariable import month_data, month_col_map, H_VALUES, ALL_VALUES, MONTHLY_VALUES
     print("Importing static variables...")
     
     
-    index_df,sheets,return_QA_df, category, code, num_products, static_data, file_path = args
+    index_df,sheets,return_QA_df, category, code, num_products, static_data, file_path,std_period,percentage = args
+    import forecast.service.staticVariable as st
+
+    st.CURRENT_MONTH_SALES_PERCENTAGES = percentage
+    st.STD_PERIOD = std_period
+
     print(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
+
     from forecast.service import config
+    
     config.sheets = sheets
     config.return_QA_df = return_QA_df
 
@@ -1012,7 +1065,7 @@ def process_category(args):
             f"C{start_row}": loader.pid_value,
             f"D{start_row}": loader.RLJ,
             f"F{start_row}":loader.MKST,
-            f"O1":STD_PERIOD[0].upper()+"-"+STD_PERIOD[-1],
+            f"O1":st.STD_PERIOD[0].upper()+"-"+st.STD_PERIOD[-1],
             f"C{start_row + 1}":loader.Current_FC_Index,
             f"C{start_row + 2}": sum(loader.STD_TY_Unit_Sales_list),
             f"D{start_row + 2}": sum(loader.STD_LY_Unit_Sales_list),
