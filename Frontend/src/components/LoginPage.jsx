@@ -10,10 +10,10 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { login } = useAuth();
-  
+
   const [formData, setFormData] = useState({
-    username: '',
-    password: ''
+    username: "",
+    password: "",
   });
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
@@ -21,50 +21,54 @@ const LoginPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = "Username is required";
     }
-    
+
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = "Password must be at least 6 characters";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
-    
+
     setIsLoading(true);
-    
+
     // Simulate loading delay
     setTimeout(() => {
-      if (formData.username === 'Shrey' && formData.password === 'Shrey@123') {
+      if (formData.username === "Shrey" && formData.password === "Shrey@123") {
         login(formData.username);
-        
+
         // Show success toast
-        dispatch(addToast({
-          type: 'success',
-          message: `Welcome back, ${formData.username}!`,
-        }));
-        
-        navigate('/', { replace: true });
+        dispatch(
+          addToast({
+            type: "success",
+            message: `Hi, ${formData.username}!`,
+          })
+        );
+
+        navigate("/", { replace: true });
       } else {
-        setErrors({ 
-          general: 'Invalid username or password. Please try again.' 
+        setErrors({
+          general: "Invalid username or password. Please try again.",
         });
-        
+
         // Show error toast
-        dispatch(addToast({
-          type: 'error',
-          message: 'Invalid credentials. Please try again.',
-        }));
+        dispatch(
+          addToast({
+            type: "error",
+            message: "Invalid credentials. Please try again.",
+          })
+        );
       }
       setIsLoading(false);
     }, 1000);
@@ -72,22 +76,22 @@ const LoginPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Clear errors when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
     if (errors.general) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        general: ''
+        general: "",
       }));
     }
   };
@@ -106,17 +110,25 @@ const LoginPage = () => {
 
           {errors.general && (
             <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 mb-6">
-              <p className="text-red-200 text-sm text-center">{errors.general}</p>
+              <p className="text-red-200 text-sm text-center">
+                {errors.general}
+              </p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Username
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <User
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type="text"
                   id="username"
@@ -124,7 +136,7 @@ const LoginPage = () => {
                   value={formData.username}
                   onChange={handleChange}
                   className={`w-full pl-10 pr-4 py-3 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    errors.username ? 'border-red-500' : 'border-white/30'
+                    errors.username ? "border-red-500" : "border-white/30"
                   }`}
                   placeholder="Enter your username"
                 />
@@ -135,11 +147,17 @@ const LoginPage = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <Lock
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                  size={20}
+                />
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
@@ -147,7 +165,7 @@ const LoginPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className={`w-full pl-10 pr-12 py-3 bg-white/10 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
-                    errors.password ? 'border-red-500' : 'border-white/30'
+                    errors.password ? "border-red-500" : "border-white/30"
                   }`}
                   placeholder="Enter your password"
                 />
@@ -175,14 +193,12 @@ const LoginPage = () => {
                   Signing In...
                 </div>
               ) : (
-                'Sign In'
+                "Sign In"
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-          
-          </div>
+          <div className="mt-6 text-center"></div>
         </div>
 
         <div className="mt-6 text-center">
