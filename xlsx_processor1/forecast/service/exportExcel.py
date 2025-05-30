@@ -35,10 +35,13 @@ from forecast.service.staticVariable import omni_rename_map, com_rename_map, sto
 import calendar
 
 def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple):
+
     print("Input path:", input_path)
     readInputExcel(input_path)
 
     import forecast.service.staticVariable as st
+
+    st.OUTPUT_FILE_PATH = file_path
 
     # Map full month name to 3-letter uppercase abbreviation
     def get_month_abbr(month_name):
@@ -1105,7 +1108,7 @@ def process_category(args):
                 "forecasting_method" : forecasting_method,
 
                 "total_added_qty" : total_added_quantity,
-                
+                "category": f"{category}{code}"
             }
         )
 

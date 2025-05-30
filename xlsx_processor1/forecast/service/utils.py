@@ -1284,3 +1284,57 @@ def calculate_index_value(Current_FC_Index):
     print("Index value :",index_value)
 
     return index_value
+
+import os 
+from openpyxl import load_workbook
+
+
+def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
+    import forecast.service.staticVariable as st
+    base_dir = os.path.join("xlsx_processor1\media\processed_files", path) 
+    print("BASE  DIRRR",base_dir) 
+    
+    filename = f"{category}.xlsx"
+    filepath = os.path.join(base_dir, filename)
+ 
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"Excel file not found: {filepath}")
+   
+    # Load workbook and get the active sheet
+    wb = load_workbook(filepath, data_only=False)
+    ws = wb.active
+    for row in ws.iter_rows(min_row=1, max_col=3):  # Only search in Column C (3rd col)
+        if row[2].value == pid:  # Column C → index 2 (0-based)
+            start_row= row[2].row
+ 
+    ws[f"F{start_row + 3}"]= std_trend
+    ws[f"E{start_row + 2}"]= STD_index_value
+    ws[f"F{start_row + 2}"]= month_12_fc_index  # Added IFERROR to prevent divide-by-zero issues
+    ws[f"F{start_row + 4}"]= forecasting_method
+    ws[f"I{start_row + 5}"]=planned_fc["FEB"]
+    ws[f"J{start_row + 5}"]=planned_fc["MAR"]
+    ws[f"K{start_row + 5}"]=planned_fc["APR"]
+    ws[f"L{start_row + 5}"]=planned_fc["MAY"]
+    ws[f"M{start_row + 5}"]=planned_fc["JUN"]
+    ws[f"N{start_row + 5}"]= planned_fc["JUL"]
+    ws[f"O{start_row + 5}"]=planned_fc["AUG"]
+    ws[f"P{start_row + 5}"]=planned_fc["SEP"]
+    ws[f"Q{start_row + 5}"]=planned_fc["OCT"]
+    ws[f"R{start_row + 5}"]=planned_fc["NOV"]
+    ws[f"S{start_row + 5}"]=planned_fc["DEC"]
+    ws[f"T{start_row + 5}"]=planned_fc["JAN"]
+ 
+    ws[f"I{start_row + 6}"]= planned_shp["FEB"]
+    ws[f"J{start_row + 6}"]= planned_shp["MAR"]
+    ws[f"K{start_row + 6}"]=planned_shp["APR"]
+    ws[f"L{start_row + 6}"]= planned_shp["MAY"]
+    ws[f"M{start_row + 6}"]= planned_shp["JUN"]
+    ws[f"N{start_row + 6}"]= planned_shp["JUL"]
+    ws[f"O{start_row + 6}"]=planned_shp["AUG"]
+    ws[f"P{start_row + 6}"]=planned_shp["SEP"]
+    ws[f"Q{start_row + 6}"]=planned_shp["OCT"]
+    ws[f"R{start_row + 6}"]=planned_shp["NOV"]
+    ws[f"S{start_row + 6}"]=planned_shp["DEC"]
+    ws[f"T{start_row + 6}"]=planned_shp["JAN"]
+ 
+    wb.save(filepath)

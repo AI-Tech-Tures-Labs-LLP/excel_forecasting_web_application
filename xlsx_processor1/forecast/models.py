@@ -114,7 +114,8 @@ class ProductDetail(models.Model):
     external_factor = models.CharField(max_length=300,null=True, blank=True)
     external_factor_percentage = models.FloatField(null=True,blank=True)
     user_added_quantity = models.FloatField(null=True, blank=True)
-    
+    category = models.CharField(max_length=100, null=True, blank=True)
+
     def __str__(self):
         return f"{self.product_id} - {self.product_description}"
 
