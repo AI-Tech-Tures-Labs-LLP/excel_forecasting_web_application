@@ -24,6 +24,7 @@ from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, Sto
 from .service.exportExcel import process_data
 from forecast.service.rollingfc import recalculate_all
 from forecast.service.adddatabase import save_forecast_data
+from forecast.service.utils import get_c2_value
 
 def make_zip_and_delete(folder_path):
     folder_path = os.path.normpath(folder_path)
@@ -51,6 +52,45 @@ def make_zip_and_delete(folder_path):
     except Exception as e:
         print(f"An error occurred: {e}")
  
+def get_product_forecast_data(pid):
+        product = get_object_or_404(ProductDetail, product_id=pid)
+        return product.category, product.rolling_method, product.std_trend, product.STD_index_value, product.month_12_fc_index, product.forecasting_method,  product.total_added_qty
+    
+
+def get_planned_data(pid, year):
+    product = ProductDetail.objects.filter(product_id=pid).first()
+    if not product:
+        return {"error": "Product not found"}
+
+    result = {
+        "PlannedShipment": {},
+        "PlannedForecast": {}
+    }
+
+    for variable in ["PlannedShipment", "PlannedForecast"]:
+        forecast = MonthlyForecast.objects.filter(
+            product=product,
+            variable_name=variable,
+            year=year
+        ).first()
+
+        if forecast:
+            result[variable] = {
+                "JAN": forecast.jan,
+                "FEB": forecast.feb,
+                "MAR": forecast.mar,
+                "APR": forecast.apr,
+                "MAY": forecast.may,
+                "JUN": forecast.jun,
+                "JUL": forecast.jul,
+                "AUG": forecast.aug,
+                "SEP": forecast.sep,
+                "OCT": forecast.oct,
+                "NOV": forecast.nov,
+                "DEC": forecast.dec,
+            }
+
+    return result
 
 class UploadXlsxAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
@@ -234,15 +274,26 @@ class ProductDetailViewSet(viewsets.ViewSet):
 
         try:
             updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), pid)
-            save_forecast_data(pid, updated_context)
             print("Rolling 12 FC updated to Database ")
-            return Response({"updated_context": updated_context})
+            return Response({"pid": pid,"updated_context": updated_context})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+        
 
+    @action(detail=False, methods=["post"])
+    def save_recalculate(self,request):
+        updated_context = request.data.get("updated_context")
+        pid = request.data.get("pid")
+        path = request.data.get("file_path")
+        save_forecast_data(pid, updated_context)
+        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid)
+        result = get_planned_data(pid,2025)
+        planned_shp = result["PlannedShipment"]
+        planned_fc = result["PlannedForecast"]
+        get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
 
-
+        print("Data saved to DB Successfully")
+        return Response({"pid": pid, "updated_context": updated_context})
 
 
 # class ForecastViewSet(ViewSet):
@@ -405,6 +456,7 @@ class DownloadForecastSummaryExcel(APIView):
             return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
         return Response({"detail": "File not found."}, status=404)
 
+
 class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')
     serializer_class = ForecastNoteSerializer
@@ -425,6 +477,7 @@ class StoreForecastViewSet(viewsets.ReadOnlyModelViewSet):
 class ComForecastViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ComForecast.objects.all()
     serializer_class = ComForecastSerializer
+
 
 class OmniForecastViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = OmniForecast.objects.all()

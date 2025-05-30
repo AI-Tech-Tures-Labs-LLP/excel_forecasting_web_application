@@ -329,3 +329,4 @@ month_col_map = {
     'JUL': 'N', 'AUG': 'O', 'SEP': 'P', 'OCT': 'Q', 'NOV': 'R',
     'DEC': 'S', 'JAN': 'T'
 }
+OUTPUT_FILE_PATH = None
