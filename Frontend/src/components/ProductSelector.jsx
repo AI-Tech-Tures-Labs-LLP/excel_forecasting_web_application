@@ -1053,7 +1053,7 @@ function ProductSelector() {
       const processedCategories = categoryDownloadModal.selectedCategories.map(
         (category) => {
           // Remove brackets and extra spaces to match file names
-          return category.replace(/\s*\([^)]*\)/, "").replace(/\s+/g, "");
+          return category.replace(/\s*\([^)]*\)/, "");
         }
       );
 

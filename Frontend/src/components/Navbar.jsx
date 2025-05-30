@@ -77,11 +77,11 @@ function Navbar() {
                 <span className="text-indigo-600">
                   <HomeIcon size={24} />
                 </span>
-                Dashboard
+                Home
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
+              {/* <Link
                 to="/pricing"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isActive(
                   "/pricing"
@@ -89,8 +89,8 @@ function Navbar() {
               >
                 <FileSpreadsheet className="mr-2" size={18} />
                 Pricing Tool
-              </Link>
-              <Link
+              </Link> */}
+              {/* <Link
                 to="/forecast"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isActive(
                   "/forecast"
@@ -98,8 +98,8 @@ function Navbar() {
               >
                 <TrendingUp className="mr-2" size={18} />
                 Forecast
-              </Link>
-              <Link
+              </Link> */}
+              {/* <Link
                 to="/products"
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isActive(
                   "/products"
@@ -107,7 +107,7 @@ function Navbar() {
               >
                 <List className="mr-2" size={18} />
                 Product Selector
-              </Link>
+              </Link> */}
             </div>
           </div>
 
