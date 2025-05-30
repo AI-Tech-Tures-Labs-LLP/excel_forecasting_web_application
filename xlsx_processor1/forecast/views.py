@@ -396,25 +396,25 @@ class ForecastViewSet(ViewSet):
         return Response(response)
 
 
-    class DownloadForecastSummaryExcel(APIView):
-        permission_classes = [AllowAny]  # Adjust if needed
+class DownloadForecastSummaryExcel(APIView):
+    permission_classes = [AllowAny]  # Adjust if needed
 
-        def get(self, request):
-            file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
-            if os.path.exists(file_path):
-                return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
-            return Response({"detail": "File not found."}, status=404)
+    def get(self, request):
+        file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+        if os.path.exists(file_path):
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
+        return Response({"detail": "File not found."}, status=404)
 
-    class ForecastNoteViewSet(viewsets.ModelViewSet):
-        queryset = ForecastNote.objects.all().order_by('-updated_at')
-        serializer_class = ForecastNoteSerializer
+class ForecastNoteViewSet(viewsets.ModelViewSet):
+    queryset = ForecastNote.objects.all().order_by('-updated_at')
+    serializer_class = ForecastNoteSerializer
 
-        def get_queryset(self):
-            queryset = super().get_queryset()
-            pid = self.request.query_params.get('pid')
-            if pid:
-                queryset = queryset.filter(pid=pid)
-            return queryset
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        pid = self.request.query_params.get('pid')
+        if pid:
+            queryset = queryset.filter(pid=pid)
+        return queryset
 
 
 class StoreForecastViewSet(viewsets.ReadOnlyModelViewSet):
