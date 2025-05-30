@@ -3715,7 +3715,7 @@ function ProductSelector() {
                             : "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                          {product.product_details?.user_added_quantity ?? "-"}
+                          {product.user_added_quantity ?? "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button

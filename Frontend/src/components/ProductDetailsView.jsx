@@ -55,7 +55,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [expandedSections, setExpandedSections] = useState({
     monthlyForecast: true,
   });
-
   // CRITICAL INPUT FIELDS STATE
   const [userAddedQuantity, setUserAddedQuantity] = useState("");
   const [externalFactorPercentage, setExternalFactorPercentage] = useState("");
@@ -212,6 +211,31 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       setEditableData(initialEditableData);
     }
   }, [rollingForecastData]);
+
+  const getData = async () => {
+    try {
+      const res = await axios.get(
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/api/product/${productId}/`
+      );
+      const rolling = res.product_details.rolling_method;
+      const trend = res.product_details.std_trend;
+      const editablemonths = res.product_details.month_12_fc_index;
+      // const selectedIndex = res.product_details.
+      const forecasting = res.product_details.forecasting_method;
+      setRollingMethod(rolling);
+      setEditableTrend(trend);
+      setEditable12MonthFC(editablemonths);
+      setForecastingMethod(forecasting);
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, []);
 
   //   if (
   //     editableTrend &&
