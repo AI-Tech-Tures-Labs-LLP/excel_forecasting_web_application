@@ -444,6 +444,17 @@ class ForecastViewSet(ViewSet):
             for item in response.get(group, []):
                 item["forecast_notes"] = notes_map.get(item["pid"], [])
 
+        # Fetch total_added_qty for all pids
+        product_qty_map = {
+            pd.product_id: pd.user_added_quantity
+            for pd in ProductDetail.objects.filter(product_id__in=all_pids)
+        }
+
+        # Inject total_added_qty into each product
+        for group in ["store_products", "com_products", "omni_products"]:
+            for item in response.get(group, []):
+                item["user_added_quantity"] = product_qty_map.get(item["pid"], None)
+                
         return Response(response)
 
 

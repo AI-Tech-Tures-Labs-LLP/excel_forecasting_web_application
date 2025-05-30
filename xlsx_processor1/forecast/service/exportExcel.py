@@ -201,201 +201,184 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     print()
     # Create dictionaries for each record
     store_instances = [
-        {
-            # Define identifying fields (must match unique_together)
-            'category': row['category'],
-            'pid': row['pid'],
-            'forecast_month': row['forecast_month'],
-            
-            # All other fields
-            'lead_time': int(row['lead time']),
-            'leadtime_holiday_adjustment': row['leadtime holiday adjustment'] == 'TRUE',
-            'month_12_fc_index': row['month_12_fc_index'],
-            'loss': row['loss'],
-            'month_12_fc_index_loss': row['month_12_fc_index_(loss)'],
-            'selected_months': parse_selected_months(row['selected_months']),
-            'trend': row['trend'],
-            'inventory_maintained': row['Inventory maintained'] == 'TRUE',
-            'trend_index_difference': row['trend index difference'],
-            'red_box_item': row['red_box item'] == 'TRUE',
-            'forecasting_method': row['forecasting_method'],
-            'door_count': row['Door Count'],
-            'average_com_oh': row['average com_oh'],
-            'fldc': row['FLDC'],
-            'birthstone': row['birthstone'],
-            'birthstone_month': row['birthstone_month'],
-            'considered_birthstone_required_quantity': row['considered birthstone'] == 'TRUE',
-            'forecast_month_required_quantity': row['forecast_month_required_quantity'],
-            'forecast_month_planned_oh': row['forecast_month_planned_oh_before_adding_qty'],
-            'next_forecast_month': row['Next_forecast_month'],
-            'next_forecast_month_required_quantity': row['Next_forecast_month_required_quantity'],
-            'next_forecast_month_planned_oh': row['Next_forecast_month_planned_oh_before_adding_qty'],
-            'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
-            'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
-            'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
-            'total_added_qty': row['Total added qty'],
-            'vendor': row.get('vendor', ''),  # New field
-            'Valentine_day': row.get('Valentine_day', 'FALSE') == 'TRUE',  # New field
-            'Mothers_day': row.get('Mothers_day', 'FALSE') == 'TRUE',  # New field
-            'Fathers_day': row.get('Fathers_day', 'FALSE') == 'TRUE',  # New field
-            'Mens_day': row.get('Mens_day', 'FALSE') == 'TRUE',  # New field
-            'Womens_day': row.get('Womens_day', 'FALSE') == 'TRUE',  # New field
-            'Min_order': float(row.get('Min_order', 0)),  # New field
-            'Macys_SOQ': float(row.get('Macys_SOQ', 0)),  # New field
-            'Qty_given_to_macys': float(row.get('Qty_given_to_macys', 0)),  # New field
-            'Added_qty_using_macys_SOQ': row.get('Added qty using macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Below_min_order': row.get('Below_min_order', 'FALSE') == 'TRUE',  # New field
-            'Over_macys_SOQ': row.get('Over_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Added_only_to_balance_macys_SOQ': row.get('Added_only_to_balance_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE',  # New field
-            'qty_added_to_maintain_OH_forecast_month' : row['Qty_added_to_maintain_OH_forecast_month'],
-            'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
-            'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
-            'average_store_sale_thru' : row['average_store_sale_thru'],
-            'macy_SOQ_percentage' : row['Macy_SOQ_percentage'],
-            'STD_index_value_original': row['STD_index_value_original'],
-            'month_12_fc_index_original': row['month_12_fc_index_original'],
-            'std_trend_original': row['std_trend_original']
-        }
-        for _, row in df_store.iterrows()
-    ]
-
+    {
+        'category': row['category'],
+        'pid': row['pid'],
+        'forecast_month': row['forecast_month'],
+        'lead_time': int(row['lead time']),
+        'leadtime_holiday_adjustment': bool(row.get('leadtime holiday adjustment', False)),
+        'month_12_fc_index': row['month_12_fc_index'],
+        'loss': row['loss'],
+        'month_12_fc_index_loss': row['month_12_fc_index_(loss)'],
+        'selected_months': parse_selected_months(row['selected_months']),
+        'trend': row['trend'],
+        'inventory_maintained': bool(row.get('Inventory maintained', False)),
+        'trend_index_difference': row['trend index difference'],
+        'red_box_item': bool(row.get('red_box item', False)),
+        'forecasting_method': row['forecasting_method'],
+        'door_count': row['Door Count'],
+        'average_com_oh': row['average com_oh'],
+        'fldc': row['FLDC'],
+        'birthstone': row['birthstone'],
+        'birthstone_month': row['birthstone_month'],
+        'considered_birthstone_required_quantity': bool(row.get('considered birthstone', False)),
+        'forecast_month_required_quantity': row['forecast_month_required_quantity'],
+        'forecast_month_planned_oh': row['forecast_month_planned_oh_before_adding_qty'],
+        'next_forecast_month': row['Next_forecast_month'],
+        'next_forecast_month_required_quantity': row['Next_forecast_month_required_quantity'],
+        'next_forecast_month_planned_oh': row['Next_forecast_month_planned_oh_before_adding_qty'],
+        'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
+        'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
+        'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
+        'total_added_qty': row['Total added qty'],
+        'vendor': row.get('vendor', ''),
+        'Valentine_day': bool(row.get('Valentine_day', False)),
+        'Mothers_day': bool(row.get('Mothers_day', False)),
+        'Fathers_day': bool(row.get('Fathers_day', False)),
+        'Mens_day': bool(row.get('Mens_day', False)),
+        'Womens_day': bool(row.get('Womens_day', False)),
+        'Min_order': float(row.get('Min_order', 0)),
+        'Macys_SOQ': float(row.get('Macys_SOQ', 0)),
+        'Qty_given_to_macys': float(row.get('Qty_given_to_macys', 0)),
+        'Added_qty_using_macys_SOQ': bool(row.get('Added qty using macys_SOQ', False)),
+        'Below_min_order': bool(row.get('Below_min_order', False)),
+        'Over_macys_SOQ': bool(row.get('Over_macys_SOQ', False)),
+        'Added_only_to_balance_macys_SOQ': bool(row.get('Added_only_to_balance_macys_SOQ', False)),
+        'Need_to_review_first': bool(row.get('Need_to_review_first', False)),
+        'qty_added_to_maintain_OH_forecast_month': row['Qty_added_to_maintain_OH_forecast_month'],
+        'qty_added_to_maintain_OH_next_forecast_month': row['Qty_added_to_maintain_OH_next_forecast_month'],
+        'qty_added_to_balance_SOQ_forecast_month': row['Qty_added_to_balance_SOQ_forecast_month'],
+        'average_store_sale_thru': row['average_store_sale_thru'],
+        'macy_SOQ_percentage': row['Macy_SOQ_percentage'],
+        'STD_index_value_original': row['STD_index_value_original'],
+        'month_12_fc_index_original': row['month_12_fc_index_original'],
+        'std_trend_original': row['std_trend_original']
+    }
+    for _, row in df_store.iterrows()
+]
     # Similarly for ComForecast
     com_instances = [
-        {
-            # Define identifying fields
-            'category': row['category'],
-            'pid': row['pid'],
-            'forecast_month': row['forecast_month'],
-            
-            # All other fields
-            'lead_time': int(row['lead time']),
-            'leadtime_holiday_adjustment': row['leadtime holiday adjustment'] == 'TRUE',
-            'selected_months': parse_selected_months(row['selected_months']),
-            'com_month_12_fc_index': row['com_month_12_fc_index'],
-            'com_trend': row['com trend'],
-            'trend': row['trend'],
-            'inventory_maintained': row['Inventory maintained'] == 'TRUE',
-            'trend_index_difference': row['trend index difference'],
-            'red_box_item': row['red_box item'] == 'TRUE',
-            'forecasting_method': row['forecasting_method'],
-            'minimum_required_oh_for_com': row['minimum required oh for com'],
-            'fldc': row['FLDC'],
-            'forecast_month_required_quantity': row['forecast_month_required_quantity'],
-            'forecast_month_planned_oh': row['forecast_month_planned_oh_before_adding_qty'],
-            'next_forecast_month': row['Next_forecast_month'],
-            'next_forecast_month_required_quantity': row['Next_forecast_month_required_quantity'],
-            'next_forecast_month_planned_oh': row['Next_forecast_month_planned_oh_before_adding_qty'],
-            'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
-            'vdf_status': row['VDF_status'] == 'TRUE',
-            'vdf_added_qty': row['VDF_added_qty'],
-            'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
-            'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
-            'total_added_qty': row['Total added qty'],
-            'vendor': row.get('vendor', ''),  # New field
-            'Valentine_day': row.get('Valentine_day', 'FALSE') == 'TRUE',  # New field
-            'Mothers_day': row.get('Mothers_day', 'FALSE') == 'TRUE',  # New field
-            'Fathers_day': row.get('Fathers_day', 'FALSE') == 'TRUE',  # New field
-            'Mens_day': row.get('Mens_day', 'FALSE') == 'TRUE',  # New field
-            'Womens_day': row.get('Womens_day', 'FALSE') == 'TRUE',  # New field
-            'Min_order': float(row.get('Min_order', 0)),  # New field
-            'Macys_SOQ': float(row.get('Macys_SOQ', 0)),  # New field
-            'Qty_given_to_macys': float(row.get('Qty_given_to_macys', 0)),  # New field
-            'Added_qty_using_macys_SOQ': row.get('Added_qty_using_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Below_min_order': row.get('Below_min_order', 'FALSE') == 'TRUE',  # New field
-            'Over_macys_SOQ': row.get('Over_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Added_only_to_balance_macys_SOQ': row.get('Added_only_to_balance_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE',# New field
-            'qty_added_to_maintain_OH_forecast_month' : row['Qty_added_to_maintain_OH_forecast_month'],
-            'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
-            'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
-            'average_store_sale_thru' : row['average_store_sale_thru'],
-            'macy_SOQ_percentage' : row['Macy_SOQ_percentage'],
-            'STD_index_value_original': row['STD_index_value_original'],
-            'month_12_fc_index_original': row['month_12_fc_index_original'],
-            'std_trend_original': row['std_trend_original']
-
-        }
-        for _, row in df_coms.iterrows()
-    ]
+    {
+        'category': row['category'],
+        'pid': row['pid'],
+        'forecast_month': row['forecast_month'],
+        'lead_time': int(row['lead time']),
+        'leadtime_holiday_adjustment': bool(row.get('leadtime holiday adjustment', False)),
+        'selected_months': parse_selected_months(row['selected_months']),
+        'com_month_12_fc_index': row['com_month_12_fc_index'],
+        'com_trend': row['com trend'],
+        'trend': row['trend'],
+        'inventory_maintained': bool(row.get('Inventory maintained', False)),
+        'trend_index_difference': row['trend index difference'],
+        'red_box_item': bool(row.get('red_box item', False)),
+        'forecasting_method': row['forecasting_method'],
+        'minimum_required_oh_for_com': row['minimum required oh for com'],
+        'fldc': row['FLDC'],
+        'forecast_month_required_quantity': row['forecast_month_required_quantity'],
+        'forecast_month_planned_oh': row['forecast_month_planned_oh_before_adding_qty'],
+        'next_forecast_month': row['Next_forecast_month'],
+        'next_forecast_month_required_quantity': row['Next_forecast_month_required_quantity'],
+        'next_forecast_month_planned_oh': row['Next_forecast_month_planned_oh_before_adding_qty'],
+        'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
+        'vdf_status': bool(row.get('VDF_status', False)),
+        'vdf_added_qty': row['VDF_added_qty'],
+        'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
+        'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
+        'total_added_qty': row['Total added qty'],
+        'vendor': row.get('vendor', ''),
+        'Valentine_day': bool(row.get('Valentine_day', False)),
+        'Mothers_day': bool(row.get('Mothers_day', False)),
+        'Fathers_day': bool(row.get('Fathers_day', False)),
+        'Mens_day': bool(row.get('Mens_day', False)),
+        'Womens_day': bool(row.get('Womens_day', False)),
+        'Min_order': float(row.get('Min_order', 0)),
+        'Macys_SOQ': float(row.get('Macys_SOQ', 0)),
+        'Qty_given_to_macys': float(row.get('Qty_given_to_macys', 0)),
+        'Added_qty_using_macys_SOQ': bool(row.get('Added_qty_using_macys_SOQ', False)),
+        'Below_min_order': bool(row.get('Below_min_order', False)),
+        'Over_macys_SOQ': bool(row.get('Over_macys_SOQ', False)),
+        'Added_only_to_balance_macys_SOQ': bool(row.get('Added_only_to_balance_macys_SOQ', False)),
+        'Need_to_review_first': bool(row.get('Need_to_review_first', False)),
+        'qty_added_to_maintain_OH_forecast_month': row['Qty_added_to_maintain_OH_forecast_month'],
+        'qty_added_to_maintain_OH_next_forecast_month': row['Qty_added_to_maintain_OH_next_forecast_month'],
+        'qty_added_to_balance_SOQ_forecast_month': row['Qty_added_to_balance_SOQ_forecast_month'],
+        'average_store_sale_thru': row['average_store_sale_thru'],
+        'macy_SOQ_percentage': row['Macy_SOQ_percentage'],
+        'STD_index_value_original': row['STD_index_value_original'],
+        'month_12_fc_index_original': row['month_12_fc_index_original'],
+        'std_trend_original': row['std_trend_original']
+    }
+    for _, row in df_coms.iterrows()
+]
 
     # And for OmniForecast
     omni_instances = [
-        {
-            # Define identifying fields
-            'category': row['category'],
-            'pid': row['pid'],
-            'forecast_month': row['forecast_month'],
-            
-            # All other fields
-            'lead_time': int(row['lead time']),
-            'leadtime_holiday_adjustment': row['leadtime holiday adjustment'] == 'TRUE',
-            'selected_months': parse_selected_months(row['selected_months']),
-            'com_month_12_fc_index': row['Com month_12_fc_index'],
-            'com_trend': row['com trend'],
-            'com_inventory_maintained': row['Com Inventory maintained'] == 'TRUE',
-            'trend_index_difference_com': row['trend index difference(com)'],
-            'red_box_item': row['red_box item'] == 'TRUE',
-            'forecasting_method_com': row['forecasting_method(com)'],
-            'minimum_required_oh_for_com': row['minimum required oh for com'],
-            'com_fldc': row['Com FLDC'],
-            'forecast_month_required_quantity_com': row['forecast_month_required_quantity_com'],
+    {
+        'category': row['category'],
+        'pid': row['pid'],
+        'forecast_month': row['forecast_month'],
+        'lead_time': int(row['lead time']),
+        'leadtime_holiday_adjustment': bool(row.get('leadtime holiday adjustment', False)),
+        'selected_months': parse_selected_months(row['selected_months']),
+        'com_month_12_fc_index': row['Com month_12_fc_index'],
+        'com_trend': row['com trend'],
+        'com_inventory_maintained': bool(row.get('Com Inventory maintained', False)),
+        'trend_index_difference_com': row['trend index difference(com)'],
+        'red_box_item': bool(row.get('red_box item', False)),
+        'forecasting_method_com': row['forecasting_method(com)'],
+        'minimum_required_oh_for_com': row['minimum required oh for com'],
+        'com_fldc': row['Com FLDC'],
+        'forecast_month_required_quantity_com': row['forecast_month_required_quantity_com'],
+        'next_forecast_month': row['Next_forecast_month'],
+        'next_forecast_month_required_quantity_com': row['Next_forecast_month_required_quantity_com'],
+        'store_month_12_fc_index': row['store_month_12_fc_index'],
+        'loss': row['loss'],
+        'store_month_12_fc_index_loss': row['store_month_12_fc_index_(loss)'],
+        'store_trend': row['store_trend'],
+        'store_trend_index_difference': row['trend index difference(store)'],
+        'store_inventory_maintained': bool(row.get('store Inventory maintained', False)),
+        'forecasting_method_store': row['forecasting_method(store)'],
+        'door_count': row['Door Count'],
+        'store_fldc': row['store FLDC'],
+        'birthstone': row['birthstone'],
+        'birthstone_month': row['birthstone_month'],
+        'considered_birthstone_required_quantity': bool(row.get('considered birthstone for requried quantity', False)),
+        'forecast_month_required_quantity_store': row['forecast_month_required_quantity_store'],
+        'next_forecast_month_required_quantity_store': row['Next_forecast_month_required_quantity_store'],
+        'forecast_month_required_quantity_total': row['forecast_month_required_quantity_combined'],
+        'forecast_month_planned_oh': row['forecast_month_planned_oh_before_adding_qty'],
+        'next_forecast_month_required_quantity_total': row['Next_forecast_month_required_quantity_combined'],
+        'next_forecast_month_planned_oh': row['Next_forecast_month_planned_oh_before_adding_qty'],
+        'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
+        'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
+        'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
+        'total_added_qty': row['Total added qty'],
+        'vendor': row.get('vendor', ''),
+        'Valentine_day': bool(row.get('Valentine_day', False)),
+        'Mothers_day': bool(row.get('Mothers_day', False)),
+        'Fathers_day': bool(row.get('Fathers_day', False)),
+        'Mens_day': bool(row.get('Mens_day', False)),
+        'Womens_day': bool(row.get('Womens_day', False)),
+        'Min_order': float(row.get('Min_order', 0)),
+        'Macys_SOQ': float(row.get('Macys_SOQ', 0)),
+        'Qty_given_to_macys': float(row.get('Qty_given_to_macys', 0)),
+        'Added_qty_using_macys_SOQ': bool(row.get('Added_qty_using_macys_SOQ', False)),
+        'Below_min_order': bool(row.get('Below_min_order', False)),
+        'Over_macys_SOQ': bool(row.get('Over_macys_SOQ', False)),
+        'Added_only_to_balance_macys_SOQ': bool(row.get('Added_only_to_balance_macys_SOQ', False)),
+        'Need_to_review_first': bool(row.get('Need_to_review_first', False)),
+        'qty_added_to_maintain_OH_forecast_month': row['Qty_added_to_maintain_OH_forecast_month'],
+        'qty_added_to_maintain_OH_next_forecast_month': row['Qty_added_to_maintain_OH_next_forecast_month'],
+        'qty_added_to_balance_SOQ_forecast_month': row['Qty_added_to_balance_SOQ_forecast_month'],
+        'average_store_sale_thru': row['average_store_sale_thru'],
+        'macy_SOQ_percentage': row['Macy_SOQ_percentage'],
+        'STD_index_value_original': row['STD_index_value_original'],
+        'month_12_fc_index_original': row['month_12_fc_index_original'],
+        'std_trend_original': row['std_trend_original']
+    }
+    for _, row in df_omni.iterrows()
+]
 
-            'next_forecast_month': row['Next_forecast_month'],
-            'next_forecast_month_required_quantity_com': row['Next_forecast_month_required_quantity_com'],
-            'store_month_12_fc_index': row['store_month_12_fc_index'],
-            'loss': row['loss'],
-            'store_month_12_fc_index_loss': row['store_month_12_fc_index_(loss)'],
-            'store_trend': row['store_trend'],
-            'store_trend_index_difference': row['trend index difference(store)'],
-            'store_inventory_maintained': row['store Inventory maintained'] == 'TRUE',
-            'forecasting_method_store': row['forecasting_method(store)'],
-            'door_count': row['Door Count'],
-            'store_fldc': row['store FLDC'],
-            'birthstone': row['birthstone'],
-            'birthstone_month': row['birthstone_month'],
-
-            'considered_birthstone_required_quantity': row['considered birthstone for requried quantity'] == 'TRUE',
-            'forecast_month_required_quantity_store': row['forecast_month_required_quantity_store'],
-            'next_forecast_month_required_quantity_store': row['Next_forecast_month_required_quantity_store'],
-
-
-            'forecast_month_required_quantity_total': row['forecast_month_required_quantity_combined'],
-            'forecast_month_planned_oh': row['forecast_month_planned_oh_before_adding_qty'],
-            'next_forecast_month_required_quantity_total': row['Next_forecast_month_required_quantity_combined'],
-            'next_forecast_month_planned_oh': row['Next_forecast_month_planned_oh_before_adding_qty'],
-            
-            'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
-            'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
-            'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
-            'total_added_qty': row['Total added qty'],
-
-
-            'vendor': row.get('vendor', ''),  # New field
-            'Valentine_day': row.get('Valentine_day', 'FALSE') == 'TRUE',  # New field
-            'Mothers_day': row.get('Mothers_day', 'FALSE') == 'TRUE',  # New field
-            'Fathers_day': row.get('Fathers_day', 'FALSE') == 'TRUE',  # New field
-            'Mens_day': row.get('Mens_day', 'FALSE') == 'TRUE',  # New field
-            'Womens_day': row.get('Womens_day', 'FALSE') == 'TRUE',  # New field
-            'Min_order': float(row.get('Min_order', 0)),  # New field
-            'Macys_SOQ': float(row.get('Macys_SOQ', 0)),  # New field
-            'Qty_given_to_macys': float(row.get('Qty_given_to_macys', 0)),  # New field
-            'Added_qty_using_macys_SOQ': row.get('Added_qty_using_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Below_min_order': row.get('Below_min_order', 'FALSE') == 'TRUE',  # New field
-            'Over_macys_SOQ': row.get('Over_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Added_only_to_balance_macys_SOQ': row.get('Added_only_to_balance_macys_SOQ', 'FALSE') == 'TRUE',  # New field
-            'Need_to_review_first': row.get('Need_to_review_first', 'FALSE') == 'TRUE',  # New field
-            'qty_added_to_maintain_OH_forecast_month' : row['Qty_added_to_maintain_OH_forecast_month'],
-            'qty_added_to_maintain_OH_next_forecast_month' : row['Qty_added_to_maintain_OH_next_forecast_month'],
-            'qty_added_to_balance_SOQ_forecast_month' : row['Qty_added_to_balance_SOQ_forecast_month'],
-            'average_store_sale_thru' : row['average_store_sale_thru'],
-            'macy_SOQ_percentage' : row['Macy_SOQ_percentage'],
-            'STD_index_value_original': row['STD_index_value_original'],
-            'month_12_fc_index_original': row['month_12_fc_index_original'],
-            'std_trend_original': row['std_trend_original']
-        }
-        for _, row in df_omni.iterrows()
-    ]
 
     # For StoreForecast
 
