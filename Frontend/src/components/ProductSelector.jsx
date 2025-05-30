@@ -1566,17 +1566,17 @@ function ProductSelector() {
   }, [dispatch, selectedProductType, selectedFilters, filtersLoading]);
 
   // Load forecast data from session
-  useEffect(() => {
-    if (forecastSession?.selectedCategories) {
-      const selectedCategoryNames = forecastSession.selectedCategories.map(
-        (cat) => cat.name
-      );
-      setSelectedFilters((prev) => ({
-        ...prev,
-        category: selectedCategoryNames,
-      }));
-    }
-  }, [forecastSession]);
+  // useEffect(() => {
+  //   if (forecastSession?.selectedCategories) {
+  //     const selectedCategoryNames = forecastSession.selectedCategories.map(
+  //       (cat) => cat.name
+  //     );
+  //     setSelectedFilters((prev) => ({
+  //       ...prev,
+  //       category: selectedCategoryNames,
+  //     }));
+  //   }
+  // }, [forecastSession]);
 
   // Load product notes data when products change
   useEffect(() => {
