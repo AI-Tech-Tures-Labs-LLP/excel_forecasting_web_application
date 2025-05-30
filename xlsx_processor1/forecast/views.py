@@ -358,10 +358,13 @@ class ForecastViewSet(ViewSet):
                     qs = qs.filter(**{field: value.lower() == "true"})
             return qs
 
+        all_pids = set()
 
         if not product_type or product_type == "store":
             store_qs = apply_common_filters(StoreForecast.objects.all(), "store")
-            response["store_products"] = StoreForecastSerializer(store_qs, many=True).data
+            store_data = StoreForecastSerializer(store_qs, many=True).data
+            response["store_products"] = store_data
+            all_pids.update([item["pid"] for item in store_data])
 
         if not product_type or product_type == "com":
             com_qs = ComForecast.objects.all()
@@ -369,43 +372,49 @@ class ForecastViewSet(ViewSet):
                 vdf_flags = [status.lower() == "true" for status in vdf_statuses]
                 com_qs = com_qs.filter(vdf_status__in=vdf_flags)
             com_qs = apply_common_filters(com_qs, "com")
-            response["com_products"] = ComForecastSerializer(com_qs, many=True).data
+            com_data = ComForecastSerializer(com_qs, many=True).data
+            response["com_products"] = com_data
+            all_pids.update([item["pid"] for item in com_data])
 
         if not product_type or product_type == "omni":
             omni_qs = apply_common_filters(OmniForecast.objects.all(), "omni")
-            response["omni_products"] = OmniForecastSerializer(omni_qs, many=True).data
+            omni_data = OmniForecastSerializer(omni_qs, many=True).data
+            response["omni_products"] = omni_data
+            all_pids.update([item["pid"] for item in omni_data])
 
-
-        all_pids = set()
-        for key in ["store_products", "com_products", "omni_products"]:
-            for item in response.get(key, []):
-                all_pids.add(item["pid"])
-
+        # Fetch and group forecast notes by pid
         notes = ForecastNote.objects.filter(pid__in=all_pids)
-        response["forecast_notes"] = ForecastNoteSerializer(notes, many=True).data
+        notes_map = {}
+        for note in ForecastNoteSerializer(notes, many=True).data:
+            notes_map.setdefault(note["pid"], []).append(note)
+
+        # Inject forecast_notes into each product
+        for group in ["store_products", "com_products", "omni_products"]:
+            for item in response.get(group, []):
+                item["forecast_notes"] = notes_map.get(item["pid"], [])
 
         return Response(response)
 
 
-class DownloadForecastSummaryExcel(APIView):
-    permission_classes = [AllowAny]  # Adjust if needed
+    class DownloadForecastSummaryExcel(APIView):
+        permission_classes = [AllowAny]  # Adjust if needed
 
-    def get(self, request):
-        file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
-        if os.path.exists(file_path):
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
-        return Response({"detail": "File not found."}, status=404)
+        def get(self, request):
+            file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+            if os.path.exists(file_path):
+                return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
+            return Response({"detail": "File not found."}, status=404)
 
-class ForecastNoteViewSet(viewsets.ModelViewSet):
-    queryset = ForecastNote.objects.all().order_by('-updated_at')
-    serializer_class = ForecastNoteSerializer
+    class ForecastNoteViewSet(viewsets.ModelViewSet):
+        queryset = ForecastNote.objects.all().order_by('-updated_at')
+        serializer_class = ForecastNoteSerializer
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        pid = self.request.query_params.get('pid')
-        if pid:
-            queryset = queryset.filter(pid=pid)
-        return queryset
+        def get_queryset(self):
+            queryset = super().get_queryset()
+            pid = self.request.query_params.get('pid')
+            if pid:
+                queryset = queryset.filter(pid=pid)
+            return queryset
 
 
 class StoreForecastViewSet(viewsets.ReadOnlyModelViewSet):
