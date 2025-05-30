@@ -87,20 +87,40 @@ const NotesModal = ({ isOpen, onClose, productId, productName = "" }) => {
     }
   };
 
-  const handleToggleReviewed = async (noteId, currentStatus) => {
+  // const handleToggleReviewed = async (noteId, currentStatus) => {
+  //   try {
+  //     const response = await axios.patch(
+  //       `${
+  //         import.meta.env.VITE_API_BASE_URL
+  //       }/forecast/forecast-notes/${noteId}/`,
+  //       { reviewed: !currentStatus }
+  //     );
+
+  //     setNotes(
+  //       notes.map((note) =>
+  //         note.id === noteId
+  //           ? { ...note, reviewed: response.data.reviewed }
+  //           : note
+  //       )
+  //     );
+  //   } catch (error) {
+  //     console.error("Error updating note status:", error);
+  //     alert("Failed to update note status");
+  //   }
+  // };
+
+  const handleToggleStatus = async (noteId, newStatus) => {
     try {
       const response = await axios.patch(
         `${
           import.meta.env.VITE_API_BASE_URL
         }/forecast/forecast-notes/${noteId}/`,
-        { reviewed: !currentStatus }
+        { status: newStatus }
       );
 
-      setNotes(
-        notes.map((note) =>
-          note.id === noteId
-            ? { ...note, reviewed: response.data.reviewed }
-            : note
+      setNotes((prev) =>
+        prev.map((note) =>
+          note.id === noteId ? { ...note, status: response.data.status } : note
         )
       );
     } catch (error) {
@@ -182,19 +202,22 @@ const NotesModal = ({ isOpen, onClose, productId, productName = "" }) => {
                   />
                 </div>
 
-                <div className="flex items-center">
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={newNote.reviewed}
-                      onChange={(e) =>
-                        setNewNote({ ...newNote, reviewed: e.target.checked })
-                      }
-                      className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                    />
-                    Mark as Reviewed
+                {/* <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Status
                   </label>
-                </div>
+                  <select
+                    value={newNote.status}
+                    onChange={(e) =>
+                      setNewNote({ ...newNote, status: e.target.value })
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="not_reviewed">Not Reviewed</option>
+                    <option value="pending">Pending</option>
+                    <option value="reviewed">Reviewed</option>
+                  </select>
+                </div> */}
               </div>
 
               <button
@@ -264,9 +287,10 @@ const NotesModal = ({ isOpen, onClose, productId, productName = "" }) => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            handleToggleReviewed(note.id, note.reviewed)
+                        <select
+                          value={note.status}
+                          onChange={(e) =>
+                            handleToggleStatus(note.id, e.target.value)
                           }
                           className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
                             note.reviewed
@@ -274,8 +298,11 @@ const NotesModal = ({ isOpen, onClose, productId, productName = "" }) => {
                               : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                         >
-                          {note.reviewed ? "Mark Unreviewed" : "Mark Reviewed"}
-                        </button>
+                          <option value="not_reviewed">Not Reviewed</option>
+                          <option value="pending">Pending</option>
+                          <option value="reviewed">Reviewed</option>
+                        </select>
+
                         <button
                           onClick={() => handleDeleteNote(note.id)}
                           className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"

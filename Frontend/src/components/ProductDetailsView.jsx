@@ -2231,7 +2231,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [selectedIndex, setSelectedIndex] = useState("Grand Total");
   const [forecastingMethod, setForecastingMethod] = useState("FC by Index");
   const [hasControlChanges, setHasControlChanges] = useState(false);
-
+  const [pendingChangeField, setPendingChangeField] = useState(null);
   //tab navigation
 
   const [activeTab, setActiveTab] = useState("forecast-variables");
@@ -2385,6 +2385,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         setEditableTrend(value);
         if (value !== originalValuesRef.current.Trend) {
           setLastChangedField("Trend");
+          setPendingChangeField("Trend");
         } else if (lastChangedField === "Trend") {
           setLastChangedField(null);
         }
@@ -2394,6 +2395,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         setForecastingMethod(value);
         if (value !== originalValuesRef.current.Forecasting_Method) {
           setLastChangedField("Forecasting_Method");
+          setPendingChangeField("Forecasting_Method");
         } else if (lastChangedField === "Forecasting_Method") {
           setLastChangedField(null);
         }
@@ -2403,6 +2405,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         setRollingMethod(value);
         if (value !== originalValuesRef.current.Rolling_method) {
           setLastChangedField("Rolling_method");
+          setPendingChangeField("Rolling_method");
         } else if (lastChangedField === "Rolling_method") {
           setLastChangedField(null);
         }
@@ -2412,6 +2415,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         setEditable12MonthFC(value);
         if (value !== originalValuesRef.current.month_12_fc_index) {
           setLastChangedField("month_12_fc_index");
+          setPendingChangeField("month_12_fc_index");
         } else if (lastChangedField === "month_12_fc_index") {
           setLastChangedField(null);
         }
@@ -2421,6 +2425,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         setSelectedIndex(value);
         if (value !== originalValuesRef.current.Current_FC_Index) {
           setLastChangedField("Current_FC_Index");
+          setPendingChangeField("Current_FC_Index");
         } else if (lastChangedField === "Current_FC_Index") {
           setLastChangedField(null);
         }
@@ -2430,6 +2435,26 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         break;
     }
   };
+
+  useEffect(() => {
+    if (!pendingChangeField || !rollingForecastData) return;
+
+    const timer = setTimeout(() => {
+      setLastChangedField(pendingChangeField);
+      handleApplyChanges();
+      setPendingChangeField(null); // reset
+    }, 500); // wait for state to settle
+
+    return () => clearTimeout(timer); // cleanup
+  }, [
+    pendingChangeField,
+    editableTrend,
+    editable12MonthFC,
+    forecastingMethod,
+    rollingMethod,
+    selectedIndex,
+    rollingForecastData,
+  ]);
 
   const handleCellChange = (rowType, month, value) => {
     setEditableData((prev) => ({
@@ -2605,7 +2630,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           month_12_fc_index: editable12MonthFC,
           Current_FC_Index: selectedIndex,
         };
-        alert("Forecast controls applied successfully!");
+        // alert("Forecast controls applied successfully!");
       }
     } catch (error) {
       console.error("Error applying control changes:", error);
