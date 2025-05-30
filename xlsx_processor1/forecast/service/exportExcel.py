@@ -919,7 +919,7 @@ def process_category(args):
 
         # Find the matching rows
         loader = VariableLoader(cross_ref)
-        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_eoh, planned_sell_thru= algorithm(loader,category,store,coms,omni,code)
+        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_eoh, planned_sell_thru,total_added_quantity= algorithm(loader,category,store,coms,omni,code)
         print("################################################################3")
 
         def safe_int(value):
@@ -1102,7 +1102,10 @@ def process_category(args):
                 "std_trend" : std_trend,
                 "STD_index_value" : STD_index_value,
                 "month_12_fc_index" : month_12_fc_index,
-                "forecasting_method" : forecasting_method
+                "forecasting_method" : forecasting_method,
+
+                "total_added_qty" : total_added_quantity,
+                
             }
         )
 

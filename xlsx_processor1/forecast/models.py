@@ -110,9 +110,11 @@ class ProductDetail(models.Model):
     STD_index_value = models.JSONField(null=True, blank=True, verbose_name="STD Index Value")  # Assuming dict-like data
     month_12_fc_index = models.FloatField(null=True, blank=True, verbose_name="12 Month FC Index")
     forecasting_method = models.CharField(max_length=100, null=True, blank=True, verbose_name="Forecasting Method")
-
-    def __str__(self):
-        return f"{self.product_id} - {self.product_description}"
+    total_added_qty = models.FloatField(null=True, blank=True)
+    external_factor = models.CharField(max_length=300,null=True, blank=True)
+    external_factor_percentage = models.FloatField(null=True,blank=True)
+    user_added_quantity = models.FloatField(null=True, blank=True)
+    
     def __str__(self):
         return f"{self.product_id} - {self.product_description}"
 
@@ -395,23 +397,23 @@ class OmniForecast(models.Model):
     class Meta:
         unique_together = ('category', 'pid', 'forecast_month')
 
-
 class ForecastNote(models.Model):
-    pid = models.CharField(max_length=100, verbose_name="Product ID")
-    note = models.TextField(null=True, blank=True, verbose_name="Note Description")
-    assigned_to = models.CharField(max_length=100, null=True, blank=True, verbose_name="Assigned To")
-    reviewed = models.BooleanField(default=False, verbose_name="Reviewed")  # New field
+    STATUS_CHOICES = [
+        ("not_reviewed", "Not reviewed"),
+        ("pending",      "Pending"),
+        ("reviewed",     "Reviewed"),
+    ]
 
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=['pid']),
-        ]
+    pid         = models.CharField(max_length=100, db_index=True, verbose_name="Product ID")
+    note        = models.TextField(blank=True,null=True, verbose_name="Note Description")
+    assigned_to = models.CharField(max_length=100,null=True, blank=True, verbose_name="Assigned To")
+    status      = models.CharField(max_length=13, choices=STATUS_CHOICES, default="pending", verbose_name="Status", null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.pid} - {self.assigned_to} - {'Reviewed' if self.reviewed else 'Not Reviewed'}"
+        return f"{self.pid} – {self.assigned_to or 'Unassigned'} – {self.get_status_display()}"
+
 
 class RetailInfo(models.Model):
     year_of_previous_month = models.CharField(max_length=100, null=True, blank=True)

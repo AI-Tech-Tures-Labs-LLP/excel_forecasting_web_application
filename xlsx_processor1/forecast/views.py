@@ -134,16 +134,21 @@ class ProductDetailViewSet(viewsets.ViewSet):
         omni_forecasts = OmniForecast.objects.filter(pid=pk)
         omni_serializer = OmniForecastSerializer(omni_forecasts, many=True)
 
+        notes     = ForecastNote.objects.filter(pid=pk)
+        notes_serializer = ForecastNoteSerializer(notes, many=True)
+
         return Response({
             "product_details": product_serializer.data,
+            "forecast_notes" : notes_serializer.data,
             "monthly_forecast": forecast_serializer.data,
             "store_forecast": store_serializer.data,
             "com_forecast": com_serializer.data,
             "omni_forecast": omni_serializer.data
         })
     
+
     def update(self, request, pk=None):
-        # Fetch product details
+    # 1. Update ProductDetail
         product = get_object_or_404(ProductDetail, product_id=pk)
         product_serializer = ProductDetailSerializer(product, data=request.data.get("product_details", {}), partial=True)
         
@@ -152,10 +157,15 @@ class ProductDetailViewSet(viewsets.ViewSet):
         else:
             return Response(product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-        # Fetch and update forecasts
+        # 2. Update/Create MonthlyForecast
         forecast_data = request.data.get("monthly_forecast", [])
         for forecast in forecast_data:
-            forecast_instance = MonthlyForecast.objects.filter(product=product, variable_name=forecast.get("variable_name"), year=forecast.get("year")).first()
+            forecast_instance = MonthlyForecast.objects.filter(
+                product=product,
+                variable_name=forecast.get("variable_name"),
+                year=forecast.get("year")
+            ).first()
+
             if forecast_instance:
                 forecast_serializer = MonthlyForecastSerializer(forecast_instance, data=forecast, partial=True)
             else:
@@ -167,12 +177,33 @@ class ProductDetailViewSet(viewsets.ViewSet):
             else:
                 return Response(forecast_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
+        # 3. Update/Create ForecastNote
+        note_data = request.data.get("forecast_notes", [])
+        for note in note_data:
+            note_id = note.get("id")
+            if note_id:
+                note_instance = ForecastNote.objects.filter(id=note_id, pid=pk).first()
+                if note_instance:
+                    note_serializer = ForecastNoteSerializer(note_instance, data=note, partial=True)
+                else:
+                    continue  # Skip invalid IDs
+            else:
+                note["pid"] = pk
+                note_serializer = ForecastNoteSerializer(data=note)
+            
+            if note_serializer.is_valid():
+                note_serializer.save()
+            else:
+                return Response(note_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 4. Return updated data
         return Response({
             "product_details": product_serializer.data,
-            "monthly_forecast": MonthlyForecastSerializer(MonthlyForecast.objects.filter(product=product), many=True).data
+            "monthly_forecast": MonthlyForecastSerializer(MonthlyForecast.objects.filter(product=product), many=True).data,
+            "forecast_notes": ForecastNoteSerializer(ForecastNote.objects.filter(pid=pk), many=True).data,
         })
     
-    
+
     @action(detail=False, methods=["post"])
     def recalculate_forecast(self, request):
         """
