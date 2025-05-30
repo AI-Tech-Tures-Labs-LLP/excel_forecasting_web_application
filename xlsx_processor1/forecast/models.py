@@ -407,7 +407,7 @@ class ForecastNote(models.Model):
     pid         = models.CharField(max_length=100, db_index=True, verbose_name="Product ID")
     note        = models.TextField(blank=True,null=True, verbose_name="Note Description")
     assigned_to = models.CharField(max_length=100,null=True, blank=True, verbose_name="Assigned To")
-    status      = models.CharField(max_length=13, choices=STATUS_CHOICES, default="pending", verbose_name="Status", null=True, blank=True)
+    status      = models.CharField(max_length=13, choices=STATUS_CHOICES, default="not_reviewed", verbose_name="Status", null=True, blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 
