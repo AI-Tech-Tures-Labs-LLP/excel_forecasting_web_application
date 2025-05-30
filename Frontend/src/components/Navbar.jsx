@@ -51,8 +51,8 @@ function Navbar() {
     // - Clear localStorage/sessionStorage
     // - Clear auth tokens
     // - Redirect to login page
-    localStorage.clear();
-    sessionStorage.clear();
+    // localStorage.clear();
+    // sessionStorage.clear();
     navigate("/login");
   };
 

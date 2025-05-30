@@ -605,10 +605,30 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                     max_length = max(max_length, len(str(cell.value)))
             ws.column_dimensions[col_letter].width = max_length + 2
         # Save changes
-    with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
-        df_store_filtered.to_excel(writer, sheet_name="store", index=False)
-        df_coms_filtered.to_excel(writer, sheet_name="coms", index=False)
-        df_omni_filtered.to_excel(writer, sheet_name="omni", index=False)
+    with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
+        for sheet_name, df in [
+            ("store", df_store_filtered),
+            ("coms", df_coms_filtered),
+            ("omni", df_omni_filtered)
+        ]:
+            df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
+
+            workbook = writer.book
+            worksheet = writer.sheets[sheet_name]
+
+            # Write header manually
+            for col_num, column_title in enumerate(df.columns):
+                worksheet.write(0, col_num, column_title)
+
+            # Add Excel table
+            worksheet.add_table(
+                0, 0, len(df), len(df.columns) - 1,
+                {
+                    "name": f"{sheet_name}_table",
+                    "columns": [{"header": col} for col in df.columns],
+                    "style": "Table Style Medium 9"
+                }
+            )
  
 
     
