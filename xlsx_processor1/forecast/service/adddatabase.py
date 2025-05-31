@@ -235,6 +235,16 @@ def save_forecast_data(pid, updated_context):
         # Fetch related product
         product = ProductDetail.objects.get(product_id=pid)
         year = datetime.now().year  # You can change this if needed
+        # print("Updated Context",updated_context)
+
+        # Update ProductDetail fields
+        product.rolling_method = updated_context.get("Rolling_method", product.rolling_method)
+        product.std_trend = updated_context.get("Trend", product.std_trend)
+        product.forecasting_method = updated_context.get("Forecasting_Method", product.forecasting_method)
+        product.month_12_fc_index = updated_context.get("month_12_fc_index", product.month_12_fc_index)
+        product.currect_fc_index = updated_context.get("Current_FC_Index", product.currect_fc_index)
+        product.save()
+        print("Product Updated Values Saved Successfully ")
 
         month_keys = {
             "JAN": "jan", "FEB": "feb", "MAR": "mar", "APR": "apr",
@@ -268,3 +278,5 @@ def save_forecast_data(pid, updated_context):
                 year=year,
                 defaults=forecast_data
             )
+
+            
