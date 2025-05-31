@@ -1603,7 +1603,11 @@ function ProductSelector() {
 
               {
                 <>
-                  <a href="http://localhost:8000/forecast/export-summary">
+                  <a
+                    href={`${
+                      import.meta.env.VITE_API_BASE_URL
+                    }/forecast/export-summary`}
+                  >
                     <button
                       className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20"
                       title="Download Category Files"
