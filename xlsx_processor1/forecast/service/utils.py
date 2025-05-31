@@ -1291,8 +1291,7 @@ from openpyxl import load_workbook
 
 def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
     import forecast.service.staticVariable as st
-    base_dir = os.path.join("xlsx_processor1\media\processed_files", path) 
-    print("BASE  DIRRR",base_dir) 
+    base_dir = os.path.join("media\processed_files", path) 
     
     filename = f"{category}.xlsx"
     filepath = os.path.join(base_dir, filename)
