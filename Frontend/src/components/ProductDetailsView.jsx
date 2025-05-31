@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import productImage from "../assets/undefined.png";
 import {
@@ -42,11 +42,13 @@ import {
 
 // Import selectors
 import {
+  fetchProducts,
   selectCurrentProducts,
   selectSelectedProductType,
 } from "../redux/productSlice";
 
 const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
+  const dispatch = useDispatch();
   const [initialControlValues, setInitialControlValues] = useState(null);
   const [hasInitialChanges, setHasInitialChanges] = useState(false);
 
@@ -653,6 +655,42 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }
   };
 
+  const getProducts = async () => {
+    try {
+      dispatch(
+        fetchProducts({
+          productType: selectedProductType,
+          filters: {
+            category: [],
+            birthstone: [],
+            red_box_item: [],
+            vdf_status: [],
+            tagged_to: [],
+            considered_birthstone: null,
+            added_qty_macys_soq: null,
+            below_min_order: null,
+            over_macys_soq: null,
+            added_only_to_balance_soq: null,
+            need_to_review_first: null,
+            // Holiday filters
+            notes_sort: null,
+            forecast_month: [],
+            added_qty_sort: null,
+            valentine_day: null,
+            mothers_day: null,
+            fathers_day: null,
+            mens_day: null,
+            womens_day: null,
+            status: [],
+            last_reviewed_sort: null,
+          },
+        })
+      );
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+    }
+  };
+
   const handleSaveChanges = async () => {
     if (!rollingForecastData || !productId) return;
 
@@ -1012,6 +1050,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
         alert("Critical forecast adjustments saved successfully!");
         await fetchProductDetails();
+        await getProducts();
       }
     } catch (error) {
       console.error("Error saving critical inputs:", error);

@@ -292,8 +292,12 @@ function ProductSelector() {
           );
           const latestNote = sortedNotes[0];
 
-          const hasUnreviewed = productNotes.some((note) => !note.reviewed);
-          const allReviewed = productNotes.every((note) => note.reviewed);
+          const hasUnreviewed = productNotes.some(
+            (note) => note.status === "not_reviewed"
+          );
+          const allReviewed = productNotes.every(
+            (note) => note.status === "reviewed"
+          );
 
           let status = "pending";
           if (allReviewed && productNotes.length > 0) {
@@ -390,9 +394,28 @@ function ProductSelector() {
       selectedFilters.forecast_month &&
       selectedFilters.forecast_month.length > 0
     ) {
-      filteredProducts = filteredProducts.filter((product) => {
-        return selectedFilters.forecast_month.includes(product.forecast_month);
-      });
+      const monthMap = {
+        JANUARY: "JAN",
+        FEBRUARY: "FEB",
+        MARCH: "MAR",
+        APRIL: "APR",
+        MAY: "MAY",
+        JUNE: "JUN",
+        JULY: "JUL",
+        AUGUST: "AUG",
+        SEPTEMBER: "SEP",
+        OCTOBER: "OCT",
+        NOVEMBER: "NOV",
+        DECEMBER: "DEC",
+      };
+
+      const selectedShortMonths = selectedFilters.forecast_month.map(
+        (m) => monthMap[m.toUpperCase()]
+      );
+
+      filteredProducts = filteredProducts.filter((product) =>
+        selectedShortMonths.includes(product.forecast_month)
+      );
     }
 
     // Apply status filter
@@ -1191,6 +1214,24 @@ function ProductSelector() {
   //       );
   //   }
   // };
+  const monthMap = {
+    JANUARY: "JAN",
+    FEBRUARY: "FEB",
+    MARCH: "MAR",
+    APRIL: "APR",
+    MAY: "MAY",
+    JUNE: "JUN",
+    JULY: "JUL",
+    AUGUST: "AUG",
+    SEPTEMBER: "SEP",
+    OCTOBER: "OCT",
+    NOVEMBER: "NOV",
+    DECEMBER: "DEC",
+  };
+
+  const selectedShortMonths = selectedFilters.forecast_month.map(
+    (m) => monthMap[m.toUpperCase()]
+  );
 
   const formatStatusDisplay = (product) => {
     const note = productNotesData[product.pid]?.latestNote;
@@ -1283,7 +1324,6 @@ function ProductSelector() {
         </div>
       );
     }
-
     return (
       <div className="flex items-center gap-2 cursor-pointer hover:text-indigo-600">
         <MessageSquare size={14} className="text-blue-500" />
@@ -1581,7 +1621,7 @@ function ProductSelector() {
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
                 <button
-                  onClick={() => navigate("/forecast")}
+                  onClick={() => navigate("/file-upload")}
                   className="text-white opacity-80 hover:opacity-100 flex items-center gap-2 transition-opacity"
                 >
                   <ArrowLeft size={16} />
@@ -1974,7 +2014,7 @@ function ProductSelector() {
                 {activeTab === "basic" && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {/* Enhanced Categories Filter */}
-                    <div className="space-y-3">
+                    {/* <div className="space-y-3">
                       <div className="flex items-center gap-2">
                         <Package size={16} className="text-indigo-600" />
                         <label className="text-sm font-semibold text-slate-700">
@@ -2036,7 +2076,7 @@ function ProductSelector() {
                           )}
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Enhanced Birthstones Filter */}
                     {(selectedProductType === "store" ||
@@ -2436,7 +2476,7 @@ function ProductSelector() {
                 )}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto min-h-[500px]">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
@@ -3890,10 +3930,21 @@ function ProductSelector() {
 
       {/* Notes Modal for adding/editing notes */}
       <NotesModal
+        selectedProductType={selectedProductType}
         isOpen={notesModal.isOpen}
         onClose={handleCloseNotes}
         productId={notesModal.productId}
         productName={notesModal.productName}
+        loadProductNotesData={loadProductNotesData}
+        onTaggedUserAdded={(newUser) => {
+          // Add new user to available filters if not already present
+          setAvailableFilters((prev) => ({
+            ...prev,
+            tagged_to: prev.tagged_to.includes(newUser)
+              ? prev.tagged_to
+              : [...prev.tagged_to, newUser].sort(),
+          }));
+        }}
       />
       {/* Category Download Modal */}
       {categoryDownloadModal.isOpen && (

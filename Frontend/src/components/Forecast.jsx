@@ -578,7 +578,7 @@
 //   Filter,
 // } from "lucide-react";
 // import { useNavigate } from "react-router-dom";
-// import { v4 as uuidv4 } from 'uuid'; 
+// import { v4 as uuidv4 } from 'uuid';
 
 // function Forecast() {
 //   const navigate = useNavigate();
@@ -1036,6 +1036,7 @@ import {
   TrendingUp,
   ChevronDown,
   Filter,
+  ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -1116,37 +1117,46 @@ function Forecast() {
       size: "Processing...",
       isSpreadsheet: true,
       isGenerated: true,
-      status: 'loading', // Start with loading status
-      forecastData: forecastData
+      status: "loading", // Start with loading status
+      forecastData: forecastData,
     };
 
     // Get existing files from session storage
-    const existingFiles = JSON.parse(sessionStorage.getItem('generatedFiles') || '[]');
-    
+    const existingFiles = JSON.parse(
+      sessionStorage.getItem("generatedFiles") || "[]"
+    );
+
     // Add new file
     const updatedFiles = [...existingFiles, newFile];
-    sessionStorage.setItem('generatedFiles', JSON.stringify(updatedFiles));
+    sessionStorage.setItem("generatedFiles", JSON.stringify(updatedFiles));
 
     return newFile.id;
   };
 
   // Function to update file status in FileUploadStep
-  const updateFileStatus = (fileId, status, downloadUrl = null, size = null) => {
-    const existingFiles = JSON.parse(sessionStorage.getItem('generatedFiles') || '[]');
-    
-    const updatedFiles = existingFiles.map(file => {
+  const updateFileStatus = (
+    fileId,
+    status,
+    downloadUrl = null,
+    size = null
+  ) => {
+    const existingFiles = JSON.parse(
+      sessionStorage.getItem("generatedFiles") || "[]"
+    );
+
+    const updatedFiles = existingFiles.map((file) => {
       if (file.id === fileId) {
         return {
           ...file,
           status: status,
           size: size || file.size,
-          downloadUrl: downloadUrl
+          downloadUrl: downloadUrl,
         };
       }
       return file;
     });
 
-    sessionStorage.setItem('generatedFiles', JSON.stringify(updatedFiles));
+    sessionStorage.setItem("generatedFiles", JSON.stringify(updatedFiles));
   };
 
   const handleSubmit = async (event) => {
@@ -1180,7 +1190,7 @@ function Forecast() {
     formData.append("month_to", monthTo);
     formData.append("percentage", percentage);
     formData.append("categories", JSON.stringify(selectedCategories));
-    
+
     setLoading(true);
 
     // Create forecast data object
@@ -1206,29 +1216,28 @@ function Forecast() {
       );
 
       const filePathFromServer = response.data.file_url;
-      
+
       // Update forecast data with download URL
       const finalForecastData = {
         ...forecastData,
         downloadUrl: filePathFromServer,
-        filePath: response.data.file_path
+        filePath: response.data.file_path,
       };
 
       // Update file status to completed
-      updateFileStatus(fileId, 'completed', filePathFromServer, '2.4 MB');
-      
+      updateFileStatus(fileId, "completed", filePathFromServer, "2.4 MB");
+
       // Store forecast data in localStorage for the Product Selector page
       localStorage.setItem("forecastData", JSON.stringify(finalForecastData));
 
       setDownloadUrl(filePathFromServer);
       setErrorMessage("");
-
     } catch (error) {
       console.error("Error uploading the file:", error);
-      
+
       // Update file status to error
-      updateFileStatus(fileId, 'error');
-      
+      updateFileStatus(fileId, "error");
+
       setErrorMessage(
         error.response ? error.response.data.error : "An error occurred"
       );
@@ -1254,12 +1263,25 @@ function Forecast() {
 
   const SelectedCategoriesCount = checkedItems.filter((item) => item).length;
 
+  const handleBackPage = () => {
+    navigate("/file-upload");
+  };
+
   return (
     <div className="max-w-6xl mx-auto my-8 bg-white rounded-2xl shadow-xl overflow-hidden">
       {/* Header with gradient */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 p-10 relative">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+        {/* <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute inset-0 bg-grid-white/[0.2] bg-[length:20px_20px]"></div>
+        </div> */}
+        <div
+          className="flex items-center gap-3 mb-2 pb-2"
+          onClick={handleBackPage}
+        >
+          <button className="text-white opacity-80 hover:opacity-100 flex items-center gap-2 transition-opacity">
+            <ArrowLeft size={16} />
+            Back to Forecast
+          </button>
         </div>
         <div className="flex items-start gap-4">
           <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">

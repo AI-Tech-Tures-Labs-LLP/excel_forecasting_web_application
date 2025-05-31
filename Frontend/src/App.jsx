@@ -25,7 +25,7 @@ const AuthContext = createContext();
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -34,10 +34,10 @@ export const useAuth = () => {
 const AuthProvider = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     // Check if user was previously authenticated (optional persistence)
-    return localStorage.getItem('isAuthenticated') === 'true';
+    return localStorage.getItem("isAuthenticated") === "true";
   });
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem('currentUser');
+    const storedUser = localStorage.getItem("currentUser");
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
@@ -45,19 +45,19 @@ const AuthProvider = ({ children }) => {
     setIsAuthenticated(true);
     const userData = { username, loginTime: new Date().toISOString() };
     setUser(userData);
-    
+
     // Optional: Persist authentication state
-    localStorage.setItem('isAuthenticated', 'true');
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+    localStorage.setItem("isAuthenticated", "true");
+    localStorage.setItem("currentUser", JSON.stringify(userData));
   };
 
   const logout = () => {
     setIsAuthenticated(false);
     setUser(null);
-    
+
     // Clear authentication state
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("isAuthenticated");
+    localStorage.removeItem("currentUser");
   };
 
   return (
@@ -71,17 +71,17 @@ const AuthProvider = ({ children }) => {
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  
+
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate('/login', { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [isAuthenticated, navigate]);
-  
+
   if (!isAuthenticated) {
     return null; // or a loading spinner
   }
-  
+
   return children;
 };
 
@@ -90,7 +90,7 @@ function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
-  
+
   const isHomePage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
 
@@ -133,7 +133,7 @@ function App() {
   // Redirect to login if not authenticated and not already on login page
   useEffect(() => {
     if (!isAuthenticated && !isLoginPage) {
-      navigate('/login', { replace: true });
+      navigate("/login", { replace: true });
     }
   }, [isAuthenticated, isLoginPage, navigate]);
 
@@ -152,49 +152,55 @@ function App() {
         {isAuthenticated && !isHomePage && !isLoginPage && <Navbar />}
 
         {/* Main Content */}
-        <div className={`flex-grow ${isAuthenticated && !isHomePage && !isLoginPage ? "pb-16 sm:pb-0" : ""}`}>
+        <div
+          className={`flex-grow ${
+            isAuthenticated && !isHomePage && !isLoginPage
+              ? "pb-16 sm:pb-0"
+              : ""
+          }`}
+        >
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route 
-              path="/" 
+            <Route
+              path="/"
               element={
                 <ProtectedRoute>
                   <LandingPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/pricing" 
+            <Route
+              path="/pricing"
               element={
                 <ProtectedRoute>
                   <XLSXUploader />
                 </ProtectedRoute>
-              } 
+              }
             />
             {/* ADD THIS NEW ROUTE */}
-            <Route 
-              path="/file-upload" 
+            <Route
+              path="/file-upload"
               element={
                 <ProtectedRoute>
                   <FileUploadStep />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/forecast" 
+            <Route
+              path="/forecast"
               element={
                 <ProtectedRoute>
                   <Forecast />
                 </ProtectedRoute>
-              } 
+              }
             />
-            <Route 
-              path="/products" 
+            <Route
+              path="/products"
               element={
                 <ProtectedRoute>
                   <ProductSelector />
                 </ProtectedRoute>
-              } 
+              }
             />
             <Route path="*" element={<LoginPage />} />
           </Routes>

@@ -70,12 +70,12 @@
 //   return (
 //     <div className="max-w-xl mx-auto my-8 p-8 bg-white rounded-2xl shadow-lg transition-transform duration-300">
 //       <h1 className="text-3xl font-bold text-center text-gray-800 mb-8">Upload Pricing Sheet</h1>
-      
+
 //       <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
 //         <div
 //           className={`p-8 border-2 border-dashed rounded-xl text-center cursor-pointer transition-all duration-300 ${
-//             dragActive 
-//               ? "border-blue-500 bg-blue-50 scale-102" 
+//             dragActive
+//               ? "border-blue-500 bg-blue-50 scale-102"
 //               : "border-gray-200 bg-gray-50"
 //           }`}
 //           onDragOver={handleDragOver}
@@ -123,7 +123,7 @@
 //               <Upload size={18} /> Upload and Process
 //             </>
 //           )}
-      
+
 //           {isUploading && (
 //             <div className="absolute bottom-0 left-0 h-1 bg-blue-300 w-full"></div>
 //           )}
@@ -168,9 +168,18 @@
 
 import React, { useState } from "react";
 import axios from "axios";
-import { Upload, FileDown, CheckCircle, AlertCircle, FileSpreadsheet } from "lucide-react";
+import {
+  Upload,
+  FileDown,
+  CheckCircle,
+  AlertCircle,
+  FileSpreadsheet,
+  ArrowLeft,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 function XLSXUploader() {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [outputFileName, setOutputFileName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -202,7 +211,7 @@ function XLSXUploader() {
     if (droppedFile) {
       setFile(droppedFile);
       if (!outputFileName) {
-        setOutputFileName(droppedFile.name.split('.')[0]);
+        setOutputFileName(droppedFile.name.split(".")[0]);
       }
     }
   };
@@ -227,9 +236,13 @@ function XLSXUploader() {
         formData
       );
       const filePathFromServer = response.data.file_path;
-      setDownloadUrl(`${import.meta.env.VITE_API_BASE_URL}${filePathFromServer}`);
+      setDownloadUrl(
+        `${import.meta.env.VITE_API_BASE_URL}${filePathFromServer}`
+      );
     } catch (error) {
-      setErrorMessage(error.response?.data?.error || "An error occurred during upload");
+      setErrorMessage(
+        error.response?.data?.error || "An error occurred during upload"
+      );
     } finally {
       setIsUploading(false);
     }
@@ -239,53 +252,107 @@ function XLSXUploader() {
     <div className="max-w-4xl mx-auto my-8 p-0 bg-gradient-to-b from-gray-50 to-white rounded-3xl shadow-xl overflow-hidden">
       {/* Header with matching gradient to forecast */}
       <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 py-8 px-10 relative">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+        {/* <div className="absolute top-0 left-0 w-full h-full opacity-10">
           <div className="absolute inset-0 bg-grid-white/[0.2] bg-[length:20px_20px]"></div>
+        </div> */}
+        <div className="flex items-center gap-3 mb-2">
+          <button
+            onClick={() => navigate("/")}
+            className="text-white opacity-80 hover:opacity-100 flex items-center gap-2 transition-opacity"
+          >
+            <ArrowLeft size={16} />
+            Back to Home
+          </button>
         </div>
         <div className="flex items-start gap-4">
           <div className="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
             <FileSpreadsheet className="text-white" size={28} />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2 relative z-10">Pricing Sheet Processor</h1>
-            <p className="text-indigo-100 max-w-xl relative z-10">Upload your Excel or CSV file to generate formatted pricing reports</p>
+            <h1 className="text-3xl font-bold text-white mb-2 relative z-10">
+              Pricing Sheet Processor
+            </h1>
+            <p className="text-indigo-100 max-w-xl relative z-10">
+              Upload your Excel or CSV file to generate formatted pricing
+              reports
+            </p>
           </div>
         </div>
       </div>
-      
+
       <div className="p-10">
         {/* Progress indicator */}
         <div className="mb-10 flex items-center justify-between">
           <div className="flex flex-col items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${file ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'}`}>1</div>
-            <span className="text-xs mt-2 font-medium text-gray-600">Upload File</span>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                file ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-500"
+              }`}
+            >
+              1
+            </div>
+            <span className="text-xs mt-2 font-medium text-gray-600">
+              Upload File
+            </span>
           </div>
-          <div className={`h-1 flex-grow mx-2 ${file ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>
+          <div
+            className={`h-1 flex-grow mx-2 ${
+              file ? "bg-indigo-600" : "bg-gray-200"
+            }`}
+          ></div>
           <div className="flex flex-col items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${outputFileName ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'}`}>2</div>
-            <span className="text-xs mt-2 font-medium text-gray-600">Name Output</span>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                outputFileName
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-200 text-gray-500"
+              }`}
+            >
+              2
+            </div>
+            <span className="text-xs mt-2 font-medium text-gray-600">
+              Name Output
+            </span>
           </div>
-          <div className={`h-1 flex-grow mx-2 ${downloadUrl ? 'bg-indigo-600' : 'bg-gray-200'}`}></div>
+          <div
+            className={`h-1 flex-grow mx-2 ${
+              downloadUrl ? "bg-indigo-600" : "bg-gray-200"
+            }`}
+          ></div>
           <div className="flex flex-col items-center">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${downloadUrl ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-500'}`}>3</div>
-            <span className="text-xs mt-2 font-medium text-gray-600">Download</span>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                downloadUrl
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-200 text-gray-500"
+              }`}
+            >
+              3
+            </div>
+            <span className="text-xs mt-2 font-medium text-gray-600">
+              Download
+            </span>
           </div>
         </div>
-        
+
         <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
           {/* File Upload */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Spreadsheet File</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Spreadsheet File
+            </label>
             <div
               className={`p-10 border-2 border-dashed rounded-xl text-center cursor-pointer transition-all duration-300 group ${
-                dragActive 
-                  ? "border-indigo-500 bg-indigo-50 scale-[1.01]" 
+                dragActive
+                  ? "border-indigo-500 bg-indigo-50 scale-[1.01]"
                   : "border-gray-300 hover:border-indigo-400 hover:bg-indigo-50/50"
               }`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
-              onClick={() => document.querySelector('input[type="file"]').click()}
+              onClick={() =>
+                document.querySelector('input[type="file"]').click()
+              }
             >
               <input
                 type="file"
@@ -293,7 +360,7 @@ function XLSXUploader() {
                 className="hidden"
                 accept=".xlsx,.xls,.csv"
               />
-              
+
               <div className="flex flex-col items-center">
                 {file ? (
                   <div className="bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center mb-4 text-indigo-600">
@@ -304,19 +371,28 @@ function XLSXUploader() {
                     <Upload size={28} />
                   </div>
                 )}
-                
+
                 {file ? (
                   <div>
-                    <div className="text-sm font-medium text-gray-800">File selected:</div>
+                    <div className="text-sm font-medium text-gray-800">
+                      File selected:
+                    </div>
                     <div className="mt-2 py-2 px-4 bg-indigo-50 rounded-lg border border-indigo-100 inline-flex items-center">
-                      <FileSpreadsheet size={16} className="text-indigo-500 mr-2" />
+                      <FileSpreadsheet
+                        size={16}
+                        className="text-indigo-500 mr-2"
+                      />
                       <span className="text-sm text-gray-600">{file.name}</span>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <div className="text-sm font-medium text-gray-800">Drag & drop your file here</div>
-                    <div className="mt-2 text-xs text-gray-500">Supports XLSX, XLS and CSV files</div>
+                    <div className="text-sm font-medium text-gray-800">
+                      Drag & drop your file here
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Supports XLSX, XLS and CSV files
+                    </div>
                     <div className="mt-4 inline-flex items-center text-sm text-indigo-600 font-medium py-1 px-3 border border-indigo-200 rounded-md hover:bg-indigo-50">
                       <Upload size={14} className="mr-1" /> Select file
                     </div>
@@ -328,7 +404,12 @@ function XLSXUploader() {
 
           {/* Output filename */}
           <div className="space-y-2">
-            <label htmlFor="output-filename" className="block text-sm font-medium text-gray-700">Output Filename</label>
+            <label
+              htmlFor="output-filename"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Output Filename
+            </label>
             <div className="relative">
               <input
                 id="output-filename"
@@ -345,7 +426,9 @@ function XLSXUploader() {
                 .xlsx
               </div>
             </div>
-            <p className="text-xs text-gray-500 ml-1">Enter a name for your processed file</p>
+            <p className="text-xs text-gray-500 ml-1">
+              Enter a name for your processed file
+            </p>
           </div>
 
           {/* Submit button */}
@@ -378,7 +461,9 @@ function XLSXUploader() {
             </div>
             <div className="space-y-2 text-center">
               <p className="text-gray-700 font-medium">Processing your file</p>
-              <p className="text-sm text-gray-500">This may take a moment depending on file size</p>
+              <p className="text-sm text-gray-500">
+                This may take a moment depending on file size
+              </p>
             </div>
           </div>
         )}
@@ -391,10 +476,14 @@ function XLSXUploader() {
                 <CheckCircle className="text-emerald-600" size={24} />
               </div>
               <div>
-                <h3 className="text-emerald-800 font-semibold text-lg">File Processed Successfully</h3>
-                <p className="mt-1 text-emerald-700 text-sm">Your file has been processed and is ready for download</p>
-                
-                <a 
+                <h3 className="text-emerald-800 font-semibold text-lg">
+                  File Processed Successfully
+                </h3>
+                <p className="mt-1 text-emerald-700 text-sm">
+                  Your file has been processed and is ready for download
+                </p>
+
+                <a
                   href={downloadUrl}
                   download={`${outputFileName}.xlsx`}
                   className="mt-5 inline-flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors shadow-sm hover:shadow"

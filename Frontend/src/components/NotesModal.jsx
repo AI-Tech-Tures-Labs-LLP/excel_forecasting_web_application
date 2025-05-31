@@ -10,8 +10,18 @@ import {
   CheckCircle,
 } from "lucide-react";
 import axios from "axios";
+import { useDispatch } from "react-redux";
 
-const NotesModal = ({ isOpen, onClose, productId, productName = "" }) => {
+const NotesModal = ({
+  isOpen,
+  onClose,
+  productId,
+  productName = "",
+  loadProductNotesData,
+  selectedProductType,
+  onTaggedUserAdded,
+}) => {
+  const dispatch = useDispatch();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -62,6 +72,14 @@ const NotesModal = ({ isOpen, onClose, productId, productName = "" }) => {
       );
 
       setNotes([response.data, ...notes]);
+      if (
+        newNote.assigned_to.trim() &&
+        newNote.assigned_to.trim() !== "Unassigned"
+      ) {
+        if (onTaggedUserAdded) {
+          onTaggedUserAdded(newNote.assigned_to.trim());
+        }
+      }
       setNewNote({ note: "", assigned_to: "", reviewed: false });
     } catch (error) {
       console.error("Error saving note:", error);
