@@ -552,7 +552,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           case "Current_FC_Index":
             return selectedIndex;
           default:
-            return null;
+            return editableTrend;
         }
       };
       if (lastChangedField) {
@@ -564,7 +564,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
       // Use a control variable change to trigger recalculation
       const payload = {
-        changed_variable: lastChangedField, // or whichever control changed most recently
+        changed_variable: lastChangedField || "TREND", // or whichever control changed most recently
         // new_value: parseFloat(editableTrend) || 0,
         new_value: getChangedFieldValue(),
         context_data: contextData,
@@ -695,7 +695,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     if (!rollingForecastData || !productId) return;
 
     setIsSaving(true);
-
+    const file_path = localStorage.getItem("file_path");
     try {
       const monthLabels = [
         "FEB",
@@ -792,7 +792,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       // Use a control variable change to trigger recalculation
       const payload = {
         updated_context: updated_context,
-        file_path: "final_final",
+        file_path: file_path,
         pid: productId,
       };
 
@@ -870,7 +870,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           month_12_fc_index: editable12MonthFC,
           Current_FC_Index: selectedIndex,
         };
-        // alert("Forecast controls applied successfully!");
+        setInitialControlValues({
+          Trend: parseFloat(editableTrend) || 0,
+          Forecasting_Method: forecastingMethod,
+          Rolling_method: rollingMethod,
+          month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+          Current_FC_Index: selectedIndex,
+        });
+        alert("Forecast controls applied successfully!");
       }
     } catch (error) {
       console.error("Error applying control changes:", error);
@@ -3147,28 +3154,39 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                         Rolling Forecast Controls
                       </h3>
                     </div>
+
                     <button
                       disabled={
                         !initialControlValues ||
                         !originalValuesRef.current ||
                         JSON.stringify(initialControlValues) ===
-                          JSON.stringify(originalValuesRef.current)
+                          JSON.stringify(originalValuesRef.current) ||
+                        isSaving // Add this condition
                       }
                       onClick={handleSaveChanges}
                       className={`px-6 py-3 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 ${
                         JSON.stringify(initialControlValues) !==
-                        JSON.stringify(originalValuesRef.current)
+                          JSON.stringify(originalValuesRef.current) && !isSaving // Add !isSaving condition
                           ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105"
                           : "bg-gray-300 text-gray-500 cursor-not-allowed"
                       }`}
                     >
-                      <Settings size={16} />
-                      Apply Changes
-                      {JSON.stringify(initialControlValues) !==
-                        JSON.stringify(originalValuesRef.current) && (
-                        <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full animate-bounce">
-                          !
-                        </span>
+                      {isSaving ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" />
+                          Applying Changes...
+                        </>
+                      ) : (
+                        <>
+                          <Settings size={16} />
+                          Apply Changes
+                          {JSON.stringify(initialControlValues) !==
+                            JSON.stringify(originalValuesRef.current) && (
+                            <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full animate-bounce">
+                              !
+                            </span>
+                          )}
+                        </>
                       )}
                     </button>
                   </div>

@@ -1229,6 +1229,7 @@ function Forecast() {
 
       // Store forecast data in localStorage for the Product Selector page
       localStorage.setItem("forecastData", JSON.stringify(finalForecastData));
+      localStorage.setItem("file_path", outputFileName);
 
       setDownloadUrl(filePathFromServer);
       setErrorMessage("");
