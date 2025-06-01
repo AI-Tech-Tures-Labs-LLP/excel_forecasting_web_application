@@ -1338,7 +1338,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
   const formatValue = (value, isPercentage = false, isCurrency = false) => {
     if (value === null || value === undefined || value === "") return "-";
-    if (isPercentage) return `${value}%`;
+
+    if (isPercentage) {
+      // Multiply by 100 for percentage display
+      const percentValue =
+        typeof value === "number" ? value * 100 : parseFloat(value) * 100;
+      return `${percentValue.toFixed(2)}%`;
+    }
+
     if (isCurrency)
       return `$${typeof value === "number" ? value.toLocaleString() : value}`;
     return typeof value === "number" ? value.toLocaleString() : value;

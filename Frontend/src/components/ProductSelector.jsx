@@ -69,6 +69,8 @@ function ProductSelector() {
   const comProducts = useSelector(selectComProducts);
   const omniProducts = useSelector(selectOmniProducts);
   const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [bulkFactorNote, setBulkFactorNote] = useState("");
+
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
@@ -324,7 +326,7 @@ function ProductSelector() {
             notes: [],
             latestNote: null,
             assignedTo: "Unassigned",
-            status: "pending",
+            status: undefined,
             count: 0,
             hasUnreviewed: false,
           };
@@ -605,6 +607,7 @@ function ProductSelector() {
               product_details: {
                 external_factor_percentage: parseFloat(bulkFactor),
                 user_added_quantity: null,
+                external_factor: bulkFactorNote, // add this line if supported
               },
             }
           )
@@ -1069,6 +1072,25 @@ function ProductSelector() {
       isOpen: true,
       selectedCategories: [],
     }));
+  };
+
+  const handleDownloadFinalQuantityReport = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/final-quantity-report/`,
+        { responseType: "blob" } // important for file download
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "final_quantity_report.xlsx");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
   };
 
   const closeAllDropdowns = () => {
@@ -1804,7 +1826,7 @@ function ProductSelector() {
                     min="-100"
                     max="100"
                     step="0.1"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    className={`w-11/12 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                       error
                         ? "border-red-300 bg-red-50"
                         : success
@@ -1832,7 +1854,18 @@ function ProductSelector() {
                     <span>External factor applied successfully!</span>
                   </div>
                 )}
-
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    External Factor Notes
+                  </label>
+                  <textarea
+                    value={bulkFactorNote}
+                    onChange={(e) => setBulkFactorNote(e.target.value)}
+                    placeholder="Add notes about external factors..."
+                    rows={3}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  />
+                </div>
                 {/* Helper Text */}
                 {!error && !success && (
                   <p className="text-xs text-gray-500 mt-2">
@@ -1940,6 +1973,20 @@ function ProductSelector() {
                 >
                   <FileDown size={18} />
                   <span className="hidden sm:inline">Download Categories</span>
+                  <span className="sm:hidden">Download</span>
+                </button>
+              }
+
+              {
+                <button
+                  onClick={handleDownloadFinalQuantityReport}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20"
+                  title="Download Category Files"
+                >
+                  <FileDown size={18} />
+                  <span className="hidden sm:inline">
+                    Download Final Quantity Report
+                  </span>
                   <span className="sm:hidden">Download</span>
                 </button>
               }
