@@ -1,8 +1,9 @@
 import os
 import time
 import json 
-import zipfile 
 import io
+import zipfile 
+import pandas as pd
 
 from django.conf import settings
 from django.http import FileResponse
@@ -296,66 +297,6 @@ class ProductDetailViewSet(viewsets.ViewSet):
         return Response({"pid": pid, "updated_context": updated_context})
 
 
-# class ForecastViewSet(ViewSet):
-
-#     @action(detail=False, methods=["get"])
-#     def filter_products(self, request):
-#         categories     = request.query_params.getlist("category")      # multiple allowed
-#         birthstones    = request.query_params.getlist("birthstone")    # multiple allowed
-#         red_box_items  = request.query_params.getlist("red_box_item")  # multiple allowed now
-#         vdf_statuses   = request.query_params.getlist("vdf_status")    # multiple allowed now
-#         product_type   = request.query_params.get("product_type")
-
-#         response = {}
-
-#         if not product_type or product_type == "store":
-#             store_qs = StoreForecast.objects.all()
-#             if categories:
-#                 store_qs = store_qs.filter(category__in=categories)
-#             if birthstones:
-#                 store_qs = store_qs.filter(birthstone__in=birthstones)
-#             if red_box_items:
-#                 # Convert string values to boolean and filter
-#                 red_box_flags = [item.lower() == "true" for item in red_box_items]
-#                 store_qs = store_qs.filter(red_box_item__in=red_box_flags)
-#             response["store_products"] = StoreForecastSerializer(store_qs, many=True).data
-
-#         if not product_type or product_type == "com":
-#             com_qs = ComForecast.objects.all()
-#             if categories:
-#                 com_qs = com_qs.filter(category__in=categories)
-#             if vdf_statuses:
-#                 # Convert string values to boolean and filter
-#                 vdf_flags = [status.lower() == "true" for status in vdf_statuses]
-#                 com_qs = com_qs.filter(vdf_status__in=vdf_flags)
-#             if red_box_items:
-#                 # Add red_box_item filter for COM products if needed
-#                 red_box_flags = [item.lower() == "true" for item in red_box_items]
-#                 com_qs = com_qs.filter(red_box_item__in=red_box_flags)
-#             response["com_products"] = ComForecastSerializer(com_qs, many=True).data
-
-#         if not product_type or product_type == "omni":
-#             omni_qs = OmniForecast.objects.all()
-#             if categories:
-#                 omni_qs = omni_qs.filter(category__in=categories)
-#             if birthstones:
-#                 omni_qs = omni_qs.filter(birthstone__in=birthstones)
-#             if red_box_items:
-#                 # Add red_box_item filter for Omni products if needed
-#                 red_box_flags = [item.lower() == "true" for item in red_box_items]
-#                 omni_qs = omni_qs.filter(red_box_item__in=red_box_flags)
-#             response["omni_products"] = OmniForecastSerializer(omni_qs, many=True).data
-
-#         all_pids = set()
-#         for key in ["store_products", "com_products", "omni_products"]:
-#             for item in response.get(key, []):
-#                 all_pids.add(item["pid"])
-
-#         # Fetch notes for those pids
-#         notes = ForecastNote.objects.filter(pid__in=all_pids)
-#         response["forecast_notes"] = ForecastNoteSerializer(notes, many=True).data
-
-#         return Response(response)
 
 class ForecastViewSet(ViewSet):
 
@@ -467,6 +408,36 @@ class DownloadForecastSummaryExcel(APIView):
             return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
         return Response({"detail": "File not found."}, status=404)
 
+class DownloadFinalQuantityReport(APIView):
+    permission_classes = [AllowAny]  # Adjust as needed
+
+    def get(self, request):
+        file_name = "FinalQuantityReport.xlsx"
+        file_path = os.path.join(settings.MEDIA_ROOT, file_name)
+
+        try:
+            data = []
+            products = ProductDetail.objects.all()
+
+            for product in products:
+                final_qty = (
+                    product.user_added_quantity
+                    if product.user_added_quantity is not None
+                    else product.total_added_qty
+                )
+                data.append({
+                    "PID": product.product_id,
+                    "Final_qty": final_qty,
+                    "Category": product.category,
+                })
+
+            df = pd.DataFrame(data)
+            df.to_excel(file_path, index=False)
+
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file_name)
+
+        except Exception as e:
+            return Response({"detail": str(e)}, status=500)
 
 class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')
@@ -608,3 +579,5 @@ def download_category_sheet(request):
             response['X-Missing-Categories'] = message
         
         return response
+    
+
