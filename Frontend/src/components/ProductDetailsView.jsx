@@ -475,6 +475,28 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }));
   };
 
+  const handleUserAddedQuantityChange = (value) => {
+    const qty = parseFloat(value);
+    setUserAddedQuantity(value);
+    if (!isNaN(qty) && totalAddedQty) {
+      const percentage = (qty / totalAddedQty) * 100;
+      setExternalFactorPercentage(percentage.toFixed(2));
+    } else {
+      setExternalFactorPercentage("");
+    }
+  };
+
+  const handleExternalFactorPercentageChange = (value) => {
+    const perc = parseFloat(value);
+    setExternalFactorPercentage(value);
+    if (!isNaN(perc) && totalAddedQty) {
+      const qty = (totalAddedQty * perc) / 100;
+      setUserAddedQuantity(Math.round(qty).toString());
+    } else {
+      setUserAddedQuantity("");
+    }
+  };
+
   // Add function to handle Apply Changes button
   const handleApplyChanges = async () => {
     if (!rollingForecastData || !productId) return;
@@ -1017,6 +1039,13 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
   const handleSaveCriticalInputs = async () => {
     try {
+      const calculatedUserQty =
+        externalFactorPercentage && cardData?.totalAddedQty
+          ? Math.round(
+              cardData?.totalAddedQty *
+                (parseFloat(externalFactorPercentage) / 100)
+            )
+          : null;
       const payload = {
         product_details: {
           user_added_quantity: userAddedQuantity
@@ -2666,6 +2695,29 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                   </div>
                 </div>
 
+                <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-green-50 rounded-md">
+                        <Package className="text-red-600" size={14} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600">
+                        Final Qty
+                      </span>
+                    </div>
+                    <p className="text-sm font-bold text-green-600">
+                      {userAddedQuantity
+                        ? userAddedQuantity
+                        : externalFactorPercentage
+                        ? Math.round(
+                            (externalFactorPercentage / 100) *
+                              cardData.totalAddedQty
+                          )
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+
                 {/* Birthstone Card */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                   <div className="p-4">
@@ -2823,7 +2875,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 </div>
 
                 {/* Status Card */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                {/* <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="p-1.5 bg-green-50 rounded-md">
@@ -2835,7 +2887,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     </div>
                     <p className="text-sm font-bold text-green-600">Active</p>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -2878,7 +2930,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 <input
                   type="number"
                   value={userAddedQuantity}
-                  onChange={(e) => setUserAddedQuantity(e.target.value)}
+                  onChange={(e) =>
+                    handleUserAddedQuantityChange(e.target.value)
+                  }
+                  disabled={!!externalFactorPercentage}
                   placeholder="Enter additional quantity..."
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all placeholder-gray-400"
                 />
@@ -2909,7 +2964,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 <input
                   type="number"
                   value={externalFactorPercentage}
-                  onChange={(e) => setExternalFactorPercentage(e.target.value)}
+                  onChange={(e) =>
+                    handleExternalFactorPercentageChange(e.target.value)
+                  }
+                  disabled={!!userAddedQuantity}
                   placeholder="Enter percentage (e.g., 15 or -10)..."
                   step="0.1"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all placeholder-gray-400"

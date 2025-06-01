@@ -50,6 +50,7 @@ import {
 import { setCurrentView, addToast, selectCurrentView } from "../redux/uiSlice";
 import { selectCurrentSession } from "../redux/forecastSlice";
 import { formatDateTime } from "../utils/dateFormat";
+import axios from "axios";
 
 function ProductSelector() {
   const dispatch = useDispatch();
@@ -67,7 +68,10 @@ function ProductSelector() {
   const storeProducts = useSelector(selectStoreProducts);
   const comProducts = useSelector(selectComProducts);
   const omniProducts = useSelector(selectOmniProducts);
-
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
   // Enhanced filter state based on API
   const [selectedFilters, setSelectedFilters] = useState({
     category: [],
@@ -93,7 +97,8 @@ function ProductSelector() {
     status: [],
     last_reviewed_sort: null,
   });
-
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkFactor, setBulkFactor] = useState("");
   const [recentSearches, setRecentSearches] = useState([]);
   const [showRecent, setShowRecent] = useState(true);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
@@ -582,6 +587,60 @@ function ProductSelector() {
     } catch (error) {
       console.error("Error saving to recent searches:", error);
     }
+  };
+
+  const applyBulkExternalFactor = async () => {
+    if (!isValidInput()) return;
+    if (!bulkFactor || selectedProductIds.length === 0) return;
+
+    await Promise.all(
+      currentProducts
+        .filter((p) => selectedProductIds.includes(p.pid))
+        .map((product) =>
+          axios.put(
+            `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/${
+              product.pid
+            }/`,
+            {
+              product_details: {
+                external_factor_percentage: parseFloat(bulkFactor),
+                user_added_quantity: null,
+              },
+            }
+          )
+        )
+    );
+    dispatch(
+      fetchProducts({
+        productType: selectedProductType,
+        filters: {
+          category: [],
+          birthstone: [],
+          red_box_item: [],
+          vdf_status: [],
+          tagged_to: [],
+          considered_birthstone: null,
+          added_qty_macys_soq: null,
+          below_min_order: null,
+          over_macys_soq: null,
+          added_only_to_balance_soq: null,
+          need_to_review_first: null,
+          // Holiday filters
+          notes_sort: null,
+          forecast_month: [],
+          added_qty_sort: null,
+          valentine_day: null,
+          mothers_day: null,
+          fathers_day: null,
+          mens_day: null,
+          womens_day: null,
+          status: [],
+          last_reviewed_sort: null,
+        },
+      })
+    );
+    setSelectedProductIds([]);
+    alert("Updated external factor and calculated user quantity.");
   };
 
   // Pagination calculations
@@ -1166,6 +1225,23 @@ function ProductSelector() {
     setSearchQuery("");
   };
 
+  // const isAllSelected = currentProducts.every((p) =>
+  //   selectedProductIds.includes(p.pid)
+  // );
+
+  // const handleSelectAll = (checked) => {
+  //   if (checked) {
+  //     const newSelections = currentProducts.map((p) => p.pid);
+  //     setSelectedProductIds((prev) => [
+  //       ...new Set([...prev, ...newSelections]),
+  //     ]);
+  //   } else {
+  //     setSelectedProductIds((prev) =>
+  //       prev.filter((id) => !currentProducts.map((p) => p.pid).includes(id))
+  //     );
+  //   }
+  // };
+
   // Refresh data
   const handleRefresh = () => {
     loadAvailableFilters();
@@ -1284,6 +1360,16 @@ function ProductSelector() {
     // Use the website field directly from the product data
     return product.website || "#";
   };
+  const isValidInput = () => {
+    const num = parseFloat(bulkFactor);
+    return !isNaN(num) && num >= 0 && num <= 100;
+  };
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget && !isApplying) {
+      setShowBulkModal(false);
+    }
+  };
 
   const handleMacysRedirect = async (pid) => {
     try {
@@ -1369,6 +1455,21 @@ function ProductSelector() {
         return omniProducts.length;
       default:
         return 0;
+    }
+  };
+
+  const isAllSelected =
+    processedProducts.length > 0 &&
+    processedProducts.every((p) => selectedProductIds.includes(p.pid));
+
+  const isSomeSelected = selectedProductIds.length > 0 && !isAllSelected;
+
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      const allProductIds = processedProducts.map((p) => p.pid);
+      setSelectedProductIds(allProductIds);
+    } else {
+      setSelectedProductIds([]);
     }
   };
 
@@ -1594,6 +1695,16 @@ function ProductSelector() {
     return () => document.removeEventListener("keydown", handleEscKey);
   }, []);
 
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape" && !isApplying) {
+        setShowBulkModal(false);
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isApplying]);
+
   if (currentView === "details") {
     const handleNavigateToProduct = (productId) => {
       const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
@@ -1612,8 +1723,166 @@ function ProductSelector() {
     );
   }
 
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setBulkFactor(value);
+    setError("");
+
+    if (value && !isValidInput()) {
+      if (parseFloat(value) < 0) {
+        setError("Percentage cannot be negative");
+      } else if (parseFloat(value) > 100) {
+        setError("Percentage cannot exceed 100%");
+      } else if (isNaN(parseFloat(value))) {
+        setError("Please enter a valid number");
+      }
+    }
+  };
+
   return (
     <>
+      {showBulkModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm transition-opacity duration-200"
+          onClick={handleBackdropClick}
+        >
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform transition-all duration-200 scale-100">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Settings className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Set External Factor %
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Apply to {selectedProductIds.length} selected products
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => !isApplying && setShowBulkModal(false)}
+                disabled={isApplying}
+                className={`p-2 rounded-lg transition-colors ${
+                  isApplying
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              {/* Selected Products Info */}
+              <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <Package className="w-4 h-4 text-blue-600" />
+                <span className="text-sm text-blue-800">
+                  <span className="font-medium">
+                    {selectedProductIds.length}
+                  </span>{" "}
+                  products will be updated
+                </span>
+              </div>
+
+              {/* Input Section */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  External Factor Percentage
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    placeholder="Enter percentage (0-100)"
+                    value={bulkFactor}
+                    onChange={handleInputChange}
+                    disabled={isApplying}
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                      error
+                        ? "border-red-300 bg-red-50"
+                        : success
+                        ? "border-green-300 bg-green-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    } ${isApplying ? "opacity-50 cursor-not-allowed" : ""}`}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                    <span className="text-gray-400 text-sm">%</span>
+                  </div>
+                </div>
+
+                {/* Error/Success Messages */}
+                {error && (
+                  <div className="flex items-center gap-2 text-sm text-red-600 mt-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 mt-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>External factor applied successfully!</span>
+                  </div>
+                )}
+
+                {/* Helper Text */}
+                {!error && !success && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    This percentage will be applied to all selected products
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => setShowBulkModal(false)}
+                disabled={isApplying}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  isApplying
+                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                    : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                }`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={applyBulkExternalFactor}
+                disabled={
+                  !bulkFactor || !isValidInput() || isApplying || success
+                }
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  !bulkFactor || !isValidInput() || isApplying || success
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-green-600 text-white hover:bg-green-700 active:scale-95 shadow-sm hover:shadow-md"
+                }`}
+              >
+                {isApplying ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Applying...</span>
+                  </div>
+                ) : success ? (
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Applied!</span>
+                  </div>
+                ) : (
+                  "Apply Changes"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 p-6">
@@ -2438,7 +2707,24 @@ function ProductSelector() {
                 )}
                 {productTypeConfig[selectedProductType].label}
               </h3>
+
               <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowBulkModal(true)}
+                  // className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`
+                  group relative inline-flex items-center gap-2 px-6 py-3 font-medium text-sm rounded-lg
+                  transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
+                  ${
+                    selectedProductIds.length === 0 || loading
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                      : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 shadow-sm hover:shadow-md active:scale-[0.98]"
+                  }
+                `}
+                  disabled={selectedProductIds.length === 0}
+                >
+                  Set External Factor %
+                </button>
                 <span className="text-sm text-gray-500">
                   {processedProducts.length} products found
                 </span>
@@ -2483,6 +2769,23 @@ function ProductSelector() {
                       {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Image
                       </th> */}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <div className="flex items-center justify-center flex-col">
+                          <input
+                            type="checkbox"
+                            ref={(el) => {
+                              if (el) el.indeterminate = isSomeSelected;
+                            }}
+                            checked={isAllSelected}
+                            onChange={(e) => handleSelectAll(e.target.checked)}
+                          />
+                          {selectedProductIds.length > 0 && (
+                            <span className="mt-2 text-xs text-indigo-600 font-medium">
+                              {selectedProductIds.length}
+                            </span>
+                          )}
+                        </div>
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Product ID
                       </th>
@@ -3702,6 +4005,20 @@ function ProductSelector() {
                           </div>
                         </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <input
+                            type="checkbox"
+                            checked={selectedProductIds.includes(product.pid)}
+                            onChange={(e) => {
+                              const checked = e.target.checked;
+                              setSelectedProductIds((prev) =>
+                                checked
+                                  ? [...prev, product.pid]
+                                  : prev.filter((id) => id !== product.pid)
+                              );
+                            }}
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           <div className="flex items-center">
                             <span className="font-mono">{product.pid}</span>
                           </div>
@@ -3759,7 +4076,24 @@ function ProductSelector() {
                             : "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                          {product.user_added_quantity ?? "-"}
+                          {/* {product.user_added_quantity
+                            ? product.total_added_qty -
+                              product.user_added_quantity
+                            : product.external_factor_percentage
+                            ? product.total_added_qty -
+                              Math.round(
+                                (product.external_factor_percentage / 100) *
+                                  product.total_added_qty
+                              )
+                            : "-"} */}
+                          {product.user_added_quantity
+                            ? product.user_added_quantity
+                            : product.external_factor_percentage
+                            ? Math.round(
+                                (product.external_factor_percentage / 100) *
+                                  product.total_added_qty
+                              )
+                            : "-"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button
