@@ -2710,8 +2710,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                         ? userAddedQuantity
                         : externalFactorPercentage
                         ? Math.round(
-                            (externalFactorPercentage / 100) *
-                              cardData.totalAddedQty
+                            cardData.totalAddedQty *
+                              (1 + externalFactorPercentage / 100)
                           )
                         : "-"}
                     </p>
@@ -2933,7 +2933,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                   onChange={(e) =>
                     handleUserAddedQuantityChange(e.target.value)
                   }
-                  disabled={!!externalFactorPercentage}
+                  // disabled={!!externalFactorPercentage}
                   placeholder="Enter additional quantity..."
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all placeholder-gray-400"
                 />
@@ -2967,7 +2967,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                   onChange={(e) =>
                     handleExternalFactorPercentageChange(e.target.value)
                   }
-                  disabled={!!userAddedQuantity}
+                  // disabled={!!userAddedQuantity}
                   placeholder="Enter percentage (e.g., 15 or -10)..."
                   step="0.1"
                   className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all placeholder-gray-400"

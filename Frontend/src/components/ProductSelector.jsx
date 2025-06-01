@@ -641,6 +641,7 @@ function ProductSelector() {
     );
     setSelectedProductIds([]);
     alert("Updated external factor and calculated user quantity.");
+    setShowBulkModal(false);
   };
 
   // Pagination calculations
@@ -1362,7 +1363,7 @@ function ProductSelector() {
   };
   const isValidInput = () => {
     const num = parseFloat(bulkFactor);
-    return !isNaN(num) && num >= 0 && num <= 100;
+    return !isNaN(num) && num >= -100 && num <= 100;
   };
 
   const handleBackdropClick = (e) => {
@@ -1729,8 +1730,8 @@ function ProductSelector() {
     setError("");
 
     if (value && !isValidInput()) {
-      if (parseFloat(value) < 0) {
-        setError("Percentage cannot be negative");
+      if (parseFloat(value) < -100) {
+        setError("Percentage cannot be less than -100%");
       } else if (parseFloat(value) > 100) {
         setError("Percentage cannot exceed 100%");
       } else if (isNaN(parseFloat(value))) {
@@ -1796,11 +1797,11 @@ function ProductSelector() {
                 <div className="relative">
                   <input
                     type="number"
-                    placeholder="Enter percentage (0-100)"
+                    placeholder="Enter percentage (-100 to 100)"
                     value={bulkFactor}
                     onChange={handleInputChange}
                     disabled={isApplying}
-                    min="0"
+                    min="-100"
                     max="100"
                     step="0.1"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
@@ -1811,6 +1812,7 @@ function ProductSelector() {
                         : "border-gray-300 hover:border-gray-400"
                     } ${isApplying ? "opacity-50 cursor-not-allowed" : ""}`}
                   />
+
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3">
                     <span className="text-gray-400 text-sm">%</span>
                   </div>
@@ -4090,8 +4092,8 @@ function ProductSelector() {
                             ? product.user_added_quantity
                             : product.external_factor_percentage
                             ? Math.round(
-                                (product.external_factor_percentage / 100) *
-                                  product.total_added_qty
+                                product.total_added_qty *
+                                  (1 + product.external_factor_percentage / 100)
                               )
                             : "-"}
                         </td>
