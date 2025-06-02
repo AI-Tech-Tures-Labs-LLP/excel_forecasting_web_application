@@ -1111,7 +1111,8 @@ def process_category(args):
                 "forecasting_method" : forecasting_method,
 
                 "total_added_qty" : total_added_quantity,
-                "category": f"{category}{code}"
+                "category": f"{category}{code}",
+                "user_added_quantity": total_added_quantity,
             }
         )
 

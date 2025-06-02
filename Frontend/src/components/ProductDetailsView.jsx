@@ -51,6 +51,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const dispatch = useDispatch();
   const [initialControlValues, setInitialControlValues] = useState(null);
   const [hasInitialChanges, setHasInitialChanges] = useState(false);
+  const [lastChangedEditableField, setLastChangedEditableField] =
+    useState(null);
 
   const [isSaving, setIsSaving] = useState(false);
   const [lastChangedField, setLastChangedField] = useState(null);
@@ -66,6 +68,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [externalFactorPercentage, setExternalFactorPercentage] = useState("");
   const [externalFactor, setExternalFactor] = useState(""); // This will be the notes
   const [showCalculatedChanges, setShowCalculatedChanges] = useState(false);
+  const [hasEditableChanges, setHasEditableChanges] = useState(false);
 
   // SEARCH HISTORY
 
@@ -290,6 +293,21 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     if (productId) getData();
   }, [productId]);
 
+  useEffect(() => {
+    if (!lastChangedEditableField) return;
+
+    const timer = setTimeout(() => {
+      const changedVariable =
+        lastChangedEditableField === "plannedFC"
+          ? "Planned_FC"
+          : "Planned_Shipments";
+      submitForecastChanges(changedVariable);
+      setLastChangedEditableField(null); // reset
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [editableData, lastChangedEditableField]);
+
   //   if (
   //     editableTrend &&
   //     forecastingMethod &&
@@ -475,6 +493,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         [month]: parseFloat(value) || 0,
       },
     }));
+    setLastChangedEditableField(rowType);
+    setHasEditableChanges(true);
   };
 
   const handleUserAddedQuantityChange = (value) => {
@@ -1037,7 +1057,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
         setRollingForecastData(updatedRollingData);
         setLastSubmittedData(payload);
-        alert(`${changedVariable} updated successfully!`);
+        // alert(`${changedVariable} updated successfully!`);
       }
     } catch (error) {
       console.error("Error submitting forecast changes:", error);
@@ -3483,22 +3503,25 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                       </h3>
                     </div>
 
-                    <button
-                      disabled={
-                        !initialControlValues ||
-                        !originalValuesRef.current ||
-                        JSON.stringify(initialControlValues) ===
-                          JSON.stringify(originalValuesRef.current) ||
-                        isSaving // Add this condition
-                      }
-                      onClick={handleSaveChanges}
-                      className={`px-6 py-3 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 ${
-                        JSON.stringify(initialControlValues) !==
-                          JSON.stringify(originalValuesRef.current) && !isSaving // Add !isSaving condition
-                          ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105"
-                          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      }`}
-                    >
+                <button
+                  disabled={
+                    ((!initialControlValues ||
+                      !originalValuesRef.current ||
+                      JSON.stringify(initialControlValues) === JSON.stringify(originalValuesRef.current)) &&
+                      !hasEditableChanges) ||
+                    isSaving
+                  }
+                  onClick={handleSaveChanges}
+                  className={`px-6 py-3 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 ${
+                    ((!initialControlValues ||
+                      !originalValuesRef.current ||
+                      JSON.stringify(initialControlValues) === JSON.stringify(originalValuesRef.current)) &&
+                      !hasEditableChanges) ||
+                    isSaving
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105"
+                  }`}
+                >
                       {isSaving ? (
                         <>
                           <RefreshCw size={16} className="animate-spin" />
