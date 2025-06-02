@@ -1427,9 +1427,9 @@ function ProductSelector() {
 
     if (!notesData || notesData.count === 0) {
       return (
-        <div className="flex items-center justify-center gap-1 text-gray-400 hover:text-indigo-600 cursor-pointer">
-          <MessageSquare size={14} />
-          <span className="text-xs">Add note</span>
+        <div className="flex items-center justify-center gap-1 text-blue-400 hover:text-indigo-600  cursor-pointer">
+          <MessageSquare size={18} />
+          <span className="text-xs"></span>
         </div>
       );
     }
@@ -2029,202 +2029,6 @@ function ProductSelector() {
             </div>
           )}
 
-          {/* Search Bar */}
-          {/* Search Bar with Dropdown Results */}
-          <div className="mb-6">
-            <div className="relative search-container">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Search products by ID or category..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                onFocus={handleSearchInputFocus}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-
-              {/* Search Results Dropdown */}
-              {showSearchDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                  {/* Show Recent Searches when no query or query matches recent items */}
-                  {searchQuery.trim() === "" && recentSearches.length > 0 && (
-                    <>
-                      <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-                        <span className="text-sm text-gray-600 font-medium">
-                          Recent Searches
-                        </span>
-                        <button
-                          onClick={clearRecentSearches}
-                          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          Clear All
-                        </button>
-                      </div>
-                      <div className="max-h-80 overflow-y-auto">
-                        {recentSearches.map((product) => (
-                          <div
-                            key={`recent-${product.pid}`}
-                            onClick={() => handleRecentSearchClick(product)}
-                            className="relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer overflow-hidden group last:border-b-0"
-                          >
-                            {/* Left accent border - different color for recent searches */}
-                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-teal-600"></div>
-
-                            <div className="p-4 pl-6">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center space-x-3 mb-2">
-                                    <div className="flex items-center space-x-2">
-                                      <Clock className="w-3 h-3 text-gray-400" />
-                                      <h3 className="font-bold text-gray-900 text-base">
-                                        {product.pid}
-                                      </h3>
-                                    </div>
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                      {product.category}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center space-x-3 text-xs text-gray-600">
-                                    <div className="flex items-center space-x-1">
-                                      <Calendar className="w-3 h-3" />
-                                      <span>Recently Viewed</span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <MessageSquare className="w-3 h-3" />
-                                      <span>
-                                        {productNotesData[product.pid]?.count ||
-                                          0}{" "}
-                                        Notes
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-1">
-                                      <User className="w-3 h-3" />
-                                      <span>
-                                        {productNotesData[product.pid]
-                                          ?.assignedTo || "Unassigned"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <button className="inline-flex items-center px-2 py-1 rounded-md bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors">
-                                    <Eye className="w-3 h-3 mr-1" />
-                                    View
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {recentSearches.length >= 10 && (
-                        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
-                          Showing recent 10 searches
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {/* Show Search Results when there's a query */}
-                  {searchQuery.trim() !== "" &&
-                    processedProducts.length > 0 && (
-                      <>
-                        <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-sm text-gray-600 font-medium">
-                          {processedProducts.length} products found
-                        </div>
-                        <div className="max-h-80 overflow-y-auto">
-                          {processedProducts.map((product) => (
-                            <div
-                              key={product.pid}
-                              onClick={() => handleViewDetails(product)}
-                              className="relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer overflow-hidden group last:border-b-0"
-                            >
-                              {/* Left accent border */}
-                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-600"></div>
-
-                              <div className="p-4 pl-6">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center space-x-3 mb-2">
-                                      <h3 className="font-bold text-gray-900 text-base">
-                                        {product.pid}
-                                      </h3>
-                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {product.category}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center space-x-3 text-xs text-gray-600">
-                                      <div className="flex items-center space-x-1">
-                                        <Calendar className="w-3 h-3" />
-                                        <span>Added Today</span>
-                                      </div>
-                                      <div className="flex items-center space-x-1">
-                                        <MessageSquare className="w-3 h-3" />
-                                        <span>
-                                          {productNotesData[product.pid]
-                                            ?.count || 0}{" "}
-                                          Notes
-                                        </span>
-                                      </div>
-                                      <div className="flex items-center space-x-1">
-                                        <User className="w-3 h-3" />
-                                        <span>
-                                          {productNotesData[product.pid]
-                                            ?.assignedTo || "Unassigned"}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center space-x-2">
-                                    <button className="inline-flex items-center px-2 py-1 rounded-md bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors">
-                                      <Eye className="w-3 h-3 mr-1" />
-                                      View
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        {processedProducts.length > 4 && (
-                          <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
-                            <ChevronDown className="w-3 h-3 inline mr-1" />
-                            Scroll to see more results
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                  {/* No results message */}
-                  {searchQuery.trim() !== "" &&
-                    processedProducts.length === 0 && (
-                      <div className="px-4 py-8 text-center text-gray-500">
-                        <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                        <p className="text-sm">No products found</p>
-                        <p className="text-xs text-gray-400">
-                          Try adjusting your search terms
-                        </p>
-                      </div>
-                    )}
-
-                  {/* Empty state when no recent searches */}
-                  {searchQuery.trim() === "" && recentSearches.length === 0 && (
-                    <div className="px-4 py-8 text-center text-gray-500">
-                      <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                      <p className="text-sm">No recent searches</p>
-                      <p className="text-xs text-gray-400">
-                        Search for products to see them here
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Product Type Tabs */}
           <div className="border-b border-gray-200 mb-6">
             <nav className="-mb-px flex space-x-8">
@@ -2331,92 +2135,36 @@ function ProductSelector() {
                 {/* Basic Filters Tab */}
                 {activeTab === "basic" && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {/* Enhanced Categories Filter */}
-                    {/* <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Package size={16} className="text-indigo-600" />
-                        <label className="text-sm font-semibold text-slate-700">
-                          Categories
-                        </label>
-                        {selectedFilters.category?.length > 0 && (
-                          <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
-                            {selectedFilters.category.length}
-                          </span>
-                        )}
-                      </div>
-                      <div className="relative">
-                        <div className="border-2 border-slate-200 rounded-xl p-3 bg-white hover:border-indigo-300 transition-colors focus-within:border-indigo-500 focus-within:shadow-sm">
-                          <div className="max-h-32 overflow-y-auto space-y-2">
-                            {availableFilters.categories
-                              .slice(0, 8)
-                              .map((category) => (
-                                <label
-                                  key={category}
-                                  className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group"
-                                >
-                                  <div className="relative">
-                                    <input
-                                      type="checkbox"
-                                      checked={
-                                        selectedFilters.category?.includes(
-                                          category
-                                        ) || false
-                                      }
-                                      onChange={(e) =>
-                                        handleMultiSelectFilterChange(
-                                          "category",
-                                          category,
-                                          e.target.checked
-                                        )
-                                      }
-                                      className="w-4 h-4 text-indigo-600 border-slate-300 rounded focus:ring-indigo-500 focus:ring-2"
-                                    />
-                                    {selectedFilters.category?.includes(
-                                      category
-                                    ) && (
-                                      <Check
-                                        size={12}
-                                        className="absolute inset-0 m-auto text-white pointer-events-none"
-                                      />
-                                    )}
-                                  </div>
-                                  <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium">
-                                    {category}
-                                  </span>
-                                </label>
-                              ))}
-                          </div>
-                          {availableFilters.categories.length > 8 && (
-                            <button className="mt-2 text-xs text-indigo-600 hover:text-indigo-800 font-medium">
-                              Show {availableFilters.categories.length - 8}{" "}
-                              more...
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div> */}
-
-                    {/* Enhanced Birthstones Filter */}
+                    {/* Birthstones Filter - Boxed */}
                     {(selectedProductType === "store" ||
                       selectedProductType === "omni") && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2">
-                          <Star size={16} className="text-purple-600" />
-                          <label className="text-sm font-semibold text-slate-700">
-                            Birthstones
-                          </label>
+                      <div className="bg-white border-2 border-purple-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-purple-300">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="p-2 bg-purple-100 rounded-lg">
+                            <Star size={18} className="text-purple-600" />
+                          </div>
+                          <div className="flex-1">
+                            <h4 className="text-sm font-bold text-purple-900">
+                              Birthstones
+                            </h4>
+                            <p className="text-xs text-purple-600">
+                              Filter by birthstone type
+                            </p>
+                          </div>
                           {selectedFilters.birthstone?.length > 0 && (
-                            <span className="px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                            <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold border border-purple-300">
                               {selectedFilters.birthstone.length}
                             </span>
                           )}
                         </div>
-                        <div className="border-2 border-slate-200 rounded-xl p-3 bg-white hover:border-purple-300 transition-colors focus-within:border-purple-500 focus-within:shadow-sm">
-                          <div className="max-h-32 overflow-y-auto space-y-2">
+
+                        {/* INCREASED HEIGHT FROM max-h-40 TO max-h-64 */}
+                        <div className="border border-purple-200 rounded-lg p-3 bg-purple-50/30 max-h-64 overflow-y-auto">
+                          <div className="space-y-2">
                             {availableFilters.birthstones.map((birthstone) => (
                               <label
                                 key={birthstone}
-                                className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group"
+                                className="flex items-center gap-3 p-2 hover:bg-purple-100 rounded-lg cursor-pointer transition-colors group"
                               >
                                 <div className="relative">
                                   <input
@@ -2433,7 +2181,7 @@ function ProductSelector() {
                                         e.target.checked
                                       )
                                     }
-                                    className="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-500 focus:ring-2"
+                                    className="w-4 h-4 text-purple-600 border-purple-300 rounded focus:ring-purple-500 focus:ring-2"
                                   />
                                   {selectedFilters.birthstone?.includes(
                                     birthstone
@@ -2444,7 +2192,7 @@ function ProductSelector() {
                                     />
                                   )}
                                 </div>
-                                <span className="text-sm text-slate-700 group-hover:text-slate-900 font-medium capitalize">
+                                <span className="text-sm text-purple-800 group-hover:text-purple-900 font-medium capitalize">
                                   {birthstone.toLowerCase()}
                                 </span>
                               </label>
@@ -2454,17 +2202,32 @@ function ProductSelector() {
                       </div>
                     )}
 
-                    {/* Enhanced Red Box Items */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded"></div>
-                        Red Box Items
-                      </label>
+                    {/* Red Box Items Filter - Boxed */}
+                    <div className="bg-white border-2 border-red-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-red-300">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-red-100 rounded-lg">
+                          <div className="w-4 h-4 bg-red-500 rounded"></div>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-red-900">
+                            Red Box Items
+                          </h4>
+                          <p className="text-xs text-red-600">
+                            Special red box category
+                          </p>
+                        </div>
+                        {selectedFilters.red_box_item?.length > 0 && (
+                          <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-300">
+                            {selectedFilters.red_box_item.length}
+                          </span>
+                        )}
+                      </div>
+
                       <div className="space-y-2">
                         {availableFilters.red_box_items.map((item) => (
                           <label
                             key={item}
-                            className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer transition-all duration-200 hover:border-slate-300"
+                            className="flex items-center gap-3 p-3 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer transition-all duration-200 hover:border-red-300 bg-red-50/30"
                           >
                             <input
                               type="checkbox"
@@ -2479,9 +2242,9 @@ function ProductSelector() {
                                   e.target.checked
                                 )
                               }
-                              className="w-4 h-4 text-red-600 border-slate-300 rounded focus:ring-red-500 focus:ring-2"
+                              className="w-4 h-4 text-red-600 border-red-300 rounded focus:ring-red-500 focus:ring-2"
                             />
-                            <span className="text-sm font-medium text-slate-700">
+                            <span className="text-sm font-semibold text-red-800">
                               {item}
                             </span>
                           </label>
@@ -2489,12 +2252,23 @@ function ProductSelector() {
                       </div>
                     </div>
 
-                    {/* Additional Boolean Filters */}
-                    <div className="space-y-3">
-                      <label className="text-sm font-semibold text-slate-700">
-                        Additional Filters
-                      </label>
-                      <div className="space-y-3">
+                    {/* Additional Boolean Filters - Boxed */}
+                    <div className="bg-white border-2 border-indigo-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-indigo-300">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-indigo-100 rounded-lg">
+                          <Settings size={18} className="text-indigo-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-bold text-indigo-900">
+                            Additional Filters
+                          </h4>
+                          <p className="text-xs text-indigo-600">
+                            Quantity and SOQ filters
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 max-h-80">
                         {additionalBooleanFilters
                           .filter(
                             (filter) =>
@@ -2508,7 +2282,7 @@ function ProductSelector() {
                           .slice(0, 3)
                           .map((filter) => (
                             <div key={filter.key} className="space-y-2">
-                              <label className="text-xs font-medium text-slate-600 uppercase tracking-wider">
+                              <label className="text-xs font-bold text-indigo-700 uppercase tracking-wider">
                                 {filter.label}
                               </label>
                               <select
@@ -2519,7 +2293,7 @@ function ProductSelector() {
                                     e.target.value
                                   )
                                 }
-                                className="w-full p-3 border-2 border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white hover:border-slate-300 transition-colors font-medium"
+                                className="w-full p-3 border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-indigo-50/30 hover:border-indigo-300 transition-colors font-medium text-indigo-800"
                               >
                                 {booleanOptions.map((option) => (
                                   <option
@@ -2746,6 +2520,73 @@ function ProductSelector() {
             )}
           </div>
 
+          {/* Summary Cards - moved above products table */}
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-800">
+                    Total Products
+                  </p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {processedProducts.length}
+                  </p>
+                </div>
+                <Package className="text-blue-600" size={24} />
+              </div>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-800">Reviewed</p>
+                  <p className="text-2xl font-bold text-green-900">
+                    {
+                      Object.values(productNotesData).filter(
+                        (data) => data.status === "reviewed"
+                      ).length
+                    }
+                  </p>
+                </div>
+                <CheckCircle className="text-green-600" size={24} />
+              </div>
+            </div>
+
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-red-800">
+                    Not Reviewed
+                  </p>
+                  <p className="text-2xl font-bold text-red-900">
+                    {
+                      Object.values(productNotesData).filter(
+                        (data) => data.status === "not_reviewed"
+                      ).length
+                    }
+                  </p>
+                </div>
+                <AlertCircle className="text-red-600" size={24} />
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-yellow-800">Pending</p>
+                  <p className="text-2xl font-bold text-yellow-900">
+                    {
+                      Object.values(productNotesData).filter(
+                        (data) => data.status === "pending"
+                      ).length
+                    }
+                  </p>
+                </div>
+                <Clock className="text-yellow-600" size={24} />
+              </div>
+            </div>
+          </div>
+
           {/* Products Display */}
           <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
@@ -2757,29 +2598,240 @@ function ProductSelector() {
                 {productTypeConfig[selectedProductType].label}
               </h3>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowBulkModal(true)}
-                  // className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  className={`
-                  group relative inline-flex items-center gap-2 px-6 py-3 font-medium text-sm rounded-lg
-                  transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
-                  ${
-                    selectedProductIds.length === 0 || loading
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-                      : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 shadow-sm hover:shadow-md active:scale-[0.98]"
-                  }
-                `}
-                  disabled={selectedProductIds.length === 0}
-                >
-                  Set External Factor %
-                </button>
-                <span className="text-sm text-gray-500">
-                  {processedProducts.length} products found
-                </span>
-                {loading && (
-                  <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-                )}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                {/* Search Bar with Dropdown - Responsive */}
+                <div className="relative search-container w-full sm:w-auto  sm:min-w-[300px] lg:min-w-[400px]">
+                  <Search
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 "
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Search products by ID or category..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    onFocus={handleSearchInputFocus}
+                    className="w-full pl-10 pr-4 py-2.5 border  border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  />
+
+                  {/* Search Results Dropdown */}
+                  {showSearchDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-w-full">
+                      {/* Show Recent Searches when no query or query matches recent items */}
+                      {searchQuery.trim() === "" &&
+                        recentSearches.length > 0 && (
+                          <>
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                              <span className="text-sm text-gray-600 font-medium">
+                                Recent Searches
+                              </span>
+                              <button
+                                onClick={clearRecentSearches}
+                                className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                              >
+                                Clear All
+                              </button>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                              {recentSearches.map((product) => (
+                                <div
+                                  key={`recent-${product.pid}`}
+                                  onClick={() =>
+                                    handleRecentSearchClick(product)
+                                  }
+                                  className="relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer overflow-hidden group last:border-b-0"
+                                >
+                                  {/* Left accent border - different color for recent searches */}
+                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-green-500 to-teal-600"></div>
+
+                                  <div className="p-4 pl-6">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                          <div className="flex items-center space-x-2">
+                                            <Clock className="w-3 h-3 text-gray-400" />
+                                            <h3 className="font-bold text-gray-900 text-base">
+                                              {product.pid}
+                                            </h3>
+                                          </div>
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            {product.category}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                          <div className="flex items-center space-x-1">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>Recently Viewed</span>
+                                          </div>
+                                          <div className="flex items-center space-x-1">
+                                            <MessageSquare className="w-3 h-3" />
+                                            <span>
+                                              {productNotesData[product.pid]
+                                                ?.count || 0}{" "}
+                                              Notes
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center space-x-1">
+                                            <User className="w-3 h-3" />
+                                            <span>
+                                              {productNotesData[product.pid]
+                                                ?.assignedTo || "Unassigned"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <button className="inline-flex items-center px-2 py-1 rounded-md bg-green-600 text-white text-xs font-medium hover:bg-green-700 transition-colors">
+                                          <Eye className="w-3 h-3 mr-1" />
+                                          View
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {recentSearches.length >= 10 && (
+                              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
+                                Showing recent 10 searches
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                      {/* Show Search Results when there's a query */}
+                      {searchQuery.trim() !== "" &&
+                        processedProducts.length > 0 && (
+                          <>
+                            <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-sm text-gray-600 font-medium">
+                              {processedProducts.length} products found
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                              {processedProducts.slice(0, 10).map((product) => (
+                                <div
+                                  key={product.pid}
+                                  onClick={() => handleViewDetails(product)}
+                                  className="relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer overflow-hidden group last:border-b-0"
+                                >
+                                  {/* Left accent border */}
+                                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 to-purple-600"></div>
+
+                                  <div className="p-4 pl-6">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex-1">
+                                        <div className="flex items-center space-x-3 mb-2">
+                                          <h3 className="font-bold text-gray-900 text-base">
+                                            {product.pid}
+                                          </h3>
+                                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {product.category}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center space-x-3 text-xs text-gray-600">
+                                          <div className="flex items-center space-x-1">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>Added Today</span>
+                                          </div>
+                                          <div className="flex items-center space-x-1">
+                                            <MessageSquare className="w-3 h-3" />
+                                            <span>
+                                              {productNotesData[product.pid]
+                                                ?.count || 0}{" "}
+                                              Notes
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center space-x-1">
+                                            <User className="w-3 h-3" />
+                                            <span>
+                                              {productNotesData[product.pid]
+                                                ?.assignedTo || "Unassigned"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <button className="inline-flex items-center px-2 py-1 rounded-md bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors">
+                                          <Eye className="w-3 h-3 mr-1" />
+                                          View
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            {processedProducts.length > 10 && (
+                              <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
+                                <ChevronDown className="w-3 h-3 inline mr-1" />
+                                Showing first 10 of {
+                                  processedProducts.length
+                                }{" "}
+                                results
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                      {/* No results message */}
+                      {searchQuery.trim() !== "" &&
+                        processedProducts.length === 0 && (
+                          <div className="px-4 py-8 text-center text-gray-500">
+                            <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No products found</p>
+                            <p className="text-xs text-gray-400">
+                              Try adjusting your search terms
+                            </p>
+                          </div>
+                        )}
+
+                      {/* Empty state when no recent searches */}
+                      {searchQuery.trim() === "" &&
+                        recentSearches.length === 0 && (
+                          <div className="px-4 py-8 text-center text-gray-500">
+                            <Search className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <p className="text-sm">No recent searches</p>
+                            <p className="text-xs text-gray-400">
+                              Search for products to see them here
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side buttons */}
+                <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
+                  <button
+                    onClick={() => setShowBulkModal(true)}
+                    className={`
+      group relative inline-flex items-center gap-2 px-4 lg:px-6 py-2.5 font-medium text-sm rounded-lg
+      transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
+      ${
+        selectedProductIds.length === 0 || loading
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+          : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 shadow-sm hover:shadow-md active:scale-[0.98]"
+      }
+    `}
+                    disabled={selectedProductIds.length === 0}
+                  >
+                    <span className="hidden sm:inline">
+                      Set External Factor %
+                    </span>
+                    <span className="sm:hidden">Set Factor</span>
+                  </button>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500 hidden sm:inline">
+                      {processedProducts.length} products found
+                    </span>
+                    <span className="text-xs text-gray-500 sm:hidden">
+                      {processedProducts.length} found
+                    </span>
+                    {loading && (
+                      <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3038,7 +3090,7 @@ function ProductSelector() {
                             {selectedFilters.tagged_to?.length > 0 && (
                               <Filter size={14} />
                             )}
-                            Tagged To
+                            Assigned To
                           </span>
                           <ChevronDown
                             size={14}
@@ -4021,16 +4073,15 @@ function ProductSelector() {
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Final Qty
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Details
-                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentProducts.map((product, index) => (
                       <tr
                         key={`${product.pid}-${index}`}
-                        className="hover:bg-gray-50 transition-colors"
+                        onClick={() => handleViewDetails(product)}
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        title="Click to view details"
                       >
                         {" "}
                         {/* New image column */}
@@ -4053,7 +4104,10 @@ function ProductSelector() {
                             </div>
                           </div>
                         </td> */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
+                        >
                           <input
                             type="checkbox"
                             checked={selectedProductIds.includes(product.pid)}
@@ -4080,7 +4134,10 @@ function ProductSelector() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatAssignedToDisplay(product)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                          onClick={(e) => e.stopPropagation()} // Prevent row click when clicking notes
+                        >
                           <div
                             className="flex justify-center cursor-pointer p-2 rounded hover:bg-gray-100"
                             onClick={() => handleOpenNotes(product)}
@@ -4144,18 +4201,16 @@ function ProductSelector() {
                               )
                             : "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button
                             onClick={() => handleViewDetails(product)}
                             className="text-indigo-600 hover:text-indigo-900 transition-colors p-2 rounded-lg hover:bg-indigo-50 flex items-center gap-2"
                             title="View Details"
                           >
                             <Eye size={16} />
-                            <span className="text-sm font-medium">
-                              View Details
-                            </span>
+                            <span className="text-sm font-medium"></span>
                           </button>
-                        </td>
+                        </td> */}
                       </tr>
                     ))}
                   </tbody>
@@ -4212,73 +4267,6 @@ function ProductSelector() {
               </div>
             </div>
           )}
-
-          {/* Summary Cards */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-800">
-                    Total Products
-                  </p>
-                  <p className="text-2xl font-bold text-blue-900">
-                    {processedProducts.length}
-                  </p>
-                </div>
-                <Package className="text-blue-600" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-800">Reviewed</p>
-                  <p className="text-2xl font-bold text-green-900">
-                    {
-                      Object.values(productNotesData).filter(
-                        (data) => data.status === "reviewed"
-                      ).length
-                    }
-                  </p>
-                </div>
-                <CheckCircle className="text-green-600" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-red-800">
-                    Not Reviewed
-                  </p>
-                  <p className="text-2xl font-bold text-red-900">
-                    {
-                      Object.values(productNotesData).filter(
-                        (data) => data.status === "not_reviewed"
-                      ).length
-                    }
-                  </p>
-                </div>
-                <AlertCircle className="text-red-600" size={24} />
-              </div>
-            </div>
-
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-800">Pending</p>
-                  <p className="text-2xl font-bold text-yellow-900">
-                    {
-                      Object.values(productNotesData).filter(
-                        (data) => data.status === "pending"
-                      ).length
-                    }
-                  </p>
-                </div>
-                <Clock className="text-yellow-600" size={24} />
-              </div>
-            </div>
-          </div>
 
           {/* Help Text */}
           <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
