@@ -476,17 +476,25 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   const handleUserAddedQuantityChange = (value) => {
+    setExternalFactorPercentage("");
+    setExternalFactor("");
     const qty = parseFloat(value);
     setUserAddedQuantity(value);
+
     if (!isNaN(qty) && totalAddedQty) {
       const percentage = (qty / totalAddedQty) * 100;
       setExternalFactorPercentage(percentage.toFixed(2));
     } else {
       setExternalFactorPercentage("");
+      setExternalFactor("");
     }
+
+    // Clear external factor note when user quantity is manually entered
   };
 
   const handleExternalFactorPercentageChange = (value) => {
+    setUserAddedQuantity("");
+
     const perc = parseFloat(value);
     setExternalFactorPercentage(value);
     if (!isNaN(perc) && totalAddedQty) {
