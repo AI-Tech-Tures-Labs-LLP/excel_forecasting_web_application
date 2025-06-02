@@ -1549,11 +1549,11 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           },
           { key: "month_12_fc_index", label: "12-Month FC Index" },
           { key: "loss", label: "Loss (%)", type: "percentage" },
-          // {
-          //   key: "month_12_fc_index_loss",
-          //   label: "12-Month FC Index (Loss %)",
-          //   // type: "percentage",
-          // },
+          {
+            key: "month_12_fc_index_loss",
+            label: "12-Month FC Index (Loss %)",
+            // type: "percentage",
+          },
           { key: "selected_months", label: "STD Months", type: "array" },
           { key: "trend", label: "Trend", type: "percentage" },
           {

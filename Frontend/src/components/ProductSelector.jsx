@@ -1433,29 +1433,63 @@ function ProductSelector() {
   };
 
   // Format notes display in separate column
+  // const formatNotesDisplay = (product) => {
+  //   const notesData = productNotesData[product.pid];
+
+  //   if (!notesData || notesData.count === 0) {
+  //     return (
+  //       <div className="flex items-center justify-center gap-1 text-blue-400 hover:text-indigo-600  cursor-pointer">
+  //         <MessageSquare size={18} />
+  //         <span className="text-xs"></span>
+  //       </div>
+  //     );
+  //   }
+  //   return (
+  //     <div className="flex items-center gap-2 cursor-pointer hover:text-indigo-600">
+  //       <MessageSquare size={14} className="text-blue-500" />
+  //       <span className="text-sm font-medium text-blue-600">
+  //         {notesData.count}
+  //       </span>
+  //       {notesData.hasUnreviewed && (
+  //         <div
+  //           className="w-2 h-2 bg-red-500 rounded-full"
+  //           title="Has unreviewed notes"
+  //         ></div>
+  //       )}
+  //     </div>
+  //   );
+  // };
+  // Updated formatNotesDisplay function with consistent sizing
+  // Updated formatNotesDisplay function with consistent sizing
   const formatNotesDisplay = (product) => {
     const notesData = productNotesData[product.pid];
 
     if (!notesData || notesData.count === 0) {
       return (
-        <div className="flex items-center justify-center gap-1 text-blue-400 hover:text-indigo-600  cursor-pointer">
-          <MessageSquare size={18} />
-          <span className="text-xs"></span>
+        <div className="flex items-center justify-center gap-1 text-blue-400 hover:text-indigo-600 cursor-pointer w-16 h-8 relative">
+          <MessageSquare size={16} />
+          <span className="text-sm">0</span>
+          {/* Empty space for red dot to maintain consistent sizing */}
+          <div className="w-2 h-2 invisible"></div>
         </div>
       );
     }
+
     return (
-      <div className="flex items-center gap-2 cursor-pointer hover:text-indigo-600">
-        <MessageSquare size={14} className="text-blue-500" />
+      <div className="flex items-center justify-center gap-1 cursor-pointer hover:text-indigo-600 w-16 h-8 relative">
+        <MessageSquare size={16} className="text-blue-500" />
         <span className="text-sm font-medium text-blue-600">
           {notesData.count}
         </span>
-        {notesData.hasUnreviewed && (
-          <div
-            className="w-2 h-2 bg-red-500 rounded-full"
-            title="Has unreviewed notes"
-          ></div>
-        )}
+        {/* Always reserve space for red dot */}
+        <div className="w-2 h-2 flex-shrink-0">
+          {notesData.hasUnreviewed && (
+            <div
+              className="w-2 h-2 bg-red-500 rounded-full"
+              title="Has unreviewed notes"
+            ></div>
+          )}
+        </div>
       </div>
     );
   };
@@ -2898,10 +2932,10 @@ function ProductSelector() {
                           )}
                         </div>
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
                         Product ID
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
                         <button
                           onClick={() => {
                             closeAllDropdowns();
@@ -3267,10 +3301,10 @@ function ProductSelector() {
                           </div>
                         )}
                       </th> */}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
-                        Assigned to
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider relative">
+                        Assigned To
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider relative">
                         <button
                           onClick={() => {
                             closeAllDropdowns();
@@ -4079,7 +4113,7 @@ function ProductSelector() {
                           </div>
                         )}
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider">
                         Final Qty
                       </th>
                     </tr>
@@ -4114,7 +4148,7 @@ function ProductSelector() {
                           </div>
                         </td> */}
                         <td
-                          className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
+                          className="px-6 py-4 whitespace-nowrap text-sm text-left font-medium text-gray-900"
                           onClick={(e) => e.stopPropagation()} // Prevent row click when clicking checkbox
                         >
                           <input
@@ -4130,12 +4164,12 @@ function ProductSelector() {
                             }}
                           />
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left font-medium text-gray-900">
                           <div className="flex items-center">
                             <span className="font-mono">{product.pid}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {product.category}
                           </span>
@@ -4143,7 +4177,7 @@ function ProductSelector() {
                         {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatAssignedToDisplay(product)}
                         </td> */}
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
                           {formatAssignedToDisplay(product)}
                         </td>
                         <td
@@ -4158,7 +4192,7 @@ function ProductSelector() {
                             {formatNotesDisplay(product)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
                           {product.forecast_month ? (
                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                               {product.forecast_month}
@@ -4167,15 +4201,15 @@ function ProductSelector() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left font-medium text-gray-900">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             {getAddedQty(product).toLocaleString()}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
                           {formatStatusDisplay(product)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">
                           {productNotesData[product.pid]?.latestNote?.updated_at
                             ? (() => {
                                 const [date, time] = formatDateTime(
@@ -4193,7 +4227,7 @@ function ProductSelector() {
                               })()
                             : "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900 ">
                           {/* {product.user_added_quantity
                             ? product.total_added_qty -
                               product.user_added_quantity
