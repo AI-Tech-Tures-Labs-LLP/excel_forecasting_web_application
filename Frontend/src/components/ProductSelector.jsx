@@ -1,7 +1,7 @@
 // Complete ProductSelector.jsx with enhanced dropdown filters and separate notes column
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import productImage from "../assets/undefined.png"; // Adjust the path to your image
+
 import {
   ChevronDown,
   Filter,
@@ -3073,7 +3073,7 @@ function ProductSelector() {
                           </div>
                         )}
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
                         <button
                           onClick={() => {
                             closeAllDropdowns();
@@ -3090,7 +3090,7 @@ function ProductSelector() {
                             {selectedFilters.tagged_to?.length > 0 && (
                               <Filter size={14} />
                             )}
-                            Assigned To
+                            Tagged To
                           </span>
                           <ChevronDown
                             size={14}
@@ -3110,7 +3110,6 @@ function ProductSelector() {
                             className="tagged-to-dropdown absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {/* Header with search */}
                             <div className="p-3 border-b border-gray-100">
                               <div className="relative">
                                 <Search
@@ -3137,7 +3136,6 @@ function ProductSelector() {
                               </div>
                             </div>
 
-                            {/* Action buttons */}
                             <div className="p-2 border-b border-gray-100 flex justify-between">
                               <button
                                 onClick={() => {
@@ -3188,7 +3186,6 @@ function ProductSelector() {
                               </button>
                             </div>
 
-                            {/* Tagged To list */}
                             <div className="flex-1 overflow-y-auto">
                               {(availableFilters.tagged_to || [])
                                 .filter((user) =>
@@ -3231,7 +3228,6 @@ function ProductSelector() {
                                   </label>
                                 ))}
 
-                              {/* No results message */}
                               {taggedToSearchTerm &&
                                 (availableFilters.tagged_to || []).filter(
                                   (user) =>
@@ -3248,7 +3244,6 @@ function ProductSelector() {
                                 )}
                             </div>
 
-                            {/* Footer with selection count */}
                             {(selectedFilters.tagged_to?.length || 0) > 0 && (
                               <div className="p-2 border-t border-gray-100 bg-gray-50">
                                 <span className="text-xs text-gray-600">
@@ -3260,7 +3255,8 @@ function ProductSelector() {
                             )}
                           </div>
                         )}
-                      </th>
+                      </th> */}
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">Assigned to</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative">
                         <button
                           onClick={() => {
@@ -4131,8 +4127,13 @@ function ProductSelector() {
                             {product.category}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatAssignedToDisplay(product)}
+                        </td> */}
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                         { console.log("ajaxxxxxxxxxxxxxxxxxxx",product.forecast_notes.product_assigned_to)}
+                          
+                          {product.product_assigned_to || "-"}
                         </td>
                         <td
                           className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"

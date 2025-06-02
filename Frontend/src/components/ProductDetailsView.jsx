@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
-import productImage from "../assets/undefined.png";
+import productImage from "../assets/productImage.png";
 import {
   ArrowLeft,
   ChevronDown,
