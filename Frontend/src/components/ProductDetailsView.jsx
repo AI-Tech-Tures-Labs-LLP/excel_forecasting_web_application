@@ -1548,7 +1548,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             type: "boolean",
           },
           { key: "month_12_fc_index", label: "12-Month FC Index" },
-          { key: "loss", label: "Loss (%)", type: "percentage" },
+          { key: "loss", label: "Loss (%)" },
           {
             key: "month_12_fc_index_loss",
             label: "12-Month FC Index (Loss %)",
@@ -1783,7 +1783,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                           {variable.label}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                          {variable.key === "trend_index_difference"
+                          {variable.key === "trend_index_difference" ||
+                          variable.key === "loss"
                             ? `${formatVariableValue(value, variable)}%`
                             : formatVariableValue(value, variable)}
                         </td>
