@@ -273,12 +273,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       const rolling = res.data.product_details.rolling_method;
       const trend = res.data.product_details.std_trend;
       const editablemonths = res.data.product_details.month_12_fc_index;
-      const selectedIndex = res.data.product_details.current_fc_index;
+      const selectedIndex = res.data.product_details.currect_fc_index;
       const forecasting = res.data.product_details.forecasting_method;
       setRollingMethod(rolling);
       setEditableTrend(trend);
       setEditable12MonthFC(editablemonths);
       setForecastingMethod(forecasting);
+      setSelectedIndex(selectedIndex);
+      setCurre;
     } catch (err) {
       console.log(err);
     }
@@ -1401,7 +1403,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     // Try to get data from the most relevant forecast type first
     const forecastData =
       store_forecast?.[0] || com_forecast?.[0] || omni_forecast?.[0] || {};
+    console.log(
+      "data",
 
+      forecastData,
+      product_details,
+      forecastData,
+      product_details
+    );
     return {
       // Existing Basic Information
       category:
@@ -1440,6 +1449,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         forecastData?.Retail_value ||
         product_details?.price ||
         0,
+
+      macys_owned_retail: product_details?.macys_owned_retail || 0,
+      STD_index_value: product_details?.STD_index_value || 0,
 
       selectedMonth:
         forecastData?.selected_months ||
@@ -2830,7 +2842,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                       </span>
                     </div>
                     <p className="text-sm font-bold text-gray-900">
-                      {cardData.leadTime} days
+                      {cardData.leadTime} weeks
                     </p>
                   </div>
                 </div>
@@ -2864,7 +2876,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                       </span>
                     </div>
                     <p className="text-sm font-bold text-gray-900">
-                      {formatValue(cardData.retailValue, false, true)}
+                      {formatValue(cardData.macys_owned_retail, false, true)}
                     </p>
                   </div>
                 </div>
@@ -2931,7 +2943,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                       </span>
                     </div>
                     <p className="text-sm font-bold text-cyan-600">
-                      {formatValue(cardData.stdIndexValue)}
+                      {formatValue(cardData.STD_index_value * 100)}%
                     </p>
                   </div>
                 </div>
