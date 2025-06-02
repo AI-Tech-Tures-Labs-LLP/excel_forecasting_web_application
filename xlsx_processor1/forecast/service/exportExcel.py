@@ -230,7 +230,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
         'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
         'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
-        'total_added_qty': row['Total added qty'],
+        'total_added_qty': row['Total added qty']  if row['Total added qty'] > 0 else 0,
         'vendor': row.get('vendor', ''),
         'Valentine_day': bool(row.get('Valentine_day', False)),
         'Mothers_day': bool(row.get('Mothers_day', False)),
@@ -284,7 +284,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         'vdf_added_qty': row['VDF_added_qty'],
         'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
         'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
-        'total_added_qty': row['Total added qty'],
+        'total_added_qty': row['Total added qty'] if row['Total added qty'] > 0 else 0,
         'vendor': row.get('vendor', ''),
         'Valentine_day': bool(row.get('Valentine_day', False)),
         'Mothers_day': bool(row.get('Mothers_day', False)),
@@ -352,7 +352,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         'added_qty_macys_soq': row['Added qtys by Macys SOQ'],
         'forecast_month_planned_shipment': row['forecast_month_planned_shipment'],
         'next_forecast_month_planned_shipment': row['Next_forecast_month_planned_shipment'],
-        'total_added_qty': row['Total added qty'],
+        'total_added_qty': row['Total added qty']  if row['Total added qty'] > 0 else 0,
         'vendor': row.get('vendor', ''),
         'Valentine_day': bool(row.get('Valentine_day', False)),
         'Mothers_day': bool(row.get('Mothers_day', False)),
@@ -926,7 +926,7 @@ def process_category(args):
         # Find the matching rows
         loader = VariableLoader(cross_ref)
         current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_eoh, planned_sell_thru,total_added_quantity= algorithm(loader,category,store,coms,omni,code)
-        print("################################################################3")
+        print("################################################################3",total_added_quantity)
 
         def safe_int(value):
             """Convert value to int or return None if conversion fails"""
@@ -1110,9 +1110,9 @@ def process_category(args):
                 "month_12_fc_index" : month_12_fc_index,
                 "forecasting_method" : forecasting_method,
 
-                "total_added_qty" : total_added_quantity,
+                "total_added_qty" : total_added_quantity if total_added_quantity > 0 else 0,
                 "category": f"{category}{code}",
-                "user_added_quantity": total_added_quantity,
+                "user_added_quantity": total_added_quantity if total_added_quantity > 0 else 0,
             }
         )
 

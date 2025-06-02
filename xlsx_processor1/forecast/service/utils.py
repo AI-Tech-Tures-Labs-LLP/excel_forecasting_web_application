@@ -415,6 +415,7 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
     """
     planned_fc = {}
     print(row_43)
+    print("V1",V1)
     print("Calculating planned forecast...",planned_fc)
  
     # Iterate through each retail month

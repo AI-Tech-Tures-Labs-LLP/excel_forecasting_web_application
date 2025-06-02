@@ -89,14 +89,13 @@ def get_forecast_variables(product, year=2025,last_year =2024):
 def dependencies():
     return {
         "Index_value" : ["Current_FC_Index"],
-        "Rolling_method":["Planned_FC","Planned_EOH"],
         "FC_by_Index": ["Index_value", "month_12_fc_index"],
         "FC_by_Trend": ["Trend"],
         "FC_by_Average": ["FC_by_Index", "FC_by_Trend"],
         "Recommended_FC": ["Forecasting_Method", "FC_by_Index", "FC_by_Trend", "FC_by_Average"],
-        "Planned_FC": ["Recommended_FC"],
+        "Planned_FC": ["Recommended_FC","Rolling_method"],
         "Planned_Shipments": ["Gross_Projection"],
-        "Planned_EOH": ["Planned_FC", "Planned_Shipments"],
+        "Planned_EOH": ["Planned_FC", "Planned_Shipments","Rolling_method"],
         "Planned_sell_thru": ["Planned_FC", "Planned_EOH"]
  
     }
@@ -179,11 +178,11 @@ def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Un
         },
         "Planned_FC": {
             "function": calculate_planned_fc,
-            "params": lambda ctx: [row_4, ctx["Recommended_FC"], row_17, row_43, ctx["Rolling_method"], k1]
+            "params": lambda ctx: [row_4, ctx["Recommended_FC"], row_17, row_43, str(ctx["Rolling_method"]).upper(), k1]
         },
         "Planned_EOH": {
             "function": calculate_planned_oh_partial,
-            "params": lambda ctx: [ctx["Rolling_method"], k1, ctx["Planned_FC"], ctx["Planned_Shipments"], row_21, row_37, row_43, row_17, current_month]
+            "params": lambda ctx: [str(ctx["Rolling_method"]).upper(), k1, ctx["Planned_FC"], ctx["Planned_Shipments"], row_21, row_37, row_43, row_17, current_month]
         },
         "Planned_sell_thru": {
             "function": calculate_planned_sell_through,
