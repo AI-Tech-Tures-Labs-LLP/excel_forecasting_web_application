@@ -3914,7 +3914,7 @@ function ProductSelector() {
 
                         {lastReviewedDropdownOpen && (
                           <div
-                            className="last-reviewed-dropdown absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col"
+                            className="last-reviewed-dropdown absolute top-full left-[-40px] mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {/* Header */}
