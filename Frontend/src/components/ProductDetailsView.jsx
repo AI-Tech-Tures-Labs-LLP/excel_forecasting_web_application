@@ -1549,11 +1549,11 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           },
           { key: "month_12_fc_index", label: "12-Month FC Index" },
           { key: "loss", label: "Loss (%)", type: "percentage" },
-          {
-            key: "month_12_fc_index_loss",
-            label: "12-Month FC Index (Loss %)",
-            // type: "percentage",
-          },
+          // {
+          //   key: "month_12_fc_index_loss",
+          //   label: "12-Month FC Index (Loss %)",
+          //   // type: "percentage",
+          // },
           { key: "selected_months", label: "STD Months", type: "array" },
           { key: "trend", label: "Trend", type: "percentage" },
           {
@@ -1783,7 +1783,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                           {variable.label}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                          {formatVariableValue(value, variable)}
+                          {variable.key === "trend_index_difference"
+                            ? `${formatVariableValue(value, variable)}%`
+                            : formatVariableValue(value, variable)}
                         </td>
                       </tr>
                     );
@@ -3315,7 +3317,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 <Save size={18} />
                 Save Critical Adjustments
               </button>
-              <button
+              {/* <button
                 onClick={() => setShowCalculatedChanges(!showCalculatedChanges)}
                 disabled={!changes}
                 className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -3326,7 +3328,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               >
                 <RefreshCw size={18} />
                 Show Impact Analysis
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
