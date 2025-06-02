@@ -1501,104 +1501,127 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
       const data = forecastData[0];
 
-      // Define variable configurations for each type
+      // Define variable configurations for each type with your specified format
       const getVariableConfig = (type) => {
         const baseConfig = [
-          { key: "lead_time", label: "Lead Time", suffix: " days" },
+          { key: "lead_time", label: "Lead Time" },
           {
             key: "leadtime_holiday_adjustment",
-            label: "Holiday Adjustment",
+            label: "Country Holiday",
             type: "boolean",
           },
-          { key: "selected_months", label: "Selected Months", type: "array" },
+          { key: "month_12_fc_index", label: "12-Month FC Index" },
+          { key: "loss", label: "Loss (%)", type: "percentage" },
+          {
+            key: "month_12_fc_index_loss",
+            label: "12-Month FC Index (Loss %)",
+            type: "percentage",
+          },
+          { key: "selected_months", label: "STD Months", type: "array" },
           { key: "trend", label: "Trend", type: "percentage" },
           {
             key: "inventory_maintained",
             label: "Inventory Maintained",
             type: "boolean",
           },
+          { key: "trend_index_difference", label: "Trend Index Difference" },
           { key: "red_box_item", label: "Red Box Item", type: "boolean" },
           { key: "forecasting_method", label: "Forecasting Method" },
-          { key: "forecast_month", label: "Forecast Month" },
-          { key: "next_forecast_month", label: "Next Forecast Month" },
+          { key: "door_count", label: "Door Count" },
+          { key: "average_com_oh", label: "Average Com OH" },
+          { key: "fldc", label: "FLDC" },
           { key: "birthstone", label: "Birthstone" },
           { key: "birthstone_month", label: "Birthstone Month" },
-          { key: "Macys_SOQ", label: "Macy's SOQ" },
-          { key: "total_added_qty", label: "Total Added Qty" },
           {
-            key: "average_store_sale_thru",
-            label: "Avg Store Sale Thru",
-            type: "percentage",
+            key: "considered_birthstone",
+            label: "Considered Birthstone",
+            type: "boolean",
+          },
+          { key: "forecast_month", label: "Forecast Month" },
+          {
+            key: "forecast_month_required_quantity",
+            label: "Forecast Month - Required Quantity",
           },
           {
-            key: "macy_SOQ_percentage",
-            label: "Macy SOQ %",
+            key: "forecast_month_planned_oh",
+            label: "Forecast Month - Planned OH (Before Added Qty)",
+          },
+          { key: "next_forecast_month", label: "Next Forecast Month" },
+          {
+            key: "next_forecast_month_required_quantity",
+            label: "Next Forecast Month - Required Quantity",
+          },
+          {
+            key: "next_forecast_month_planned_oh",
+            label: "Next Forecast Month - Planned OH (Before Added Qty)",
+          },
+          {
+            key: "forecast_month_planned_shipment",
+            label: "Forecast Month - Planned Shipment",
+          },
+          {
+            key: "next_forecast_month_planned_shipment",
+            label: "Next Forecast Month - Planned Shipment",
+          },
+          {
+            key: "forecast_month_qty_added",
+            label: "Forecast Month - Qty Added (Maintain OH)",
+          },
+          {
+            key: "next_forecast_month_qty_added",
+            label: "Next Forecast Month - Qty Added (Maintain OH)",
+          },
+          { key: "macys_soq_qty_added", label: "Macys SOQ - Qty Added" },
+          { key: "total_added_qty", label: "Total Added Qty" },
+          { key: "min_order", label: "Min Order" },
+          {
+            key: "average_store_sale_thru",
+            label: "Average Store SellThru",
             type: "percentage",
+          },
+          { key: "Macys_SOQ", label: "Macys SOQ - Total" },
+          {
+            key: "macy_SOQ_percentage",
+            label: "Macys SOQ - Percentage Required",
+            type: "percentage",
+          },
+          { key: "Qty_given_to_macys", label: "Macys SOQ - Actual Given" },
+          { key: "below_min_order", label: "Below Min Order", type: "boolean" },
+          { key: "over_macys_soq", label: "Over Macys SOQ", type: "boolean" },
+          {
+            key: "macys_soq_only_maintained",
+            label: "Macys SOQ - Only Maintained Qty Added",
+            type: "boolean",
+          },
+          {
+            key: "needs_review",
+            label: "Needs Review (Below Planned OH)",
+            type: "boolean",
           },
         ];
 
         const typeSpecific = {
           store: [
-            { key: "month_12_fc_index", label: "12M FC Index" },
-            { key: "loss", label: "Loss" },
-            { key: "month_12_fc_index_loss", label: "12M FC Index Loss" },
-            { key: "trend_index_difference", label: "Trend Index Difference" },
-            { key: "door_count", label: "Door Count" },
-            { key: "average_com_oh", label: "Average COM OH" },
-            { key: "fldc", label: "FLDC" },
+            // Store-specific variables that aren't in base config
             {
-              key: "forecast_month_required_quantity",
-              label: "Forecast Month Req Qty",
+              key: "store_specific_variable",
+              label: "Store Specific Variable",
             },
-            {
-              key: "forecast_month_planned_oh",
-              label: "Forecast Month Planned OH",
-            },
-            {
-              key: "next_forecast_month_required_quantity",
-              label: "Next Month Req Qty",
-            },
-            {
-              key: "next_forecast_month_planned_oh",
-              label: "Next Month Planned OH",
-            },
-            { key: "Qty_given_to_macys", label: "Qty Given to Macy's" },
           ],
           com: [
-            { key: "com_month_12_fc_index", label: "COM 12M FC Index" },
+            // COM-specific variables
+            { key: "com_month_12_fc_index", label: "COM 12-Month FC Index" },
             { key: "com_trend", label: "COM Trend", type: "percentage" },
-            { key: "trend_index_difference", label: "Trend Index Difference" },
             {
               key: "minimum_required_oh_for_com",
               label: "Min Required OH for COM",
             },
-            { key: "fldc", label: "FLDC" },
-            {
-              key: "forecast_month_required_quantity",
-              label: "Forecast Month Req Qty",
-            },
-            {
-              key: "forecast_month_planned_oh",
-              label: "Forecast Month Planned OH",
-            },
-            {
-              key: "next_forecast_month_required_quantity",
-              label: "Next Month Req Qty",
-            },
-            {
-              key: "next_forecast_month_planned_oh",
-              label: "Next Month Planned OH",
-            },
             { key: "vdf_status", label: "VDF Status", type: "boolean" },
             { key: "vdf_added_qty", label: "VDF Added Qty" },
-            {
-              key: "forecast_month_planned_shipment",
-              label: "Forecast Month Planned Shipment",
-            },
-            { key: "Qty_given_to_macys", label: "Qty Given to Macy's" },
           ],
           omni: [
-            { key: "com_month_12_fc_index", label: "COM 12M FC Index" },
+            // Omni-specific variables
+            { key: "com_month_12_fc_index", label: "COM 12-Month FC Index" },
             { key: "com_trend", label: "COM Trend", type: "percentage" },
             {
               key: "com_inventory_maintained",
@@ -1610,10 +1633,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               label: "Min Required OH for COM",
             },
             { key: "com_fldc", label: "COM FLDC" },
-            { key: "store_month_12_fc_index", label: "Store 12M FC Index" },
+            {
+              key: "store_month_12_fc_index",
+              label: "Store 12-Month FC Index",
+            },
             {
               key: "store_month_12_fc_index_loss",
-              label: "Store 12M FC Index Loss",
+              label: "Store 12-Month FC Index Loss",
+              type: "percentage",
             },
             { key: "store_trend", label: "Store Trend", type: "percentage" },
             {
@@ -1621,16 +1648,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               label: "Store Inventory Maintained",
               type: "boolean",
             },
-            { key: "door_count", label: "Door Count" },
             { key: "store_fldc", label: "Store FLDC" },
-            {
-              key: "forecast_month_planned_oh",
-              label: "Forecast Month Planned OH",
-            },
-            {
-              key: "next_forecast_month_planned_oh",
-              label: "Next Month Planned OH",
-            },
             {
               key: "trend_index_difference_com",
               label: "Trend Index Diff (COM)",
