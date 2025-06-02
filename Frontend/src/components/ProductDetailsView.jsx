@@ -1548,7 +1548,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             type: "boolean",
           },
           { key: "month_12_fc_index", label: "12-Month FC Index" },
-          { key: "loss", label: "Loss (%)", type: "percentage" },
+          { key: "loss", label: "Loss (%)" },
           {
             key: "month_12_fc_index_loss",
             label: "12-Month FC Index (Loss %)",
@@ -1783,7 +1783,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                           {variable.label}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                          {formatVariableValue(value, variable)}
+                          {variable.key === "trend_index_difference" ||
+                          variable.key === "loss"
+                            ? `${formatVariableValue(value, variable)}%`
+                            : formatVariableValue(value, variable)}
                         </td>
                       </tr>
                     );
@@ -1909,7 +1912,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return (
       <div className="w-full">
         {/* Submit Buttons */}
-        <div className="mb-4 flex gap-3">
+        {/* <div className="mb-4 flex gap-3">
           <button
             onClick={() => submitForecastChanges("Planned_FC")}
             disabled={isSubmitting}
@@ -1934,7 +1937,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             )}
             Submit Planned Shipments
           </button>
-        </div>
+        </div> */}
 
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
           <table className="w-full border-collapse bg-white">
@@ -3315,7 +3318,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 <Save size={18} />
                 Save Critical Adjustments
               </button>
-              <button
+              {/* <button
                 onClick={() => setShowCalculatedChanges(!showCalculatedChanges)}
                 disabled={!changes}
                 className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
@@ -3326,7 +3329,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               >
                 <RefreshCw size={18} />
                 Show Impact Analysis
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
