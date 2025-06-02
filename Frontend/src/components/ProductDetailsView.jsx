@@ -477,7 +477,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
   const handleUserAddedQuantityChange = (value) => {
     setExternalFactorPercentage("");
-    setExternalFactor("");
+    // setExternalFactor("");
     const qty = parseFloat(value);
     setUserAddedQuantity(value);
 
@@ -492,18 +492,18 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     // Clear external factor note when user quantity is manually entered
   };
 
-  const handleExternalFactorPercentageChange = (value) => {
-    setUserAddedQuantity("");
+  // const handleExternalFactorPercentageChange = (value) => {
+  //   setUserAddedQuantity("");
 
-    const perc = parseFloat(value);
-    setExternalFactorPercentage(value);
-    if (!isNaN(perc) && totalAddedQty) {
-      const qty = (totalAddedQty * perc) / 100;
-      setUserAddedQuantity(Math.round(qty).toString());
-    } else {
-      setUserAddedQuantity("");
-    }
-  };
+  //   const perc = parseFloat(value);
+  //   setExternalFactorPercentage(value);
+  //   if (!isNaN(perc) && totalAddedQty) {
+  //     const qty = (totalAddedQty * perc) / 100;
+  //     setUserAddedQuantity(Math.round(qty).toString());
+  //   } else {
+  //     setUserAddedQuantity("");
+  //   }
+  // };
 
   // Add function to handle Apply Changes button
   const handleApplyChanges = async () => {
@@ -1045,15 +1045,41 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }
   };
 
+  const handleSaveProductNote = async () => {
+    if (!externalFactor || !externalFactor.trim()) {
+      console.log("No note content to save");
+      return;
+    }
+
+    try {
+      const noteData = {
+        pid: productId,
+        note: externalFactor.trim(),
+        assigned_to: "Unassigned", // or get from state if you have user management
+        status: "not_reviewed", // default status
+      };
+
+      console.log("Saving note:", noteData);
+
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`,
+        noteData
+      );
+
+      console.log("Note saved successfully:", response.data);
+
+      // Optional: Clear the note field after saving
+      // setExternalFactor("");
+
+      // Optional: Show success message
+      // alert("Note saved successfully!");
+    } catch (error) {
+      console.error("Error saving note:", error);
+      alert("Failed to save note. Please try again.");
+    }
+  };
   const handleSaveCriticalInputs = async () => {
     try {
-      const calculatedUserQty =
-        externalFactorPercentage && cardData?.totalAddedQty
-          ? Math.round(
-              cardData?.totalAddedQty *
-                (parseFloat(externalFactorPercentage) / 100)
-            )
-          : null;
       const payload = {
         product_details: {
           user_added_quantity: userAddedQuantity
@@ -1092,6 +1118,11 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           );
         }
 
+        // Save note if there's content in externalFactor
+        if (externalFactor && externalFactor.trim()) {
+          await handleSaveProductNote();
+        }
+
         alert("Critical forecast adjustments saved successfully!");
         await fetchProductDetails();
         await getProducts();
@@ -1106,7 +1137,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       );
     }
   };
-
   // Make sure productId is in the dependency array
 
   const calculateChanges = () => {
@@ -2168,6 +2198,201 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       </div>
     );
   }
+  function renderLastYearForecastTable() {
+    const year = new Date().getFullYear() - 1;
+    if (!productData?.monthly_forecast) {
+      return (
+        <div className="text-center py-8 bg-gray-50 rounded-xl">
+          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">
+            No monthly forecast data available for {year}
+          </p>
+        </div>
+      );
+    }
+
+    const yearForecasts = productData.monthly_forecast.filter(
+      (f) => f.year === year
+    );
+
+    if (yearForecasts.length === 0) {
+      return (
+        <div className="text-center py-8 bg-gray-50 rounded-xl">
+          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">No forecast data available for {year}</p>
+        </div>
+      );
+    }
+
+    const forecastRows = [
+      { key: "LY_Unit_Sales", label: "Total Sales Units" },
+      { key: "LY_store_unit_sales", label: "Store Sales Units" },
+      { key: "LY_MCOM_Unit_Sales", label: "COM Sales Units" },
+      {
+        key: "LY_COM_to_TTL",
+        label: "COM % to TTL (Sales)",
+        isPercentage: true,
+      },
+      { key: "LY_OH_Units", label: "TOTAL EOM OH" },
+      { key: "LY_store_EOM_OH", label: "STORE EOM OH" },
+      { key: "LY_MCOM_OH_Units", label: "COM EOH OH" },
+      {
+        key: "LY_COM_to_TTL_OH",
+        label: "COM % to TTL (EOH)",
+        isPercentage: true,
+      },
+      { key: "LY_PTD_Sales", label: "Omni Sales $" },
+      { key: "MCOM_PTD_LY_Sales", label: "COM Sales $" },
+    ];
+
+    const months = [
+      "jan",
+      "feb",
+      "mar",
+      "apr",
+      "may",
+      "jun",
+      "jul",
+      "aug",
+      "sep",
+      "oct",
+      "nov",
+      "dec",
+    ];
+
+    const monthLabels = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
+
+    const calculateTotals = (forecast) => {
+      if (!forecast) return { annual: 0, spring: 0, fall: 0 };
+
+      const values = months.map((month) => forecast[month] || 0);
+      const annual = values.reduce((sum, val) => sum + val, 0);
+      const spring = values.slice(1, 7).reduce((sum, val) => sum + val, 0);
+      const fall = [...values.slice(7), values[0]].reduce(
+        (sum, val) => sum + val,
+        0
+      );
+
+      return { annual, spring, fall };
+    };
+
+    return (
+      <div className="w-full">
+        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+          <table className="w-full border-collapse bg-white">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-100 to-gray-50">
+                <th className="border-r border-gray-300 px-4 py-4 text-left text-sm font-bold text-gray-700 bg-white sticky left-0 z-10 min-w-[200px]">
+                  TOTAL {year}
+                </th>
+                {monthLabels.map((month) => (
+                  <th
+                    key={month}
+                    className="border-r border-gray-300 px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[90px]"
+                  >
+                    {month}
+                  </th>
+                ))}
+                <th className="border-r border-gray-300 px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[100px]">
+                  ANNUAL
+                </th>
+                <th className="border-r border-gray-300 px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[100px]">
+                  SPRING
+                </th>
+                <th className="px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[100px]">
+                  FALL
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {forecastRows.map((row, index) => {
+                const forecast = yearForecasts.find(
+                  (f) => f.variable_name === row.key
+                );
+
+                if (!forecast) {
+                  return (
+                    <tr
+                      key={row.key}
+                      className={`border-b border-gray-200 ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                      }`}
+                    >
+                      <td className="border-r border-gray-300 px-4 py-3 text-sm font-bold text-gray-800 bg-white sticky left-0 z-10">
+                        {row.label}
+                      </td>
+                      {monthLabels.map((_, i) => (
+                        <td
+                          key={i}
+                          className="border-r border-gray-300 px-3 py-3 text-center text-sm text-gray-400"
+                        >
+                          -
+                        </td>
+                      ))}
+                      <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-400">
+                        -
+                      </td>
+                      <td className="border-r border-gray-300 px-3 py-3 text-center text-sm text-gray-400">
+                        -
+                      </td>
+                      <td className="px-3 py-3 text-center text-sm text-gray-400">
+                        -
+                      </td>
+                    </tr>
+                  );
+                }
+
+                const totals = calculateTotals(forecast);
+
+                return (
+                  <tr
+                    key={row.key}
+                    className={`border-b border-gray-200 ${
+                      index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                    } hover:bg-indigo-50 transition-colors`}
+                  >
+                    <td className="border-r border-gray-300 px-4 py-3 text-sm font-bold text-gray-800 bg-white sticky left-0 z-10">
+                      {row.label}
+                    </td>
+                    {months.map((month) => (
+                      <td
+                        key={month}
+                        className="border-r border-gray-300 px-3 py-3 text-center text-sm font-medium text-gray-800"
+                      >
+                        {formatValue(forecast[month], row.isPercentage)}
+                      </td>
+                    ))}
+                    <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 bg-blue-50">
+                      {formatValue(totals.annual, row.isPercentage)}
+                    </td>
+                    <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 bg-green-50">
+                      {formatValue(totals.spring, row.isPercentage)}
+                    </td>
+                    <td className="px-3 py-3 text-center text-sm font-bold text-gray-900 bg-orange-50">
+                      {formatValue(totals.fall, row.isPercentage)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
 
   const cardData = getSophisticatedCardData();
 
@@ -2961,7 +3186,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               </div>
 
               {/* External Factor Percentage */}
-              <div className="bg-white rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow p-5">
+              {/* <div className="bg-white rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 bg-blue-50 rounded-lg">
                     <TrendingUp className="text-blue-600" size={18} />
@@ -3006,7 +3231,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     {externalFactorPercentage}% adjustment
                   </div>
                 )}
-              </div>
+              </div> */}
             </div>
 
             {/* External Factor Notes Section */}
@@ -3014,7 +3239,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
               <div className="flex items-center gap-2 mb-3">
                 <FileText className="text-gray-600" size={18} />
                 <label className="block text-sm font-semibold text-gray-800">
-                  External Factor Notes
+                  Notes
                 </label>
               </div>
               <textarea
@@ -3472,7 +3697,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     TOTAL {new Date().getFullYear() - 1}
                   </h4>
                 </div>
-                {renderCurrentYearForecastTable()}
+                {renderLastYearForecastTable()}
               </div>
             </div>
           )}
