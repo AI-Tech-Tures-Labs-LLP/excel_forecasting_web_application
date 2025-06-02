@@ -89,6 +89,7 @@ def get_forecast_variables(product, year=2025,last_year =2024):
 def dependencies():
     return {
         "Index_value" : ["Current_FC_Index"],
+        "Rolling_method":["Planned_FC","Planned_EOH"],
         "FC_by_Index": ["Index_value", "month_12_fc_index"],
         "FC_by_Trend": ["Trend"],
         "FC_by_Average": ["FC_by_Index", "FC_by_Trend"],
@@ -154,7 +155,6 @@ def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Un
     row_37 = TY_Receipts
     row_21 = TY_OH_Units
     print("row_43:", row_43)
-
 
     return {
         "Index_value": {

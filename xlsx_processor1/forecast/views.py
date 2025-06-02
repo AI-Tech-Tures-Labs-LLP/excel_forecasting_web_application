@@ -430,11 +430,13 @@ class DownloadFinalQuantityReport(APIView):
                     if product.user_added_quantity is not None
                     else product.total_added_qty
                 )
-                data.append({
-                    "PID": product.product_id,
-                    "Final_qty": final_qty,
-                    "Category": product.category,
-                })
+                if final_qty > 0:
+                    data.append({
+                        "PID": product.product_id,
+                        "Category": product.category,
+                        "Final_qty": final_qty,
+                        
+                    })
 
             df = pd.DataFrame(data)
             df.to_excel(file_path, index=False)
