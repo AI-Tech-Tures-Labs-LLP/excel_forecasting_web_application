@@ -1911,7 +1911,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return (
       <div className="w-full">
         {/* Submit Buttons */}
-        <div className="mb-4 flex gap-3">
+        {/* <div className="mb-4 flex gap-3">
           <button
             onClick={() => submitForecastChanges("Planned_FC")}
             disabled={isSubmitting}
@@ -1936,7 +1936,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             )}
             Submit Planned Shipments
           </button>
-        </div>
+        </div> */}
 
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
           <table className="w-full border-collapse bg-white">
