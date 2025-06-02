@@ -24,7 +24,7 @@ Select * from public.forecast_storeforecast;
 
 -- # Delete All Data from Tables
 -- Note: This will remove all data from the specified tables. Use with caution.
-truncate table public.forecast_monthlyforecast, public.forecast_productdetail, public.forecast_omniforecast, public.forecast_comforecast, public.forecast_storeforecast ;
+truncate table public.forecast_monthlyforecast, public.forecast_productdetail, public.forecast_omniforecast, public.forecast_comforecast, public.forecast_storeforecast,public.forecast_forecastnote ;
 
 
 -- Replace with actual PIDs or categories as needed
@@ -54,3 +54,41 @@ SET
   "Mens_day" = TRUE,
   "Womens_day" = TRUE
 WHERE pid IN ('RAX4713A8FE1PKCH', 'TRF043734Y18', 'VSC067102Y18');
+
+
+
+
+WITH category_assignees AS (
+    SELECT *
+    FROM (
+        VALUES
+            ('Bridal739&267&263', 'Alice'),
+            ('Bridge Gem742', 'Carol'),
+            ('Diamond734&737&748', 'Eva'),
+            ('Fine Pearl265&271', 'George'),
+            ('Gold262&270', 'Ian'),
+            ('Gold746', 'Kevin'),
+            ('Men''s768&771', 'Mark'),  -- Escaped apostrophe
+            ('Precious264&268', 'Oliver'),
+            ('Semi272&733', 'Quinn'),
+            ('Womens Silver260&404', 'Steve'),
+            ('', 'Default_User1')  -- Fallback
+    ) AS t(category_name, assignee)
+),
+
+-- Step 2: Map each product's category to its fixed assignee
+assignments AS (
+    SELECT
+        fn.pid,
+        ca.assignee
+    FROM forecast_forecastnote fn
+    JOIN forecast_productdetail pd ON fn.pid = pd.product_id
+    LEFT JOIN category_assignees ca ON pd.category = ca.category_name
+)
+
+-- Step 3: Update product_assigned_to instead of assigned_to
+
+UPDATE forecast_forecastnote fn
+SET product_assigned_to = a.assignee
+FROM assignments a
+WHERE fn.pid = a.pid;
