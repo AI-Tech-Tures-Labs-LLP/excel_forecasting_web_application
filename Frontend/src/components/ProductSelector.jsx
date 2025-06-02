@@ -317,6 +317,7 @@ function ProductSelector() {
             notes: sortedNotes,
             latestNote: latestNote,
             assignedTo: latestNote.assigned_to || "Unassigned",
+            productAssignedTo: latestNote.product_assigned_to || "Unassigned",
             status: status,
             count: productNotes.length,
             hasUnreviewed: hasUnreviewed,
@@ -1264,7 +1265,17 @@ function ProductSelector() {
   //     );
   //   }
   // };
-
+  const formatAssignedToDisplay = (product) => {
+    const notesData = productNotesData[product.pid];
+    const assignedTo = notesData?.assignedTo || "Unassigned";
+    const productAssignedTo = notesData?.productAssignedTo || "Unassigned";
+    return (
+      <div className="flex items-center gap-1">
+        <User size={14} className="text-gray-400" />
+        <span className="text-sm">{productAssignedTo}</span>
+      </div>
+    );
+  };
   // Refresh data
   const handleRefresh = () => {
     loadAvailableFilters();
@@ -1450,17 +1461,17 @@ function ProductSelector() {
   };
 
   // Format assigned to display
-  const formatAssignedToDisplay = (product) => {
-    const notesData = productNotesData[product.pid];
-    const assignedTo = notesData?.assignedTo || "Unassigned";
+  // const formatAssignedToDisplay = (product) => {
+  //   const notesData = productNotesData[product.pid];
+  //   const assignedTo = notesData?.assignedTo || "Unassigned";
 
-    return (
-      <div className="flex items-center gap-1">
-        <User size={14} className="text-gray-400" />
-        <span className="text-sm">{assignedTo}</span>
-      </div>
-    );
-  };
+  //   return (
+  //     <div className="flex items-center gap-1">
+  //       <User size={14} className="text-gray-400" />
+  //       <span className="text-sm">{assignedTo}</span>
+  //     </div>
+  //   );
+  // };
 
   // Get added qty
   const getAddedQty = (product) => {
@@ -3256,7 +3267,9 @@ function ProductSelector() {
                           </div>
                         )}
                       </th> */}
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">Assigned to</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+                        Assigned to
+                      </th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider relative">
                         <button
                           onClick={() => {
@@ -4131,9 +4144,7 @@ function ProductSelector() {
                           {formatAssignedToDisplay(product)}
                         </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                         { console.log("ajaxxxxxxxxxxxxxxxxxxx",product.forecast_notes.product_assigned_to)}
-                          
-                          {product.product_assigned_to || "-"}
+                          {formatAssignedToDisplay(product)}
                         </td>
                         <td
                           className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"

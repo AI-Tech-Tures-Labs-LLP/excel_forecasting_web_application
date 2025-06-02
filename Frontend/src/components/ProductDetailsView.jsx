@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
-import productImage from "../assets/productImage.png";
+import productImage from "../assets/undefined.png";
 import {
   ArrowLeft,
   ChevronDown,
@@ -430,6 +430,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     selectedIndex,
     rollingForecastData,
   ]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [productId]);
 
   // Save recent searches to memory
   const saveRecentSearches = (searches) => {
@@ -929,6 +933,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           month_12_fc_index: parseFloat(editable12MonthFC) || 0,
           Current_FC_Index: selectedIndex,
         });
+        setHasEditableChanges(false);
         alert("Forecast controls applied successfully!");
       }
     } catch (error) {
@@ -1547,7 +1552,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           {
             key: "month_12_fc_index_loss",
             label: "12-Month FC Index (Loss %)",
-            type: "percentage",
+            // type: "percentage",
           },
           { key: "selected_months", label: "STD Months", type: "array" },
           { key: "trend", label: "Trend", type: "percentage" },
@@ -1672,7 +1677,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             {
               key: "store_month_12_fc_index_loss",
               label: "Store 12-Month FC Index Loss",
-              type: "percentage",
+              // type: "percentage",
             },
             { key: "store_trend", label: "Store Trend", type: "percentage" },
             {
@@ -3503,25 +3508,27 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                       </h3>
                     </div>
 
-                <button
-                  disabled={
-                    ((!initialControlValues ||
-                      !originalValuesRef.current ||
-                      JSON.stringify(initialControlValues) === JSON.stringify(originalValuesRef.current)) &&
-                      !hasEditableChanges) ||
-                    isSaving
-                  }
-                  onClick={handleSaveChanges}
-                  className={`px-6 py-3 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 ${
-                    ((!initialControlValues ||
-                      !originalValuesRef.current ||
-                      JSON.stringify(initialControlValues) === JSON.stringify(originalValuesRef.current)) &&
-                      !hasEditableChanges) ||
-                    isSaving
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105"
-                  }`}
-                >
+                    <button
+                      disabled={
+                        ((!initialControlValues ||
+                          !originalValuesRef.current ||
+                          JSON.stringify(initialControlValues) ===
+                            JSON.stringify(originalValuesRef.current)) &&
+                          !hasEditableChanges) ||
+                        isSaving
+                      }
+                      onClick={handleSaveChanges}
+                      className={`px-6 py-3 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 ${
+                        ((!initialControlValues ||
+                          !originalValuesRef.current ||
+                          JSON.stringify(initialControlValues) ===
+                            JSON.stringify(originalValuesRef.current)) &&
+                          !hasEditableChanges) ||
+                        isSaving
+                          ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105"
+                          : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105"
+                      }`}
+                    >
                       {isSaving ? (
                         <>
                           <RefreshCw size={16} className="animate-spin" />
@@ -3531,12 +3538,12 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                         <>
                           <Settings size={16} />
                           Apply Changes
-                          {JSON.stringify(initialControlValues) !==
+                          {/* {JSON.stringify(initialControlValues) !==
                             JSON.stringify(originalValuesRef.current) && (
                             <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full animate-bounce">
                               !
                             </span>
-                          )}
+                          )} */}
                         </>
                       )}
                     </button>
