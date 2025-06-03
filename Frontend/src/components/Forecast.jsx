@@ -1039,6 +1039,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import apiService from "../services/apiService";
 
 function Forecast() {
   const navigate = useNavigate();
@@ -1159,6 +1160,8 @@ function Forecast() {
     sessionStorage.setItem("generatedFiles", JSON.stringify(updatedFiles));
   };
 
+  // Replace the handleSubmit function (around line 120) with this:
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -1210,38 +1213,42 @@ function Forecast() {
     navigate("/file-upload");
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/upload/`,
-        formData
-      );
+      const result = await apiService.forecast.uploadForecast(formData);
 
-      const filePathFromServer = response.data.file_url;
+      if (result.success) {
+        const filePathFromServer = result.data.file_url;
 
-      // Update forecast data with download URL
-      const finalForecastData = {
-        ...forecastData,
-        downloadUrl: filePathFromServer,
-        filePath: response.data.file_path,
-      };
+        // Update forecast data with download URL
+        const finalForecastData = {
+          ...forecastData,
+          downloadUrl: filePathFromServer,
+          filePath: result.data.file_path,
+        };
 
-      // Update file status to completed
-      updateFileStatus(fileId, "completed", filePathFromServer, "2.4 MB");
+        // Update file status to completed
+        updateFileStatus(fileId, "completed", filePathFromServer, "2.4 MB");
 
-      // Store forecast data in localStorage for the Product Selector page
-      localStorage.setItem("forecastData", JSON.stringify(finalForecastData));
-      localStorage.setItem("file_path", outputFileName);
+        // Store forecast data in localStorage for the Product Selector page
+        localStorage.setItem("forecastData", JSON.stringify(finalForecastData));
+        localStorage.setItem("file_path", outputFileName);
 
-      setDownloadUrl(filePathFromServer);
-      setErrorMessage("");
+        setDownloadUrl(filePathFromServer);
+        setErrorMessage("");
+      } else {
+        console.error("Error uploading the file:", result.error);
+
+        // Update file status to error
+        updateFileStatus(fileId, "error");
+
+        setErrorMessage(result.error);
+      }
     } catch (error) {
       console.error("Error uploading the file:", error);
 
       // Update file status to error
       updateFileStatus(fileId, "error");
 
-      setErrorMessage(
-        error.response ? error.response.data.error : "An error occurred"
-      );
+      setErrorMessage("An error occurred while uploading the file");
     } finally {
       setLoading(false);
     }

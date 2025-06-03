@@ -1,6 +1,7 @@
 // Complete ProductSelector.jsx with enhanced dropdown filters and separate notes column
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import apiService from "../services/apiService";
 
 import {
   ChevronDown,
@@ -593,59 +594,17 @@ function ProductSelector() {
   };
 
   const applyBulkExternalFactor = async () => {
-    if (!isValidInput()) return;
-    if (!bulkFactor || selectedProductIds.length === 0) return;
+    const result = await apiService.product.bulkUpdateExternalFactor(
+      selectedProductIds,
+      bulkFactor,
+      bulkFactorNote
+    );
 
-    await Promise.all(
-      currentProducts
-        .filter((p) => selectedProductIds.includes(p.pid))
-        .map((product) =>
-          axios.put(
-            `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/${
-              product.pid
-            }/`,
-            {
-              product_details: {
-                external_factor_percentage: parseFloat(bulkFactor),
-                user_added_quantity: null,
-                external_factor: bulkFactorNote, // add this line if supported
-              },
-            }
-          )
-        )
-    );
-    dispatch(
-      fetchProducts({
-        productType: selectedProductType,
-        filters: {
-          category: [],
-          birthstone: [],
-          red_box_item: [],
-          vdf_status: [],
-          tagged_to: [],
-          considered_birthstone: null,
-          added_qty_macys_soq: null,
-          below_min_order: null,
-          over_macys_soq: null,
-          added_only_to_balance_soq: null,
-          need_to_review_first: null,
-          // Holiday filters
-          notes_sort: null,
-          forecast_month: [],
-          added_qty_sort: null,
-          valentine_day: null,
-          mothers_day: null,
-          fathers_day: null,
-          mens_day: null,
-          womens_day: null,
-          status: [],
-          last_reviewed_sort: null,
-        },
-      })
-    );
-    setSelectedProductIds([]);
-    alert("Updated external factor and calculated user quantity.");
-    setShowBulkModal(false);
+    if (result.success) {
+      alert("Updated external factor successfully!");
+    } else {
+      alert("Failed to update external factor");
+    }
   };
 
   // Pagination calculations
@@ -654,8 +613,6 @@ function ProductSelector() {
   const endIndex = startIndex + itemsPerPage;
   const currentProducts = processedProducts.slice(startIndex, endIndex);
 
-  // Load available filter options from API
-  // const loadAvailableFilters = async () => {
   //   setFiltersLoading(true);
   //   try {
   //     const response = await fetch(
@@ -874,86 +831,83 @@ function ProductSelector() {
   const loadAvailableFilters = async () => {
     setFiltersLoading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/query/filter_products/`
-      );
-      const data = await response.json();
-
-      const allProducts = [
-        ...(data.store_products || []),
-        ...(data.com_products || []),
-        ...(data.omni_products || []),
-      ];
-
-      // Extract unique values for each filter
-      const categories = [
-        ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
-      ];
-
-      const birthstones = [
-        ...new Set(allProducts.map((p) => p.birthstone).filter(Boolean)),
-      ];
-
-      // Predefined months array
-      const forecastMonths = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
-      ];
-
-      // Predefined status options
-      const statuses = ["Reviewed", "Not Reviewed", "Pending"];
-
-      // Load product notes to get tagged users
-      let taggedToUsers = ["Unassigned"]; // Default value
-      try {
-        const notesResponse = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`
-        );
-        const notesData = await notesResponse.json();
-        const notes = notesData.results || notesData;
-
-        // Extract unique assigned users from notes
-        const assignedUsers = [
-          ...new Set(
-            notes
-              .map((note) => note.assigned_to)
-              .filter(Boolean)
-              .filter((user) => user !== "Unassigned")
-          ),
+      const result = await apiService.product.getFilteredProducts();
+      if (result.success) {
+        const allProducts = [
+          ...(result.data.store_products || []),
+          ...(result.data.com_products || []),
+          ...(result.data.omni_products || []),
         ];
 
-        taggedToUsers = ["Unassigned", ...assignedUsers.sort()];
-      } catch (notesError) {
-        console.warn("Could not load notes for tagged users:", notesError);
+        // Extract unique values for each filter
+        const categories = [
+          ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
+        ];
+
+        const birthstones = [
+          ...new Set(allProducts.map((p) => p.birthstone).filter(Boolean)),
+        ];
+
+        // Predefined months array
+        const forecastMonths = [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December",
+        ];
+
+        // Predefined status options
+        const statuses = ["Reviewed", "Not Reviewed", "Pending"];
+
+        // Load product notes to get tagged users
+        let taggedToUsers = ["Unassigned"];
+        try {
+          const notesResponse = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`
+          );
+          const notesData = await notesResponse.json();
+          const notes = notesData.results || notesData;
+
+          const assignedUsers = [
+            ...new Set(
+              notes
+                .map((note) => note.assigned_to)
+                .filter(Boolean)
+                .filter((user) => user !== "Unassigned")
+            ),
+          ];
+
+          taggedToUsers = ["Unassigned", ...assignedUsers.sort()];
+        } catch (notesError) {
+          console.warn("Could not load notes for tagged users:", notesError);
+        }
+
+        const redBoxItems = ["Yes", "No"];
+        const vdfStatuses = ["Active", "Inactive"];
+
+        setAvailableFilters({
+          categories: categories.sort(),
+          birthstones: birthstones.sort(),
+          tagged_to: taggedToUsers,
+          forecast_months: forecastMonths,
+          statuses: statuses,
+          red_box_items: redBoxItems,
+          vdf_statuses: vdfStatuses,
+        });
+
+        setCategoryDownloadModal((prev) => ({
+          ...prev,
+          availableCategories: categories.sort(),
+        }));
       }
-
-      const redBoxItems = ["Yes", "No"];
-      const vdfStatuses = ["Active", "Inactive"];
-
-      setAvailableFilters({
-        categories: categories.sort(),
-        birthstones: birthstones.sort(),
-        tagged_to: taggedToUsers,
-        forecast_months: forecastMonths,
-        statuses: statuses, // Add this line
-        red_box_items: redBoxItems,
-        vdf_statuses: vdfStatuses,
-      });
-
-      setCategoryDownloadModal((prev) => ({
-        ...prev,
-        availableCategories: categories.sort(),
-      }));
     } catch (error) {
       console.error("Error loading filter options:", error);
       dispatch(

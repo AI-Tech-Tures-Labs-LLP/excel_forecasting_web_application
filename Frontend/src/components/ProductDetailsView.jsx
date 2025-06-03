@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
+import apiService from "../services/apiService";
 import productImage from "../assets/undefined.png";
 import {
   ArrowLeft,
@@ -594,7 +595,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         contextData.Planned_sell_thru[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
       });
-      console.log("TREND", lastChangedField);
+
       const getChangedFieldValue = () => {
         switch (lastChangedField) {
           case "Trend":
@@ -611,17 +612,16 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             return editableTrend;
         }
       };
+
       if (lastChangedField) {
         lastAppliedChangeRef.current = {
           changed_variable: lastChangedField,
-          new_value: getChangedFieldValue(), // reuse same logic
+          new_value: getChangedFieldValue(),
         };
       }
 
-      // Use a control variable change to trigger recalculation
       const payload = {
-        changed_variable: lastChangedField || "TREND", // or whichever control changed most recently
-        // new_value: parseFloat(editableTrend) || 0,
+        changed_variable: lastChangedField || "TREND",
         new_value: getChangedFieldValue(),
         context_data: contextData,
         pid: productId,
@@ -629,23 +629,11 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
       console.log("Applying control changes:", payload);
 
-      // const response = await axios.post(
-      //   `${
-      //     import.meta.env.VITE_API_BASE_URL
-      //   }/forecast/api/product/${productId}/`,
-      //   payload
-      // );
+      const result = await apiService.product.recalculateForecast(payload);
 
-      const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/recalculate_forecast/`,
-        payload
-      );
-
-      if (response.data && response.data.updated_context) {
+      if (result.success && result.data.updated_context) {
         // Update the rolling forecast data with the recalculated values
-        const updatedContext = response.data.updated_context;
+        const updatedContext = result.data.updated_context;
 
         const updatedRollingData = {
           index: monthLabels.map(
@@ -669,8 +657,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           plannedEOH: monthLabels.map(
             (month) => updatedContext.Planned_EOH?.[month] || 0
           ),
-          grossProjection: rollingForecastData.grossProjection, // Keep existing
-          macysProjReceipts: rollingForecastData.macysProjReceipts, // Keep existing
+          grossProjection: rollingForecastData.grossProjection,
+          macysProjReceipts: rollingForecastData.macysProjReceipts,
           plannedSellThru: monthLabels.map(
             (month) => updatedContext.Planned_sell_thru?.[month] || 0
           ),
@@ -691,7 +679,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         });
         setEditableData(newEditableData);
 
-        // setHasControlChanges(false);
         setLastSubmittedData(payload);
         setLastChangedField(null);
         originalValuesRef.current = {
@@ -701,7 +688,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           month_12_fc_index: editable12MonthFC,
           Current_FC_Index: selectedIndex,
         };
-        // alert("Forecast controls applied successfully!");
+      } else {
+        console.error("Error applying control changes:", result.error);
+        alert("Failed to apply changes. Please try again.");
       }
     } catch (error) {
       console.error("Error applying control changes:", error);
@@ -746,12 +735,12 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       console.error("Failed to fetch products:", err);
     }
   };
-
   const handleSaveChanges = async () => {
     if (!rollingForecastData || !productId) return;
 
     setIsSaving(true);
     const file_path = localStorage.getItem("file_path");
+
     try {
       const monthLabels = [
         "FEB",
@@ -809,7 +798,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         contextData.Planned_sell_thru[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
       });
-      console.log("TREND", lastChangedField);
+
       const getChangedFieldValue = () => {
         switch (lastChangedField) {
           case "Trend":
@@ -833,19 +822,18 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         Forecasting_Method: forecastingMethod,
         month_12_fc_index: parseFloat(editable12MonthFC) || 0,
         Current_FC_Index: selectedIndex,
-        Index: contextData.Index_value, // ✅ rename from Index_value
+        Index: contextData.Index_value,
         FC_by_Index: contextData.FC_by_Index,
         FC_by_Trend: contextData.FC_by_Trend,
         Recommended_FC: contextData.Recommended_FC,
         Planned_FC: contextData.Planned_FC,
         Planned_Shipments: contextData.Planned_Shipments,
         Planned_EOH: contextData.Planned_EOH,
-        Gross_Projection_Nav: contextData.Gross_Projection_Nav || {}, // if needed
-        Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {}, // if needed
+        Gross_Projection_Nav: contextData.Gross_Projection_Nav || {},
+        Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {},
         Planned_sell_Thru: contextData.Planned_sell_thru,
       };
 
-      // Use a control variable change to trigger recalculation
       const payload = {
         updated_context: updated_context,
         file_path: file_path,
@@ -854,23 +842,13 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
       console.log("Applying control changes:", payload);
 
-      // const response = await axios.post(
-      //   `${
-      //     import.meta.env.VITE_API_BASE_URL
-      //   }/forecast/api/product/${productId}/`,
-      //   payload
-      // );
-
-      const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/save_recalculate/`,
+      const result = await apiService.product.saveAndRecalculateForecast(
         payload
       );
 
-      if (response.data && response.data.updated_context) {
+      if (result.success && result.data.updated_context) {
         // Update the rolling forecast data with the recalculated values
-        const updatedContext = response.data.updated_context;
+        const updatedContext = result.data.updated_context;
 
         const updatedRollingData = {
           index: monthLabels.map(
@@ -894,8 +872,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           plannedEOH: monthLabels.map(
             (month) => updatedContext.Planned_EOH?.[month] || 0
           ),
-          grossProjection: rollingForecastData.grossProjection, // Keep existing
-          macysProjReceipts: rollingForecastData.macysProjReceipts, // Keep existing
+          grossProjection: rollingForecastData.grossProjection,
+          macysProjReceipts: rollingForecastData.macysProjReceipts,
           plannedSellThru: monthLabels.map(
             (month) => updatedContext.Planned_sell_thru?.[month] || 0
           ),
@@ -935,6 +913,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         });
         setHasEditableChanges(false);
         alert("Forecast controls applied successfully!");
+      } else {
+        console.error("Error applying control changes:", result.error);
+        alert("Failed to apply changes. Please try again.");
       }
     } catch (error) {
       console.error("Error applying control changes:", error);
@@ -1195,72 +1176,75 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/${productId}/`
-      );
-      console.log("Product details fetched:", response.data);
-      setProductData(response.data);
-      if (response.data.product_details) {
-        setUserAddedQuantity(
-          response.data.product_details.user_added_quantity || ""
+      const result = await apiService.product.getProductDetails(productId);
+      if (result.success) {
+        console.log("Product details fetched:", result.data);
+        setProductData(result.data);
+
+        if (result.data.product_details) {
+          setUserAddedQuantity(
+            result.data.product_details.user_added_quantity || ""
+          );
+          setExternalFactorPercentage(
+            result.data.product_details.external_factor_percentage || ""
+          );
+          setExternalFactor(result.data.product_details.external_factor || "");
+        }
+
+        // Extract 12-month rolling forecast dynamically
+        const rolling = {
+          index: [],
+          fcByIndex: [],
+          fcByTrend: [],
+          recommendedFC: [],
+          plannedFC: [],
+          plannedShipments: [],
+          plannedEOH: [],
+          grossProjection: [],
+          macysProjReceipts: [],
+          plannedSellThru: [],
+        };
+
+        const monthOrder = [
+          "feb",
+          "mar",
+          "apr",
+          "may",
+          "jun",
+          "jul",
+          "aug",
+          "sep",
+          "oct",
+          "nov",
+          "dec",
+          "jan",
+        ];
+
+        const getForecastValues = (variable) => {
+          const item = result.data.monthly_forecast?.find(
+            (f) => f.variable_name === variable
+          );
+          if (!item) return Array(12).fill(0);
+          return monthOrder.map((m) => item[m] ?? 0);
+        };
+
+        rolling.index = getForecastValues("IndexPercentage");
+        rolling.fcByIndex = getForecastValues("ForecastByIndex");
+        rolling.fcByTrend = getForecastValues("ForecastByTrend");
+        rolling.recommendedFC = getForecastValues("RecommendedForecast");
+        rolling.plannedFC = getForecastValues("PlannedForecast");
+        rolling.plannedShipments = getForecastValues("PlannedShipment");
+        rolling.plannedEOH = getForecastValues("PlannedEOH");
+        rolling.grossProjection = getForecastValues("GrossProjection");
+        rolling.macysProjReceipts = getForecastValues(
+          "MacysProjectionReciepts"
         );
-        setExternalFactorPercentage(
-          response.data.product_details.external_factor_percentage || ""
-        );
-        setExternalFactor(response.data.product_details.external_factor || "");
+        rolling.plannedSellThru = getForecastValues("PlannedSellThru");
+
+        setRollingForecastData(rolling);
+      } else {
+        setError(result.error);
       }
-
-      // Extract 12-month rolling forecast dynamically
-      const rolling = {
-        index: [],
-        fcByIndex: [],
-        fcByTrend: [],
-        recommendedFC: [],
-        plannedFC: [],
-        plannedShipments: [],
-        plannedEOH: [],
-        grossProjection: [],
-        macysProjReceipts: [],
-        plannedSellThru: [],
-      };
-
-      const monthOrder = [
-        "feb",
-        "mar",
-        "apr",
-        "may",
-        "jun",
-        "jul",
-        "aug",
-        "sep",
-        "oct",
-        "nov",
-        "dec",
-        "jan",
-      ];
-
-      const getForecastValues = (variable) => {
-        const item = response.data.monthly_forecast?.find(
-          (f) => f.variable_name === variable
-        );
-        if (!item) return Array(12).fill(0);
-        return monthOrder.map((m) => item[m] ?? 0);
-      };
-
-      rolling.index = getForecastValues("IndexPercentage");
-      rolling.fcByIndex = getForecastValues("ForecastByIndex");
-      rolling.fcByTrend = getForecastValues("ForecastByTrend");
-      rolling.recommendedFC = getForecastValues("RecommendedForecast");
-      rolling.plannedFC = getForecastValues("PlannedForecast");
-      rolling.plannedShipments = getForecastValues("PlannedShipment");
-      rolling.plannedEOH = getForecastValues("PlannedEOH");
-      rolling.grossProjection = getForecastValues("GrossProjection");
-      rolling.macysProjReceipts = getForecastValues("MacysProjectionReciepts");
-      rolling.plannedSellThru = getForecastValues("PlannedSellThru");
-
-      setRollingForecastData(rolling);
     } catch (error) {
       console.error("Error fetching product details:", error);
       setError("Failed to load product details");

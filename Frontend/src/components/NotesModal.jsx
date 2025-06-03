@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
+import apiService from "../services/apiService";
 
 const NotesModal = ({
   isOpen,
@@ -37,16 +38,13 @@ const NotesModal = ({
       fetchNotes();
     }
   }, [isOpen, productId]);
-
   const fetchNotes = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/?pid=${productId}`
-      );
-      setNotes(response.data.results || response.data);
+      const result = await apiService.notes.getProductNotes(productId);
+      if (result.success) {
+        setNotes(result.data.results || result.data);
+      }
     } catch (error) {
       console.error("Error fetching notes:", error);
     } finally {
@@ -66,21 +64,23 @@ const NotesModal = ({
         reviewed: newNote.reviewed,
       };
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`,
-        noteData
-      );
+      const result = await apiService.notes.createNote(noteData);
 
-      setNotes([response.data, ...notes]);
-      if (
-        newNote.assigned_to.trim() &&
-        newNote.assigned_to.trim() !== "Unassigned"
-      ) {
-        if (onTaggedUserAdded) {
-          onTaggedUserAdded(newNote.assigned_to.trim());
+      if (result.success) {
+        setNotes([result.data, ...notes]);
+        if (
+          newNote.assigned_to.trim() &&
+          newNote.assigned_to.trim() !== "Unassigned"
+        ) {
+          if (onTaggedUserAdded) {
+            onTaggedUserAdded(newNote.assigned_to.trim());
+          }
         }
+        setNewNote({ note: "", assigned_to: "", reviewed: false });
+      } else {
+        console.error("Error saving note:", result.error);
+        alert("Failed to save note");
       }
-      setNewNote({ note: "", assigned_to: "", reviewed: false });
     } catch (error) {
       console.error("Error saving note:", error);
       alert("Failed to save note");
@@ -93,12 +93,14 @@ const NotesModal = ({
     if (!confirm("Are you sure you want to delete this note?")) return;
 
     try {
-      await axios.delete(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/${noteId}/`
-      );
-      setNotes(notes.filter((note) => note.id !== noteId));
+      const result = await apiService.notes.deleteNote(noteId);
+
+      if (result.success) {
+        setNotes(notes.filter((note) => note.id !== noteId));
+      } else {
+        console.error("Error deleting note:", result.error);
+        alert("Failed to delete note");
+      }
     } catch (error) {
       console.error("Error deleting note:", error);
       alert("Failed to delete note");
@@ -129,18 +131,20 @@ const NotesModal = ({
 
   const handleToggleStatus = async (noteId, newStatus) => {
     try {
-      const response = await axios.patch(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/${noteId}/`,
-        { status: newStatus }
-      );
+      const result = await apiService.notes.updateNote(noteId, {
+        status: newStatus,
+      });
 
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === noteId ? { ...note, status: response.data.status } : note
-        )
-      );
+      if (result.success) {
+        setNotes((prev) =>
+          prev.map((note) =>
+            note.id === noteId ? { ...note, status: result.data.status } : note
+          )
+        );
+      } else {
+        console.error("Error updating note status:", result.error);
+        alert("Failed to update note status");
+      }
     } catch (error) {
       console.error("Error updating note status:", error);
       alert("Failed to update note status");

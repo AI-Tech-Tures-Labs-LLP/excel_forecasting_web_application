@@ -167,7 +167,7 @@
 // export default XLSXUploader;
 
 import React, { useState } from "react";
-import axios from "axios";
+
 import {
   Upload,
   FileDown,
@@ -177,7 +177,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import apiService from "../services/apiService";
 function XLSXUploader() {
   const navigate = useNavigate();
   const [file, setFile] = useState(null);
@@ -231,18 +231,19 @@ function XLSXUploader() {
     formData.append("output_filename", outputFileName);
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_BASE_URL}/api/upload/`,
-        formData
-      );
-      const filePathFromServer = response.data.file_path;
-      setDownloadUrl(
-        `${import.meta.env.VITE_API_BASE_URL}${filePathFromServer}`
-      );
+      const result = await apiService.file.uploadPricingSheet(formData);
+
+      if (result.success) {
+        const filePathFromServer = result.data.file_path;
+        setDownloadUrl(
+          `${import.meta.env.VITE_API_BASE_URL}${filePathFromServer}`
+        );
+      } else {
+        setErrorMessage(result.error);
+      }
     } catch (error) {
-      setErrorMessage(
-        error.response?.data?.error || "An error occurred during upload"
-      );
+      console.error("Error uploading file:", error);
+      setErrorMessage("An error occurred during upload");
     } finally {
       setIsUploading(false);
     }
