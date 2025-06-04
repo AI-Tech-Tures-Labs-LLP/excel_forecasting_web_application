@@ -155,7 +155,8 @@ class DownloadFileAPIView(APIView):
 
 
 class ProductDetailViewSet(viewsets.ViewSet):
-    
+    lookup_field = "pk"         
+    lookup_value_regex = r"[^/]+"
     def retrieve(self, request, pk=None):
         # Fetch product details
         product = get_object_or_404(ProductDetail, product_id=pk)
