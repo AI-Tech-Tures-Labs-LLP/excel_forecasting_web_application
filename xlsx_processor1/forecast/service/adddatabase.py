@@ -9,6 +9,8 @@ django.setup()
 from forecast.models import MonthlyForecast, ProductDetail
 from datetime import datetime
 import pandas as pd
+from django.db import transaction
+
 
 
 
@@ -41,12 +43,13 @@ def save_macys_projection_receipts(product, matching_row, year):
             receipts_data[month] = None
     
     # Update or create the forecast entry for the entire year
-    MonthlyForecast.objects.update_or_create(
-        product=product,
-        variable_name='MacysProjectionReciepts',
-        year=year,
-        defaults=receipts_data  # Updates all month fields at once
-    )
+    with transaction.atomic():
+        MonthlyForecast.objects.update_or_create(
+            product=product,
+            variable_name='MacysProjectionReciepts',
+            year=year,
+            defaults=receipts_data  # Updates all month fields at once
+        )
 
 
 # Use this 
@@ -164,12 +167,14 @@ def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit
             monthly_values[month_field] = value
 
         # Update or create the record for the entire year
-        MonthlyForecast.objects.update_or_create(
-            product=product,
-            variable_name=variable_name,
-            year=year,
-            defaults=monthly_values  # Updates all month fields at once
-        )
+        with transaction.atomic():
+
+            MonthlyForecast.objects.update_or_create(
+                product=product,
+                variable_name=variable_name,
+                year=year,
+                defaults=monthly_values  # Updates all month fields at once
+            )
 
 def save_rolling_forecasts(product, year, forecast_data_dict):
     """
@@ -223,12 +228,13 @@ def save_rolling_forecasts(product, year, forecast_data_dict):
 
         # Only create/update if there's at least one valid month value
         if defaults:
-            MonthlyForecast.objects.update_or_create(
-                product=product,
-                variable_name=variable,
-                year=year,
-                defaults=defaults
-            )
+            with transaction.atomic():
+                MonthlyForecast.objects.update_or_create(
+                    product=product,
+                    variable_name=variable,
+                    year=year,
+                    defaults=defaults
+                )
 
 
 def save_forecast_data(pid, updated_context):
@@ -243,7 +249,8 @@ def save_forecast_data(pid, updated_context):
         product.forecasting_method = updated_context.get("Forecasting_Method", product.forecasting_method)
         product.month_12_fc_index = updated_context.get("month_12_fc_index", product.month_12_fc_index)
         product.currect_fc_index = updated_context.get("Current_FC_Index", product.currect_fc_index)
-        product.save()
+        with transaction.atomic():
+            product.save()
         print("Product Updated Values Saved Successfully ")
 
         month_keys = {
@@ -263,20 +270,21 @@ def save_forecast_data(pid, updated_context):
             "Index_value": "IndexPercentage",
         }
 
-        for key, var_name in field_map.items():
-            data = updated_context.get(key)
-            if not data:
-                continue
+        with transaction.atomic():
+            for key, var_name in field_map.items():
+                data = updated_context.get(key)
+                if not data:
+                    continue
 
-            # Map month values
-            forecast_data = {month_keys[mon]: val for mon, val in data.items() if mon in month_keys}
-            
-            # Create or update the entry
-            MonthlyForecast.objects.update_or_create(
-                product=product,
-                variable_name=var_name,
-                year=year,
-                defaults=forecast_data
-            )
+                # Map month values
+                forecast_data = {month_keys[mon]: val for mon, val in data.items() if mon in month_keys}
+                
+                # Create or update the entry
+                MonthlyForecast.objects.update_or_create(
+                    product=product,
+                    variable_name=var_name,
+                    year=year,
+                    defaults=forecast_data
+                )
 
             

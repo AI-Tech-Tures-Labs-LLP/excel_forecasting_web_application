@@ -2,8 +2,11 @@
 # Standard library imports
 import os
 from multiprocessing import Pool, cpu_count
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from django.conf import settings
+from django.db import transaction
+
 
 # Third-party imports
 import numpy as np
@@ -131,30 +134,31 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         dec_weeks, jan_weeks
     )
 
-    RetailInfo.objects.create(
-    year_of_previous_month=year_of_previous_month,
-    last_year_of_previous_month=last_year_of_previous_month,
-    season=season,
-    current_month=current_month,
-    current_month_number=current_month_number,
-    previous_week_number=previous_week_number,
-    last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
-    rolling_method=rolling_method,
+    with transaction.atomic():
+        RetailInfo.objects.create(
+        year_of_previous_month=year_of_previous_month,
+        last_year_of_previous_month=last_year_of_previous_month,
+        season=season,
+        current_month=current_month,
+        current_month_number=current_month_number,
+        previous_week_number=previous_week_number,
+        last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
+        rolling_method=rolling_method,
 
-    feb_weeks=feb_weeks,
-    mar_weeks=mar_weeks,
-    apr_weeks=apr_weeks,
-    may_weeks=may_weeks,
-    jun_weeks=jun_weeks,
-    jul_weeks=jul_weeks,
-    aug_weeks=aug_weeks,
-    sep_weeks=sep_weeks,
-    oct_weeks=oct_weeks,
-    nov_weeks=nov_weeks,
-    dec_weeks=dec_weeks,
-    jan_weeks=jan_weeks
+        feb_weeks=feb_weeks,
+        mar_weeks=mar_weeks,
+        apr_weeks=apr_weeks,
+        may_weeks=may_weeks,
+        jun_weeks=jun_weeks,
+        jul_weeks=jul_weeks,
+        aug_weeks=aug_weeks,
+        sep_weeks=sep_weeks,
+        oct_weeks=oct_weeks,
+        nov_weeks=nov_weeks,
+        dec_weeks=dec_weeks,
+        jan_weeks=jan_weeks
 
-    )
+        )
 
     args_list = [
         (index_df, config.sheets, config.return_QA_df,category, code, num_products, static_data, file_path,std_period,percentage)
@@ -172,6 +176,42 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             store.extend(s)
             coms.extend(c)
             omni.extend(o)
+    # max_workers = min(len(args_list), 4)  # Limit concurrent workers
+
+    # try:
+    #     with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    #         # Submit all tasks
+    #         future_to_args = {executor.submit(process_category, args): args for args in args_list}
+            
+    #         # Collect results as they complete
+    #         for future in as_completed(future_to_args):
+    #             try:
+    #                 result = future.result(timeout=300)  # 5 minute timeout per task
+    #                 if result:
+    #                     s, c, o = result
+    #                     store.extend(s)
+    #                     coms.extend(c)
+    #                     omni.extend(o)
+    #             except Exception as e:
+    #                 args = future_to_args[future]
+    #                 print(f"Error processing category {args[3]}{args[4]}: {e}")
+    #                 continue
+                    
+    # except Exception as e:
+    #     print(f"ThreadPoolExecutor error: {e}")
+    #     # Fallback to sequential processing
+    #     print("Falling back to sequential processing...")
+    #     for args in args_list:
+    #         try:
+    #             result = process_category(args)
+    #             if result:
+    #                 s, c, o = result
+    #                 store.extend(s)
+    #                 coms.extend(c)
+    #                 omni.extend(o)
+    #         except Exception as e:
+    #             print(f"Error in sequential processing for {args[3]}{args[4]}: {e}")
+    #             continue
 
     df_store = pd.DataFrame(store)
     df_coms = pd.DataFrame(coms)
@@ -383,191 +423,198 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     # For StoreForecast
 
     print("Starting StoreForecast data save/update...")
-    for instance in store_instances:
-        StoreForecast.objects.update_or_create(
-            category=instance['category'],
-            pid=instance['pid'],
-            forecast_month=instance['forecast_month'],
-            defaults={
-                'lead_time': instance['lead_time'],
-                'leadtime_holiday_adjustment': instance['leadtime_holiday_adjustment'],
-                'month_12_fc_index': instance['month_12_fc_index'],
-                'loss': instance['loss'],
-                'month_12_fc_index_loss': instance['month_12_fc_index_loss'],
-                'selected_months': instance['selected_months'],
-                'trend': instance['trend'],
-                'inventory_maintained': instance['inventory_maintained'],
-                'trend_index_difference': instance['trend_index_difference'],
-                'red_box_item': instance['red_box_item'],
-                'forecasting_method': instance['forecasting_method'],
-                'door_count': instance['door_count'],
-                'average_com_oh': instance['average_com_oh'],
-                'fldc': instance['fldc'],
-                'birthstone': instance['birthstone'],
-                'birthstone_month': instance['birthstone_month'],
-                'considered_birthstone_required_quantity': instance['considered_birthstone_required_quantity'],
-                'forecast_month_required_quantity': instance['forecast_month_required_quantity'],
-                'forecast_month_planned_oh': instance['forecast_month_planned_oh'],
-                'next_forecast_month': instance['next_forecast_month'],
-                'next_forecast_month_required_quantity': instance['next_forecast_month_required_quantity'],
-                'next_forecast_month_planned_oh': instance['next_forecast_month_planned_oh'],
-                'added_qty_macys_soq': instance['added_qty_macys_soq'],
-                'forecast_month_planned_shipment': instance['forecast_month_planned_shipment'],
-                'next_forecast_month_planned_shipment': instance['next_forecast_month_planned_shipment'],
-                'total_added_qty': instance['total_added_qty'],
-                'vendor': instance['vendor'],
-                'Valentine_day': instance['Valentine_day'],
-                'Mothers_day': instance['Mothers_day'],
-                'Fathers_day': instance['Fathers_day'],
-                'Mens_day': instance['Mens_day'],
-                'Womens_day': instance['Womens_day'],
-                'Min_order': instance['Min_order'],
-                'Macys_SOQ': instance['Macys_SOQ'],
-                'Qty_given_to_macys': instance['Qty_given_to_macys'],
-                'Added_qty_using_macys_SOQ': instance['Added_qty_using_macys_SOQ'],
-                'Below_min_order': instance['Below_min_order'],
-                'Over_macys_SOQ': instance['Over_macys_SOQ'],
-                'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
-                'Need_to_review_first': instance['Need_to_review_first'],
-                'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
-                'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
-                'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
-                'average_store_sale_thru' : instance['average_store_sale_thru'],
-                'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
-                'STD_index_value_original': instance['STD_index_value_original'],
-                'month_12_fc_index_original': instance['month_12_fc_index_original'],
-                'std_trend_original': instance['std_trend_original']
-            }
-        )
+    with transaction.atomic():
+
+        for instance in store_instances:
+            StoreForecast.objects.update_or_create(
+                category=instance['category'],
+                pid=instance['pid'],
+                forecast_month=instance['forecast_month'],
+                defaults={
+                    'lead_time': instance['lead_time'],
+                    'leadtime_holiday_adjustment': instance['leadtime_holiday_adjustment'],
+                    'month_12_fc_index': instance['month_12_fc_index'],
+                    'loss': instance['loss'],
+                    'month_12_fc_index_loss': instance['month_12_fc_index_loss'],
+                    'selected_months': instance['selected_months'],
+                    'trend': instance['trend'],
+                    'inventory_maintained': instance['inventory_maintained'],
+                    'trend_index_difference': instance['trend_index_difference'],
+                    'red_box_item': instance['red_box_item'],
+                    'forecasting_method': instance['forecasting_method'],
+                    'door_count': instance['door_count'],
+                    'average_com_oh': instance['average_com_oh'],
+                    'fldc': instance['fldc'],
+                    'birthstone': instance['birthstone'],
+                    'birthstone_month': instance['birthstone_month'],
+                    'considered_birthstone_required_quantity': instance['considered_birthstone_required_quantity'],
+                    'forecast_month_required_quantity': instance['forecast_month_required_quantity'],
+                    'forecast_month_planned_oh': instance['forecast_month_planned_oh'],
+                    'next_forecast_month': instance['next_forecast_month'],
+                    'next_forecast_month_required_quantity': instance['next_forecast_month_required_quantity'],
+                    'next_forecast_month_planned_oh': instance['next_forecast_month_planned_oh'],
+                    'added_qty_macys_soq': instance['added_qty_macys_soq'],
+                    'forecast_month_planned_shipment': instance['forecast_month_planned_shipment'],
+                    'next_forecast_month_planned_shipment': instance['next_forecast_month_planned_shipment'],
+                    'total_added_qty': instance['total_added_qty'],
+                    'vendor': instance['vendor'],
+                    'Valentine_day': instance['Valentine_day'],
+                    'Mothers_day': instance['Mothers_day'],
+                    'Fathers_day': instance['Fathers_day'],
+                    'Mens_day': instance['Mens_day'],
+                    'Womens_day': instance['Womens_day'],
+                    'Min_order': instance['Min_order'],
+                    'Macys_SOQ': instance['Macys_SOQ'],
+                    'Qty_given_to_macys': instance['Qty_given_to_macys'],
+                    'Added_qty_using_macys_SOQ': instance['Added_qty_using_macys_SOQ'],
+                    'Below_min_order': instance['Below_min_order'],
+                    'Over_macys_SOQ': instance['Over_macys_SOQ'],
+                    'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
+                    'Need_to_review_first': instance['Need_to_review_first'],
+                    'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
+                    'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
+                    'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
+                    'average_store_sale_thru' : instance['average_store_sale_thru'],
+                    'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
+                    'STD_index_value_original': instance['STD_index_value_original'],
+                    'month_12_fc_index_original': instance['month_12_fc_index_original'],
+                    'std_trend_original': instance['std_trend_original']
+                }
+            )
+    
     print("StoreForecast data saved/updated successfully.")
 
     # For ComForecast
     print("Starting ComForecast data save/update...")
-    for instance in com_instances:
-        ComForecast.objects.update_or_create(
-            category=instance['category'],
-            pid=instance['pid'],
-            forecast_month=instance['forecast_month'],
-            defaults={
-                'lead_time': instance['lead_time'],
-                'leadtime_holiday_adjustment': instance['leadtime_holiday_adjustment'],
-                'selected_months': instance['selected_months'],
-                'com_month_12_fc_index': instance['com_month_12_fc_index'],
-                'com_trend': instance['com_trend'],
-                'trend': instance['trend'],
-                'inventory_maintained': instance['inventory_maintained'],
-                'trend_index_difference': instance['trend_index_difference'],
-                'red_box_item': instance['red_box_item'],
-                'forecasting_method': instance['forecasting_method'],
-                'minimum_required_oh_for_com': instance['minimum_required_oh_for_com'],
-                'fldc': instance['fldc'],
-                'forecast_month_required_quantity': instance['forecast_month_required_quantity'],
-                'forecast_month_planned_oh': instance['forecast_month_planned_oh'],
-                'next_forecast_month': instance['next_forecast_month'],
-                'next_forecast_month_required_quantity': instance['next_forecast_month_required_quantity'],
-                'next_forecast_month_planned_oh': instance['next_forecast_month_planned_oh'],
-                'added_qty_macys_soq': instance['added_qty_macys_soq'],
-                'vdf_status': instance['vdf_status'],
-                'vdf_added_qty': instance['vdf_added_qty'],
-                'forecast_month_planned_shipment': instance['forecast_month_planned_shipment'],
-                'next_forecast_month_planned_shipment': instance['next_forecast_month_planned_shipment'],
-                'total_added_qty': instance['total_added_qty'],
-                'vendor': instance['vendor'],
-                'Valentine_day': instance['Valentine_day'],
-                'Mothers_day': instance['Mothers_day'],
-                'Fathers_day': instance['Fathers_day'],
-                'Mens_day': instance['Mens_day'],
-                'Womens_day': instance['Womens_day'],
-                'Min_order': instance['Min_order'],
-                'Macys_SOQ': instance['Macys_SOQ'],
-                'Qty_given_to_macys': instance['Qty_given_to_macys'],
-                'Added_qty_using_macys_SOQ': instance['Added_qty_using_macys_SOQ'],
-                'Below_min_order': instance['Below_min_order'],
-                'Over_macys_SOQ': instance['Over_macys_SOQ'],
-                'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
-                'Need_to_review_first': instance['Need_to_review_first'],
-                'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
-                'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
-                'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
-                'average_store_sale_thru' : instance['average_store_sale_thru'],
-                'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
-                'STD_index_value_original': instance['STD_index_value_original'],
-                'month_12_fc_index_original': instance['month_12_fc_index_original'],
-                'std_trend_original': instance['std_trend_original']
-            }
-        )
+    with transaction.atomic():
+
+        for instance in com_instances:
+            ComForecast.objects.update_or_create(
+                category=instance['category'],
+                pid=instance['pid'],
+                forecast_month=instance['forecast_month'],
+                defaults={
+                    'lead_time': instance['lead_time'],
+                    'leadtime_holiday_adjustment': instance['leadtime_holiday_adjustment'],
+                    'selected_months': instance['selected_months'],
+                    'com_month_12_fc_index': instance['com_month_12_fc_index'],
+                    'com_trend': instance['com_trend'],
+                    'trend': instance['trend'],
+                    'inventory_maintained': instance['inventory_maintained'],
+                    'trend_index_difference': instance['trend_index_difference'],
+                    'red_box_item': instance['red_box_item'],
+                    'forecasting_method': instance['forecasting_method'],
+                    'minimum_required_oh_for_com': instance['minimum_required_oh_for_com'],
+                    'fldc': instance['fldc'],
+                    'forecast_month_required_quantity': instance['forecast_month_required_quantity'],
+                    'forecast_month_planned_oh': instance['forecast_month_planned_oh'],
+                    'next_forecast_month': instance['next_forecast_month'],
+                    'next_forecast_month_required_quantity': instance['next_forecast_month_required_quantity'],
+                    'next_forecast_month_planned_oh': instance['next_forecast_month_planned_oh'],
+                    'added_qty_macys_soq': instance['added_qty_macys_soq'],
+                    'vdf_status': instance['vdf_status'],
+                    'vdf_added_qty': instance['vdf_added_qty'],
+                    'forecast_month_planned_shipment': instance['forecast_month_planned_shipment'],
+                    'next_forecast_month_planned_shipment': instance['next_forecast_month_planned_shipment'],
+                    'total_added_qty': instance['total_added_qty'],
+                    'vendor': instance['vendor'],
+                    'Valentine_day': instance['Valentine_day'],
+                    'Mothers_day': instance['Mothers_day'],
+                    'Fathers_day': instance['Fathers_day'],
+                    'Mens_day': instance['Mens_day'],
+                    'Womens_day': instance['Womens_day'],
+                    'Min_order': instance['Min_order'],
+                    'Macys_SOQ': instance['Macys_SOQ'],
+                    'Qty_given_to_macys': instance['Qty_given_to_macys'],
+                    'Added_qty_using_macys_SOQ': instance['Added_qty_using_macys_SOQ'],
+                    'Below_min_order': instance['Below_min_order'],
+                    'Over_macys_SOQ': instance['Over_macys_SOQ'],
+                    'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
+                    'Need_to_review_first': instance['Need_to_review_first'],
+                    'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
+                    'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
+                    'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
+                    'average_store_sale_thru' : instance['average_store_sale_thru'],
+                    'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
+                    'STD_index_value_original': instance['STD_index_value_original'],
+                    'month_12_fc_index_original': instance['month_12_fc_index_original'],
+                    'std_trend_original': instance['std_trend_original']
+                }
+            )
     print("ComForecast data saved/updated successfully.")
 
    # For OmniForecast - Updated with all the fields matching the model definition
     print("Starting OmniForecast data save/update...")
-    for instance in omni_instances:
-        OmniForecast.objects.update_or_create(
-            category=instance['category'],
-            pid=instance['pid'],
-            forecast_month=instance['forecast_month'],
-            defaults={
-                'lead_time': instance['lead_time'],
-                'leadtime_holiday_adjustment': instance['leadtime_holiday_adjustment'],
-                'selected_months': instance['selected_months'],
-                'com_month_12_fc_index': instance['com_month_12_fc_index'],
-                'com_trend': instance['com_trend'],
-                'com_inventory_maintained': instance['com_inventory_maintained'],
-                'red_box_item': instance['red_box_item'],
-                'minimum_required_oh_for_com': instance['minimum_required_oh_for_com'],
-                'com_fldc': instance['com_fldc'],
-                'next_forecast_month': instance['next_forecast_month'],
-                'store_month_12_fc_index': instance['store_month_12_fc_index'],
-                'loss': instance['loss'],
-                'store_month_12_fc_index_loss': instance['store_month_12_fc_index_loss'],
-                'store_trend': instance['store_trend'],
-                'store_inventory_maintained': instance['store_inventory_maintained'],
-                'door_count': instance['door_count'],
-                'store_fldc': instance['store_fldc'],
-                'birthstone': instance['birthstone'],
-                'birthstone_month': instance['birthstone_month'],
-                'considered_birthstone_required_quantity': instance['considered_birthstone_required_quantity'],
-                'forecast_month_planned_oh': instance['forecast_month_planned_oh'],
-                'next_forecast_month_planned_oh': instance['next_forecast_month_planned_oh'],
-                'added_qty_macys_soq': instance['added_qty_macys_soq'],
-                'forecast_month_planned_shipment': instance['forecast_month_planned_shipment'],
-                'next_forecast_month_planned_shipment': instance['next_forecast_month_planned_shipment'],
-                'total_added_qty': instance['total_added_qty'],
-                'vendor': instance['vendor'],
-                'Valentine_day': instance['Valentine_day'],
-                'Mothers_day': instance['Mothers_day'],
-                'Fathers_day': instance['Fathers_day'],
-                'Mens_day': instance['Mens_day'],
-                'Womens_day': instance['Womens_day'],
-                'Min_order': instance['Min_order'],
-                'Macys_SOQ': instance['Macys_SOQ'],
-                'Qty_given_to_macys': instance['Qty_given_to_macys'],
-                'Added_qty_using_macys_SOQ': instance['Added_qty_using_macys_SOQ'],
-                'Below_min_order': instance['Below_min_order'],
-                'Over_macys_SOQ': instance['Over_macys_SOQ'],
-                'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
-                'Need_to_review_first': instance['Need_to_review_first'],
-                # New fields from the model
-                'RLJ': instance.get('RLJ', None),  # Including the RLJ field, defaulting to None if not in instance
-                'trend_index_difference_com': instance['trend_index_difference_com'],
-                'trend_index_difference_store': instance['store_trend_index_difference'],
-                'forecasting_method_com': instance['forecasting_method_com'],
-                'forecasting_method_store': instance['forecasting_method_store'],
-                'forecast_month_required_quantity_com': instance['forecast_month_required_quantity_com'],
-                'next_forecast_month_required_quantity_com': instance['next_forecast_month_required_quantity_com'],
-                'forecast_month_required_quantity_store': instance['forecast_month_required_quantity_store'],
-                'next_forecast_month_required_quantity_store': instance['next_forecast_month_required_quantity_store'],
-                'forecast_month_required_quantity_total': instance['forecast_month_required_quantity_total'],
-                'next_forecast_month_required_quantity_total': instance['next_forecast_month_required_quantity_total'],
-                'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
-                'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
-                'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
-                'average_store_sale_thru' : instance['average_store_sale_thru'],
-                'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
-                'STD_index_value_original': instance['STD_index_value_original'],
-                'month_12_fc_index_original': instance['month_12_fc_index_original'],
-                'std_trend_original': instance['std_trend_original']
-            }
-        )
+    with transaction.atomic():
+
+        for instance in omni_instances:
+            OmniForecast.objects.update_or_create(
+                category=instance['category'],
+                pid=instance['pid'],
+                forecast_month=instance['forecast_month'],
+                defaults={
+                    'lead_time': instance['lead_time'],
+                    'leadtime_holiday_adjustment': instance['leadtime_holiday_adjustment'],
+                    'selected_months': instance['selected_months'],
+                    'com_month_12_fc_index': instance['com_month_12_fc_index'],
+                    'com_trend': instance['com_trend'],
+                    'com_inventory_maintained': instance['com_inventory_maintained'],
+                    'red_box_item': instance['red_box_item'],
+                    'minimum_required_oh_for_com': instance['minimum_required_oh_for_com'],
+                    'com_fldc': instance['com_fldc'],
+                    'next_forecast_month': instance['next_forecast_month'],
+                    'store_month_12_fc_index': instance['store_month_12_fc_index'],
+                    'loss': instance['loss'],
+                    'store_month_12_fc_index_loss': instance['store_month_12_fc_index_loss'],
+                    'store_trend': instance['store_trend'],
+                    'store_inventory_maintained': instance['store_inventory_maintained'],
+                    'door_count': instance['door_count'],
+                    'store_fldc': instance['store_fldc'],
+                    'birthstone': instance['birthstone'],
+                    'birthstone_month': instance['birthstone_month'],
+                    'considered_birthstone_required_quantity': instance['considered_birthstone_required_quantity'],
+                    'forecast_month_planned_oh': instance['forecast_month_planned_oh'],
+                    'next_forecast_month_planned_oh': instance['next_forecast_month_planned_oh'],
+                    'added_qty_macys_soq': instance['added_qty_macys_soq'],
+                    'forecast_month_planned_shipment': instance['forecast_month_planned_shipment'],
+                    'next_forecast_month_planned_shipment': instance['next_forecast_month_planned_shipment'],
+                    'total_added_qty': instance['total_added_qty'],
+                    'vendor': instance['vendor'],
+                    'Valentine_day': instance['Valentine_day'],
+                    'Mothers_day': instance['Mothers_day'],
+                    'Fathers_day': instance['Fathers_day'],
+                    'Mens_day': instance['Mens_day'],
+                    'Womens_day': instance['Womens_day'],
+                    'Min_order': instance['Min_order'],
+                    'Macys_SOQ': instance['Macys_SOQ'],
+                    'Qty_given_to_macys': instance['Qty_given_to_macys'],
+                    'Added_qty_using_macys_SOQ': instance['Added_qty_using_macys_SOQ'],
+                    'Below_min_order': instance['Below_min_order'],
+                    'Over_macys_SOQ': instance['Over_macys_SOQ'],
+                    'Added_only_to_balance_macys_SOQ': instance['Added_only_to_balance_macys_SOQ'],
+                    'Need_to_review_first': instance['Need_to_review_first'],
+                    # New fields from the model
+                    'RLJ': instance.get('RLJ', None),  # Including the RLJ field, defaulting to None if not in instance
+                    'trend_index_difference_com': instance['trend_index_difference_com'],
+                    'trend_index_difference_store': instance['store_trend_index_difference'],
+                    'forecasting_method_com': instance['forecasting_method_com'],
+                    'forecasting_method_store': instance['forecasting_method_store'],
+                    'forecast_month_required_quantity_com': instance['forecast_month_required_quantity_com'],
+                    'next_forecast_month_required_quantity_com': instance['next_forecast_month_required_quantity_com'],
+                    'forecast_month_required_quantity_store': instance['forecast_month_required_quantity_store'],
+                    'next_forecast_month_required_quantity_store': instance['next_forecast_month_required_quantity_store'],
+                    'forecast_month_required_quantity_total': instance['forecast_month_required_quantity_total'],
+                    'next_forecast_month_required_quantity_total': instance['next_forecast_month_required_quantity_total'],
+                    'qty_added_to_maintain_OH_forecast_month' : instance['qty_added_to_maintain_OH_forecast_month'],
+                    'qty_added_to_maintain_OH_next_forecast_month' : instance['qty_added_to_maintain_OH_next_forecast_month'],
+                    'qty_added_to_balance_SOQ_forecast_month' : instance['qty_added_to_balance_SOQ_forecast_month'],
+                    'average_store_sale_thru' : instance['average_store_sale_thru'],
+                    'macy_SOQ_percentage' : instance['macy_SOQ_percentage'],
+                    'STD_index_value_original': instance['STD_index_value_original'],
+                    'month_12_fc_index_original': instance['month_12_fc_index_original'],
+                    'std_trend_original': instance['std_trend_original']
+                }
+            )
     print("OmniForecast data saved/updated successfully.")
     # Write to different sheets in one Excel file
     file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
@@ -1003,118 +1050,119 @@ def process_category(args):
         months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         current_year = datetime.now().year 
         website_link = f"http://www.macys.com/shop/product/{loader.Prod_Desc}?ID={loader.Mktg_ID}"
-        
-        ProductDetail.objects.update_or_create(
-            product_id=loader.pid_value,
-            defaults={
-                "product_description": safe_str(loader.PID_Desc),
+        with transaction.atomic():
 
-                # Main identifiers
-                "blu": safe_str(loader.RLJ),
-                "mkst": safe_str(loader.MKST),
-                "currect_fc_index": safe_str(loader.Current_FC_Index),
+            ProductDetail.objects.update_or_create(
+                product_id=loader.pid_value,
+                defaults={
+                    "product_description": safe_str(loader.PID_Desc),
 
-                # Classification fields
-                "safe_non_safe": safe_str(loader.Safe_Non_Safe),
-                "item_code": safe_str(loader.Item_Code),
+                    # Main identifiers
+                    "blu": safe_str(loader.RLJ),
+                    "mkst": safe_str(loader.MKST),
+                    "currect_fc_index": safe_str(loader.Current_FC_Index),
 
-                # Store information
-                "current_door_count": safe_int(loader.Door_Count),
-                "last_store_count": safe_int(loader.Last_Str_Cnt),
-                "door_count_updated": parse_date(loader.Door_count_Updated),
-                "store_model": safe_int(loader.Store_Model),
-                "com_model": safe_int(loader.Com_Model),
+                    # Classification fields
+                    "safe_non_safe": safe_str(loader.Safe_Non_Safe),
+                    "item_code": safe_str(loader.Item_Code),
 
-                # Inventory and forecast fields
-                "holiday_build_fc": safe_int(loader.Holiday_Bld_FC),
-                "macys_onhand": safe_int(loader.MCYOH),
-                "oo": safe_int(loader.OO),
-                "in_transit": safe_int(loader.nav_OO),
-                "month_to_date_shipment": safe_int(loader.MTD_SHIPMENTS),
-                "lastweek_shipment": safe_int(loader.LW_Shipments),
-                "planned_weeks_of_stock": safe_int(loader.Wks_of_Stock_OH),
-                "weeks_of_projection": safe_int(loader.Wks_of_on_Proj),
-                "last_4weeks_shipment": safe_int(loader.Last_3Wks_Ships),
+                    # Store information
+                    "current_door_count": safe_int(loader.Door_Count),
+                    "last_store_count": safe_int(loader.Last_Str_Cnt),
+                    "door_count_updated": parse_date(loader.Door_count_Updated),
+                    "store_model": safe_int(loader.Store_Model),
+                    "com_model": safe_int(loader.Com_Model),
 
-                # Vendor information
-                "vendor_name": safe_str(loader.Vendor_Name),
-                "min_order": safe_int(loader.Min_order),
+                    # Inventory and forecast fields
+                    "holiday_build_fc": safe_int(loader.Holiday_Bld_FC),
+                    "macys_onhand": safe_int(loader.MCYOH),
+                    "oo": safe_int(loader.OO),
+                    "in_transit": safe_int(loader.nav_OO),
+                    "month_to_date_shipment": safe_int(loader.MTD_SHIPMENTS),
+                    "lastweek_shipment": safe_int(loader.LW_Shipments),
+                    "planned_weeks_of_stock": safe_int(loader.Wks_of_Stock_OH),
+                    "weeks_of_projection": safe_int(loader.Wks_of_on_Proj),
+                    "last_4weeks_shipment": safe_int(loader.Last_3Wks_Ships),
 
-                # Projection fields
-                "rl_total": safe_int(loader.Proj),
-                "net_projection": safe_int(loader.Net_Proj),
-                "unalloc_order": safe_int(loader.Unalloc_Orders),
+                    # Vendor information
+                    "vendor_name": safe_str(loader.Vendor_Name),
+                    "min_order": safe_int(loader.Min_order),
 
-                # Distribution center fields
-                "ma_bin": safe_int(loader.RLJ_OH),
-                "fldc": safe_int(loader.FLDC),
-                "wip_quantity": safe_int(loader.WIP),
+                    # Projection fields
+                    "rl_total": safe_int(loader.Proj),
+                    "net_projection": safe_int(loader.Net_Proj),
+                    "unalloc_order": safe_int(loader.Unalloc_Orders),
 
-                # Status fields
-                "md_status": safe_str(loader.MD_Status_MZ1),
-                "replanishment_flag": safe_str(loader.Repl_Flag),
-                "mcom_replanishment": safe_str(loader.MCOM_RPL),
-                "pool_stock": safe_int(loader.Pool_stock),
+                    # Distribution center fields
+                    "ma_bin": safe_int(loader.RLJ_OH),
+                    "fldc": safe_int(loader.FLDC),
+                    "wip_quantity": safe_int(loader.WIP),
 
-                # Date fields
-                "first_reciept_date": parse_date(loader.st_Rec_Date),
-                "last_reciept_date": parse_date(loader.Last_Rec_Date),
-                "item_age": safe_int(loader.Item_Age),
-                "first_live_date": parse_date(loader.st_Live),
+                    # Status fields
+                    "md_status": safe_str(loader.MD_Status_MZ1),
+                    "replanishment_flag": safe_str(loader.Repl_Flag),
+                    "mcom_replanishment": safe_str(loader.MCOM_RPL),
+                    "pool_stock": safe_int(loader.Pool_stock),
 
-                # Cost and retail fields
-                "this_year_last_cost": safe_float(loader.TY_Last_Cost),
-                "macys_owned_retail": safe_float(loader.Own_Retail),
-                "awr_first_ticket_retail": safe_float(loader.AWR_1st_Tkt_Ret),
+                    # Date fields
+                    "first_reciept_date": parse_date(loader.st_Rec_Date),
+                    "last_reciept_date": parse_date(loader.Last_Rec_Date),
+                    "item_age": safe_int(loader.Item_Age),
+                    "first_live_date": parse_date(loader.st_Live),
 
-                # Policy and configuration fields
-                "metal_lock": safe_float(loader.Metal_Lock),
-                "mfg_policy": safe_str(loader.MFG_Policy),
+                    # Cost and retail fields
+                    "this_year_last_cost": safe_float(loader.TY_Last_Cost),
+                    "macys_owned_retail": safe_float(loader.Own_Retail),
+                    "awr_first_ticket_retail": safe_float(loader.AWR_1st_Tkt_Ret),
 
-                # KPI fields
-                "kpi_data_updated": safe_str(loader.KPI_Data_Updated),
-                "kpi_door_count": safe_int(loader.KPI_Door_count),
+                    # Policy and configuration fields
+                    "metal_lock": safe_float(loader.Metal_Lock),
+                    "mfg_policy": safe_str(loader.MFG_Policy),
 
-                # Location fields
-                "out_of_stock_location": safe_int(loader.OOS_Locs),
-                "suspended_location_count": safe_int(loader.Suspended_Loc_Count),
-                "live_site": safe_str(loader.Live_Site),
+                    # KPI fields
+                    "kpi_data_updated": safe_str(loader.KPI_Data_Updated),
+                    "kpi_door_count": safe_int(loader.KPI_Door_count),
 
-                # Product categorization fields
-                "masterstyle_description": safe_str(loader.Masterstyle_Desc),
-                "masterstyle_id": safe_str(loader.MstrSt_ID),
+                    # Location fields
+                    "out_of_stock_location": safe_int(loader.OOS_Locs),
+                    "suspended_location_count": safe_int(loader.Suspended_Loc_Count),
+                    "live_site": safe_str(loader.Live_Site),
 
-                "department_id": safe_int(loader.Dpt_ID),
-                "department_description": safe_str(loader.Dpt_Desc),
+                    # Product categorization fields
+                    "masterstyle_description": safe_str(loader.Masterstyle_Desc),
+                    "masterstyle_id": safe_str(loader.MstrSt_ID),
 
-                "subclass_id": safe_int(loader.SC_ID),
-                "subclass_decription": safe_str(loader.SC_Desc),
-                "webid_description": safe_str(loader.Prod_Desc),
+                    "department_id": safe_int(loader.Dpt_ID),
+                    "department_description": safe_str(loader.Dpt_Desc),
 
-                # Marketing fields
-                "v2c": safe_str(loader.V2C),
-                "marketing_id": safe_str(loader.Mktg_ID),
-                
+                    "subclass_id": safe_int(loader.SC_ID),
+                    "subclass_decription": safe_str(loader.SC_Desc),
+                    "webid_description": safe_str(loader.Prod_Desc),
 
-                "std_store_return": safe_float(loader.STD_Store_Rtn),
+                    # Marketing fields
+                    "v2c": safe_str(loader.V2C),
+                    "marketing_id": safe_str(loader.Mktg_ID),
+                    
 
-                # Planning fields
-                "last_project_review_date": parse_date(loader.Last_Proj_Review_Date),
-                "macy_spring_projection_note": safe_str(loader.Macys_Spring_Proj_Notes),
-                "planner_response": safe_str(loader.Planner_Response),
-                "website": website_link,
+                    "std_store_return": safe_float(loader.STD_Store_Rtn),
 
-                "rolling_method" : rolling_method,
-                "std_trend" : std_trend,
-                "STD_index_value" : STD_index_value,
-                "month_12_fc_index" : month_12_fc_index,
-                "forecasting_method" : forecasting_method,
+                    # Planning fields
+                    "last_project_review_date": parse_date(loader.Last_Proj_Review_Date),
+                    "macy_spring_projection_note": safe_str(loader.Macys_Spring_Proj_Notes),
+                    "planner_response": safe_str(loader.Planner_Response),
+                    "website": website_link,
 
-                "total_added_qty" : total_added_quantity if total_added_quantity > 0 else 0,
-                "category": f"{category}{code}",
-                "user_added_quantity": total_added_quantity if total_added_quantity > 0 else 0,
-            }
-        )
+                    "rolling_method" : rolling_method,
+                    "std_trend" : std_trend,
+                    "STD_index_value" : STD_index_value,
+                    "month_12_fc_index" : month_12_fc_index,
+                    "forecasting_method" : forecasting_method,
+
+                    "total_added_qty" : total_added_quantity if total_added_quantity > 0 else 0,
+                    "category": f"{category}{code}",
+                    "user_added_quantity": total_added_quantity if total_added_quantity > 0 else 0,
+                }
+            )
 
 
         productmain = ProductDetail.objects.get(product_id=loader.pid_value)
