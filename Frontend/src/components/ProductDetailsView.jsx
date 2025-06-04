@@ -2509,7 +2509,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       key={productId}
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 h-100"
     >
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      <div className="w-full mx-auto p-6 space-y-8">
         {/* Enhanced Header Section with Search and Navigation */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
           <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-10 py-6 min-h-[200px] relative">
