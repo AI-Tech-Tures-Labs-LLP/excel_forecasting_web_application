@@ -471,8 +471,8 @@ function ProductSelector() {
     // Apply added quantity sorting
     if (selectedFilters.added_qty_sort) {
       filteredProducts.sort((a, b) => {
-        const aQty = a.total_added_qty || a.added_qty_macys_soq || 0;
-        const bQty = b.total_added_qty || b.added_qty_macys_soq || 0;
+        const aQty = a.total_added_qty || 0;
+        const bQty = b.total_added_qty || 0;
 
         if (selectedFilters.added_qty_sort === "asc") {
           return aQty - bQty; // Ascending
@@ -610,6 +610,12 @@ function ProductSelector() {
       );
 
       const updatePromises = productsToUpdate.map(async (product) => {
+        // Calculate the new user_added_quantity based on external factor percentage
+        const originalQty = product.user_added_quantity || 0;
+        const newUserAddedQty = Math.round(
+          originalQty * (1 + parseFloat(bulkFactor) / 100)
+        );
+
         const response = await axios.put(
           `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/${
             product.pid
@@ -617,18 +623,17 @@ function ProductSelector() {
           {
             product_details: {
               external_factor_percentage: parseFloat(bulkFactor),
-              user_added_quantity: null,
+              user_added_quantity: newUserAddedQty, // Set the calculated quantity
               external_factor: bulkFactorNote,
             },
           }
         );
+
         return {
           pid: product.pid,
           category: product.category,
-          originalQty: product.total_added_qty || 0,
-          newQty: Math.round(
-            product.total_added_qty * (1 + parseFloat(bulkFactor) / 100)
-          ),
+          originalQty: originalQty,
+          newQty: newUserAddedQty,
           factorApplied: parseFloat(bulkFactor),
           response: response.data,
         };
@@ -653,7 +658,7 @@ function ProductSelector() {
         },
       });
 
-      // Refresh the products data
+      // Refresh the products data to get updated values
       await dispatch(
         fetchProducts({
           productType: selectedProductType,
@@ -661,7 +666,9 @@ function ProductSelector() {
         })
       );
 
-      setSelectedProductIds([]);
+      // Also refresh the product notes data to ensure everything is up to date
+      await loadProductNotesData();
+
       setSuccess(true);
       setShowResults(true);
 
@@ -1541,7 +1548,7 @@ function ProductSelector() {
 
   // Get added qty
   const getAddedQty = (product) => {
-    return product.total_added_qty || product.added_qty_macys_soq || 0;
+    return product.total_added_qty || 0;
   };
 
   // Get the correct count for each product type
@@ -4889,25 +4896,52 @@ function ProductSelector() {
                               })()
                             : "-"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900 ">
-                          {/* {product.user_added_quantity
-                            ? product.total_added_qty -
-                              product.user_added_quantity
-                            : product.external_factor_percentage
-                            ? product.total_added_qty -
-                              Math.round(
-                                (product.external_factor_percentage / 100) *
-                                  product.total_added_qty
-                              )
-                            : "-"} */}
-                          {product.user_added_quantity
-                            ? product.user_added_quantity
-                            : product.external_factor_percentage
-                            ? Math.round(
-                                product.total_added_qty *
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
+                          {(() => {
+                            // Priority: user_added_quantity > calculated from external_factor_percentage > default display
+                            if (
+                              product.user_added_quantity !== null &&
+                              product.user_added_quantity !== undefined
+                            ) {
+                              return (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  {parseInt(
+                                    product.user_added_quantity
+                                  ).toLocaleString()}
+                                </span>
+                              );
+                            } else if (
+                              product.external_factor_percentage !== null &&
+                              product.external_factor_percentage !== undefined
+                            ) {
+                              const calculatedQty = Math.round(
+                                product.user_added_quantity *
                                   (1 + product.external_factor_percentage / 100)
-                              )
-                            : "-"}
+                              );
+                              return (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {calculatedQty.toLocaleString()}
+                                  <span className="ml-1 text-xs bg-blue-200 text-blue-700 px-1 rounded">
+                                    {product.external_factor_percentage > 0
+                                      ? "+"
+                                      : ""}
+                                    {product.external_factor_percentage}%
+                                  </span>
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                  {(
+                                    product.user_added_quantity || 0
+                                  ).toLocaleString()}
+                                  <span className="ml-1 text-xs bg-gray-200 text-gray-600 px-1 rounded">
+                                    Default
+                                  </span>
+                                </span>
+                              );
+                            }
+                          })()}
                         </td>
                         {/* <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                           <button

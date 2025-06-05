@@ -3,6 +3,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import productImage from "../assets/undefined.png";
+import ForecastVariableCards from "./ForecastVariableCard"; // Adjust path as needed
 import {
   ArrowLeft,
   ChevronDown,
@@ -37,7 +38,15 @@ import {
   Settings,
   ExternalLink,
   History, // Add this for recent searches icon
-  X, /// Add this for notes
+  X,
+  Users,
+  MapPin,
+  Percent,
+  Box,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Info, /// Add this for notes
 } from "lucide-react";
 
 // Import selectors
@@ -92,6 +101,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [forecastingMethod, setForecastingMethod] = useState("FC by Index");
   const [hasControlChanges, setHasControlChanges] = useState(false);
   const [pendingChangeField, setPendingChangeField] = useState(null);
+
+  const [showVariablesModal, setShowVariablesModal] = useState(false);
   //tab navigation
 
   const [activeTab, setActiveTab] = useState("forecast-variables");
@@ -507,8 +518,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     const qty = parseFloat(value);
     setUserAddedQuantity(value);
 
-    if (!isNaN(qty) && totalAddedQty) {
-      const percentage = (qty / totalAddedQty) * 100;
+    if (!isNaN(qty) && cardData.totalAddedQty) {
+      const percentage = (qty / cardData.totalAddedQty) * 100;
       setExternalFactorPercentage(percentage.toFixed(2));
     } else {
       setExternalFactorPercentage("");
@@ -1072,6 +1083,405 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }
   };
 
+  const renderProductVariablesCards = () => {
+    if (!productData) return null;
+
+    const { store_forecast, com_forecast, omni_forecast } = productData;
+
+    // Helper function to render individual forecast cards
+    const renderForecastCards = (
+      forecastData,
+      type,
+      title,
+      bgColor,
+      iconColor,
+      Icon
+    ) => {
+      if (!forecastData || !forecastData[0]) return null;
+
+      const data = forecastData[0];
+
+      // Define variable configurations for each type
+      const getVariableConfig = (type) => {
+        const baseConfig = [
+          { key: "lead_time", label: "Lead Time", icon: Clock },
+          {
+            key: "leadtime_holiday_adjustment",
+            label: "Country Holiday",
+            type: "boolean",
+            icon: Calendar,
+          },
+          {
+            key: "month_12_fc_index",
+            label: "12-Month FC Index",
+            icon: BarChart3,
+          },
+          { key: "loss", label: "Loss (%)", icon: TrendingDown },
+          {
+            key: "month_12_fc_index_loss",
+            label: "12-Month FC Index (Loss %)",
+            icon: AlertTriangle,
+          },
+          {
+            key: "selected_months",
+            label: "STD Months",
+            type: "array",
+            icon: Calendar,
+          },
+          {
+            key: "trend",
+            label: "Trend",
+            type: "percentage",
+            icon: TrendingUp,
+          },
+          {
+            key: "inventory_maintained",
+            label: "Inventory Maintained",
+            type: "boolean",
+            icon: Package,
+          },
+          {
+            key: "trend_index_difference",
+            label: "Trend Index Difference",
+            icon: BarChart3,
+          },
+          {
+            key: "red_box_item",
+            label: "Red Box Item",
+            type: "boolean",
+            icon: Box,
+          },
+          {
+            key: "forecasting_method",
+            label: "Forecasting Method",
+            icon: Settings,
+          },
+          { key: "door_count", label: "Door Count", icon: Building2 },
+          { key: "average_com_oh", label: "Average Com OH", icon: Package },
+          { key: "fldc", label: "FLDC", icon: MapPin },
+          { key: "birthstone", label: "Birthstone", icon: Gem },
+          {
+            key: "birthstone_month",
+            label: "Birthstone Month",
+            icon: Calendar,
+          },
+          {
+            key: "considered_birthstone_required_quantity",
+            label: "Considered Birthstone",
+            type: "boolean",
+            icon: Gem,
+          },
+          { key: "forecast_month", label: "Forecast Month", icon: Calendar },
+          {
+            key: "forecast_month_required_quantity",
+            label: "Forecast Month - Required Qty",
+            icon: Package,
+          },
+          {
+            key: "forecast_month_planned_oh",
+            label: "Forecast Month - Planned OH",
+            icon: Package,
+          },
+          {
+            key: "next_forecast_month",
+            label: "Next Forecast Month",
+            icon: Calendar,
+          },
+          {
+            key: "next_forecast_month_required_quantity",
+            label: "Next Forecast Month - Required Qty",
+            icon: Package,
+          },
+          {
+            key: "next_forecast_month_planned_oh",
+            label: "Next Forecast Month - Planned OH",
+            icon: Package,
+          },
+          {
+            key: "forecast_month_planned_shipment",
+            label: "Forecast Month - Planned Shipment",
+            icon: Truck,
+          },
+          {
+            key: "next_forecast_month_planned_shipment",
+            label: "Next Forecast Month - Planned Shipment",
+            icon: Truck,
+          },
+          {
+            key: "qty_added_to_maintain_OH_forecast_month",
+            label: "Forecast Month - Qty Added",
+            icon: Package,
+          },
+          {
+            key: "qty_added_to_maintain_OH_next_forecast_month",
+            label: "Next Forecast Month - Qty Added",
+            icon: Package,
+          },
+          {
+            key: "qty_added_to_balance_SOQ_forecast_month",
+            label: "Macys SOQ - Qty Added",
+            icon: Star,
+          },
+          { key: "total_added_qty", label: "Total Added Qty", icon: Package },
+          { key: "Min_order", label: "Min Order", icon: ShoppingCart },
+          {
+            key: "average_store_sale_thru",
+            label: "Average Store SellThru",
+            type: "percentage",
+            icon: TrendingUp,
+          },
+          { key: "Macys_SOQ", label: "Macys SOQ - Total", icon: Star },
+          {
+            key: "macy_SOQ_percentage",
+            label: "Macys SOQ - Percentage Required",
+            type: "percentage",
+            icon: Percent,
+          },
+          {
+            key: "Qty_given_to_macys",
+            label: "Macys SOQ - Actual Given",
+            icon: Star,
+          },
+          {
+            key: "Below_min_order",
+            label: "Below Min Order",
+            type: "boolean",
+            icon: AlertTriangle,
+          },
+          {
+            key: "Over_macys_SOQ",
+            label: "Over Macys SOQ",
+            type: "boolean",
+            icon: AlertTriangle,
+          },
+          {
+            key: "Added_only_to_balance_macys_SOQ",
+            label: "Macys SOQ - Only Maintained",
+            type: "boolean",
+            icon: CheckCircle,
+          },
+          {
+            key: "Need_to_review_first",
+            label: "Needs Review",
+            type: "boolean",
+            icon: AlertCircle,
+          },
+        ];
+
+        const typeSpecific = {
+          store: [],
+          com: [
+            {
+              key: "com_month_12_fc_index",
+              label: "COM 12-Month FC Index",
+              icon: BarChart3,
+            },
+            {
+              key: "com_trend",
+              label: "COM Trend",
+              type: "percentage",
+              icon: TrendingUp,
+            },
+            {
+              key: "minimum_required_oh_for_com",
+              label: "Min Required OH for COM",
+              icon: Package,
+            },
+            {
+              key: "vdf_status",
+              label: "VDF Status",
+              type: "boolean",
+              icon: CheckCircle,
+            },
+            { key: "vdf_added_qty", label: "VDF Added Qty", icon: Package },
+          ],
+          omni: [
+            {
+              key: "com_month_12_fc_index",
+              label: "COM 12-Month FC Index",
+              icon: BarChart3,
+            },
+            {
+              key: "com_trend",
+              label: "COM Trend",
+              type: "percentage",
+              icon: TrendingUp,
+            },
+            {
+              key: "com_inventory_maintained",
+              label: "COM Inventory Maintained",
+              type: "boolean",
+              icon: CheckCircle,
+            },
+            {
+              key: "minimum_required_oh_for_com",
+              label: "Min Required OH for COM",
+              icon: Package,
+            },
+            { key: "com_fldc", label: "COM FLDC", icon: MapPin },
+            {
+              key: "store_month_12_fc_index",
+              label: "Store 12-Month FC Index",
+              icon: BarChart3,
+            },
+            {
+              key: "store_month_12_fc_index_loss",
+              label: "Store 12-Month FC Index Loss",
+              icon: AlertTriangle,
+            },
+            {
+              key: "store_trend",
+              label: "Store Trend",
+              type: "percentage",
+              icon: TrendingUp,
+            },
+            {
+              key: "store_inventory_maintained",
+              label: "Store Inventory Maintained",
+              type: "boolean",
+              icon: CheckCircle,
+            },
+            { key: "store_fldc", label: "Store FLDC", icon: MapPin },
+            {
+              key: "trend_index_difference_com",
+              label: "Trend Index Diff (COM)",
+              icon: BarChart3,
+            },
+            {
+              key: "trend_index_difference_store",
+              label: "Trend Index Diff (Store)",
+              icon: BarChart3,
+            },
+            {
+              key: "forecasting_method_com",
+              label: "Forecasting Method (COM)",
+              icon: Settings,
+            },
+            {
+              key: "forecasting_method_store",
+              label: "Forecasting Method (Store)",
+              icon: Settings,
+            },
+            {
+              key: "forecast_month_required_quantity_total",
+              label: "Total Req Qty (Forecast Month)",
+              icon: Package,
+            },
+            {
+              key: "next_forecast_month_required_quantity_total",
+              label: "Total Req Qty (Next Month)",
+              icon: Package,
+            },
+          ],
+        };
+
+        return [...baseConfig, ...(typeSpecific[type] || [])];
+      };
+
+      const formatVariableValue = (value, config) => {
+        if (value === null || value === undefined) return "-";
+
+        switch (config.type) {
+          case "boolean":
+            return value ? "Yes" : "No";
+          case "array":
+            return Array.isArray(value) ? value.join(", ") : value;
+          case "percentage":
+            return typeof value === "number"
+              ? `${(value * 100).toFixed(2)}%`
+              : `${value}%`;
+          default:
+            const formattedValue =
+              typeof value === "number" ? value.toLocaleString() : value;
+            return config.suffix
+              ? `${formattedValue}${config.suffix}`
+              : formattedValue;
+        }
+      };
+
+      const variables = getVariableConfig(type);
+
+      return (
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`p-2 ${bgColor} rounded-lg`}>
+              <Icon className={iconColor} size={20} />
+            </div>
+            <h5 className="text-lg font-semibold text-gray-800">{title}</h5>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {variables.map((variable) => {
+              const value = data[variable.key];
+              const IconComponent = variable.icon || Info;
+
+              return (
+                <div
+                  key={variable.key}
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                >
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className={`p-1.5 ${bgColor} rounded-md`}>
+                        <IconComponent className={iconColor} size={14} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 leading-tight">
+                        {variable.label}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-gray-900">
+                      {variable.key === "trend_index_difference" ||
+                      variable.key === "loss"
+                        ? `${formatVariableValue(value, variable)}%`
+                        : formatVariableValue(value, variable)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-6">
+        {store_forecast &&
+          store_forecast.length > 0 &&
+          renderForecastCards(
+            store_forecast,
+            "store",
+            "Store Forecast Variables",
+            "bg-blue-50",
+            "text-blue-600",
+            Building2
+          )}
+
+        {com_forecast &&
+          com_forecast.length > 0 &&
+          renderForecastCards(
+            com_forecast,
+            "com",
+            "COM Forecast Variables",
+            "bg-green-50",
+            "text-green-600",
+            ShoppingCart
+          )}
+
+        {omni_forecast &&
+          omni_forecast.length > 0 &&
+          renderForecastCards(
+            omni_forecast,
+            "omni",
+            "Omni Forecast Variables",
+            "bg-purple-50",
+            "text-purple-600",
+            Layers
+          )}
+      </div>
+    );
+  };
+
   const handleSaveProductNote = async () => {
     if (!externalFactor || !externalFactor.trim()) {
       console.log("No note content to save");
@@ -1202,13 +1612,24 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       );
       console.log("Product details fetched:", response.data);
       setProductData(response.data);
+      // Pre-fetch and set the critical adjustment values
       if (response.data.product_details) {
+        // Convert user_added_quantity to string, handle null/undefined cases
+        const userQty = response.data.product_details.user_added_quantity;
         setUserAddedQuantity(
-          response.data.product_details.user_added_quantity || ""
+          userQty !== null && userQty !== undefined ? userQty.toString() : ""
         );
+
+        // Convert external_factor_percentage to string, handle null/undefined cases
+        const extFactorPerc =
+          response.data.product_details.external_factor_percentage;
         setExternalFactorPercentage(
-          response.data.product_details.external_factor_percentage || ""
+          extFactorPerc !== null && extFactorPerc !== undefined
+            ? extFactorPerc.toString()
+            : ""
         );
+
+        // Set external factor notes (already working correctly)
         setExternalFactor(response.data.product_details.external_factor || "");
       }
 
@@ -1601,7 +2022,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             label: "Next Forecast Month - Planned Shipment",
           },
           {
-            key: "forecast_month_qty_added",
+            key: "qty_added_to_maintain_OH_forecast_month",
             label: "Forecast Month - Qty Added (Maintain OH)",
           },
           {
@@ -3191,146 +3612,94 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           </div>
         )}
         {/* CRITICAL INPUT FIELDS SECTION - Dynamic Implementation */}
-        <div className="bg-white rounded-xl shadow-lg border-l-4 border-amber-500 overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-amber-100">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-amber-100 rounded-lg">
-                <AlertTriangle className="text-amber-600" size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Critical Forecast Adjustments
-                </h3>
-                <p className="text-amber-700 text-sm">
-                  These values directly impact forecast calculations
-                </p>
-              </div>
+        <div className="bg-white rounded-lg shadow-sm border border-amber-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-amber-600" size={16} />
+              <h3 className="text-sm font-semibold text-gray-800">
+                Critical Adjustments
+              </h3>
             </div>
           </div>
 
-          <div className="p-6 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* User Added Quantity Input */}
-              <div className="bg-white rounded-lg border-2 border-amber-200 shadow-sm hover:shadow-md transition-shadow p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-amber-50 rounded-lg">
-                    <Calculator className="text-amber-600" size={18} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800">
-                      User Added Quantity
-                    </label>
-                    <span className="text-xs text-amber-600 font-medium">
-                      Additional quantity to be added
-                    </span>
-                  </div>
-                </div>
+          <div className="p-4">
+            <div className="grid grid-cols-12 gap-4 items-end">
+              {/* User Added Quantity - Takes 4 columns */}
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  User Added Quantity
+                </label>
                 <input
                   type="number"
                   value={userAddedQuantity}
                   onChange={(e) =>
                     handleUserAddedQuantityChange(e.target.value)
                   }
-                  // disabled={!!externalFactorPercentage}
-                  placeholder="Enter additional quantity..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all placeholder-gray-400"
+                  placeholder="Enter quantity..."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 transition-all"
                 />
                 {userAddedQuantity && (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-emerald-600 font-medium">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    Value set: {formatValue(parseFloat(userAddedQuantity))}
+                  <div className="mt-1.5 text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                    Value: {formatValue(parseFloat(userAddedQuantity))}
                   </div>
                 )}
               </div>
 
-              {/* External Factor Percentage */}
-              {/* <div className="bg-white rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <TrendingUp className="text-blue-600" size={18} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800">
-                      External Factor Percentage
-                    </label>
-                    <span className="text-xs text-blue-600 font-medium">
-                      Market adjustment factor (can be positive or negative)
-                    </span>
-                  </div>
-                </div>
-
-                <input
-                  type="number"
-                  value={externalFactorPercentage}
-                  onChange={(e) =>
-                    handleExternalFactorPercentageChange(e.target.value)
-                  }
-                  // disabled={!!userAddedQuantity}
-                  placeholder="Enter percentage (e.g., 15 or -10)..."
-                  step="0.1"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all placeholder-gray-400"
-                />
-                {externalFactorPercentage && (
-                  <div
-                    className={`mt-3 flex items-center gap-2 text-sm font-medium ${
-                      parseFloat(externalFactorPercentage) >= 0
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        parseFloat(externalFactorPercentage) >= 0
-                          ? "bg-emerald-500"
-                          : "bg-red-500"
-                      }`}
-                    ></div>
-                    {parseFloat(externalFactorPercentage) >= 0 ? "+" : ""}
-                    {externalFactorPercentage}% adjustment
-                  </div>
-                )}
-              </div> */}
-            </div>
-
-            {/* External Factor Notes Section */}
-            <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <FileText className="text-gray-600" size={18} />
-                <label className="block text-sm font-semibold text-gray-800">
+              {/* Notes - Takes 6 columns */}
+              <div className="col-span-12 md:col-span-6">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
                   Notes
                 </label>
+                <textarea
+                  value={externalFactor}
+                  onChange={(e) => setExternalFactor(e.target.value)}
+                  placeholder="Add relevant notes about external factors..."
+                  rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none transition-all"
+                />
               </div>
-              <textarea
-                value={externalFactor}
-                onChange={(e) => setExternalFactor(e.target.value)}
-                placeholder="Add any relevant notes about external factors affecting the forecast..."
-                rows={3}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all resize-none placeholder-gray-400"
-              />
+
+              {/* Save Button - Takes 2 columns */}
+              <div className="col-span-12 md:col-span-2">
+                <button
+                  onClick={handleSaveCriticalInputs}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:from-emerald-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all transform hover:scale-105 shadow-sm hover:shadow-md"
+                >
+                  <Save size={14} />
+                  Save
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleSaveCriticalInputs}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-semibold shadow-md hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg transform hover:scale-105 transition-all"
-              >
-                <Save size={18} />
-                Save Critical Adjustments
-              </button>
-              {/* <button
-                onClick={() => setShowCalculatedChanges(!showCalculatedChanges)}
-                disabled={!changes}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                  changes
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transform hover:scale-105"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                <RefreshCw size={18} />
-                Show Impact Analysis
-              </button> */}
-            </div>
+            {/* Final Quantity Display - If there's a calculated value */}
+            {(userAddedQuantity || externalFactorPercentage) &&
+              cardData?.totalAddedQty && (
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-600">
+                      Final Quantity:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-indigo-600">
+                        {userAddedQuantity
+                          ? userAddedQuantity
+                          : externalFactorPercentage
+                          ? Math.round(
+                              cardData.totalAddedQty *
+                                (1 + parseFloat(externalFactorPercentage) / 100)
+                            ).toLocaleString()
+                          : cardData.totalAddedQty.toLocaleString()}
+                      </span>
+                      {(userAddedQuantity || externalFactorPercentage) && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                          Updated
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
 
@@ -3444,73 +3813,45 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           </div>
         )}
 
-        {/* Tabs Section - Forecast Variables and Rolling Forecast */}
+        {/* Rolling Forecast Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Tab Headers - Button Style */}
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
-            <div className="flex items-center justify-center">
-              <div className="inline-flex bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-                <button
-                  onClick={() => setActiveTab("forecast-variables")}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200 ${
-                    activeTab === "forecast-variables"
-                      ? "bg-indigo-600 text-white shadow-md transform scale-105"
-                      : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
-                  }`}
-                >
-                  <BarChart3 className="text-current" size={18} />
-                  <span>Forecast Algorithm Variables</span>
-                  {activeTab === "forecast-variables" && (
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab("rolling-forecast")}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200 ${
-                    activeTab === "rolling-forecast"
-                      ? "bg-indigo-600 text-white shadow-md transform scale-105"
-                      : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
-                  }`}
-                >
-                  <TrendingUp className="text-current" size={18} />
-                  <span>Rolling 12M Forecast</span>
-                  {activeTab === "rolling-forecast" && (
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  )}
-                </button>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <TrendingUp className="text-indigo-600" size={20} />
               </div>
+              <h3 className="text-xl font-semibold text-gray-800">
+                Rolling 12M Forecast
+              </h3>
             </div>
           </div>
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === "forecast-variables" && (
-              <div className="animate-fadeIn">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="p-2 bg-indigo-50 rounded-lg">
-                    <BarChart3 className="text-indigo-600" size={20} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    Forecast Algorithm Variables
-                  </h3>
-                </div>
-                {renderProductVariablesTable()}
-              </div>
-            )}
-
-            {activeTab === "rolling-forecast" && (
-              <div className="animate-fadeIn">
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-50 rounded-lg">
-                        <TrendingUp className="text-indigo-600" size={20} />
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        Rolling Forecast Controls
-                      </h3>
+            <div className="animate-fadeIn">
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-50 rounded-lg">
+                      <TrendingUp className="text-indigo-600" size={20} />
                     </div>
+                    <h3 className="text-xl font-semibold text-gray-800">
+                      Rolling Forecast Controls
+                    </h3>
+                  </div>
 
+                  {/* Updated button row with both buttons */}
+                  <div className="flex items-center gap-3">
+                    {/* NEW: Forecast Algorithm Variables Button */}
+                    <button
+                      onClick={() => setShowVariablesModal(true)}
+                      className="px-6 py-3 rounded-lg text-sm font-semibold shadow-lg transition-all duration-200 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transform hover:scale-105"
+                    >
+                      <BarChart3 size={16} />
+                      Forecast Algorithm Variables
+                    </button>
+
+                    {/* Existing Apply Changes Button */}
                     <button
                       disabled={
                         ((!initialControlValues ||
@@ -3541,184 +3882,175 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                         <>
                           <Settings size={16} />
                           Apply Changes
-                          {/* {JSON.stringify(initialControlValues) !==
-                            JSON.stringify(originalValuesRef.current) && (
-                            <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full animate-bounce">
-                              !
-                            </span>
-                          )} */}
                         </>
                       )}
                     </button>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {/* Select Index */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Select Index
-                      </label>
-                      <select
-                        value={selectedIndex}
-                        onChange={(e) =>
-                          handleFieldChange("Current_FC_Index", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "Current_FC_Index"
-                        }
-                      >
-                        {[
-                          "BT",
-                          "Citrine",
-                          "Cross",
-                          "CZ",
-                          "Dia",
-                          "Ear",
-                          "EMER",
-                          "Garnet",
-                          "Gem",
-                          "GEM EAR",
-                          "Gold Chain",
-                          "GOLD EAR",
-                          "Amy",
-                          "Anklet",
-                          "Aqua",
-                          "Bridal",
-                          "Heart",
-                          "Heavy Gold Chain",
-                          "Jade",
-                          "KIDS",
-                          "Locket",
-                          "Mens Gold Bracelet",
-                          "Mens Misc",
-                          "Mens Silver chain",
-                          "Mom",
-                          "MOP",
-                          "Neck",
-                          "Onyx",
-                          "Opal",
-                          "Pearl",
-                          "Peridot",
-                          "Religious",
-                          "Ring",
-                          "Ruby",
-                          "Saph",
-                          "Womens Silver Chain",
-                          "Wrist",
-                          "Grand Total",
-                        ].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Rolling Method Dropdown */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Rolling Method
-                      </label>
-                      <select
-                        value={rollingMethod}
-                        onChange={(e) =>
-                          handleFieldChange("Rolling_method", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "Rolling_method"
-                        }
-                      >
-                        <option value="YTD">YTD</option>
-                        <option value="Current MTH">Current MTH</option>
-                        <option value="SPRING">SPRING</option>
-                        <option value="FALL">FALL</option>
-                        <option value="LY FALL">LY FALL</option>
-                      </select>
-                    </div>
-
-                    {/* Forecasting Method Dropdown */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Forecasting Method
-                      </label>
-                      <select
-                        value={forecastingMethod}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "Forecasting_Method",
-                            e.target.value
-                          )
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "Forecasting_Method"
-                        }
-                      >
-                        {[
-                          "FC By Index",
-                          "FC By Trend",
-                          "Average",
-                          "Current Year",
-                          "Last Year",
-                        ].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Editable Trend */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Trend
-                      </label>
-                      <input
-                        type="number"
-                        value={editableTrend}
-                        onChange={(e) =>
-                          handleFieldChange("Trend", e.target.value)
-                        }
-                        step="0.1"
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        placeholder="Enter trend value"
-                        disabled={
-                          lastChangedField && lastChangedField !== "Trend"
-                        }
-                      />
-                    </div>
-
-                    {/* Editable 12 Month FC */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        12 Month FC
-                      </label>
-                      <input
-                        type="number"
-                        value={editable12MonthFC}
-                        onChange={(e) =>
-                          handleFieldChange("month_12_fc_index", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        placeholder="Enter 12 month FC"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "month_12_fc_index"
-                        }
-                      />
-                    </div>
-                  </div>
                 </div>
 
-                {/* Forecast Table */}
-                {renderRollingForecastTable()}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Select Index */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Select Index
+                    </label>
+                    <select
+                      value={selectedIndex}
+                      onChange={(e) =>
+                        handleFieldChange("Current_FC_Index", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "Current_FC_Index"
+                      }
+                    >
+                      {[
+                        "BT",
+                        "Citrine",
+                        "Cross",
+                        "CZ",
+                        "Dia",
+                        "Ear",
+                        "EMER",
+                        "Garnet",
+                        "Gem",
+                        "GEM EAR",
+                        "Gold Chain",
+                        "GOLD EAR",
+                        "Amy",
+                        "Anklet",
+                        "Aqua",
+                        "Bridal",
+                        "Heart",
+                        "Heavy Gold Chain",
+                        "Jade",
+                        "KIDS",
+                        "Locket",
+                        "Mens Gold Bracelet",
+                        "Mens Misc",
+                        "Mens Silver chain",
+                        "Mom",
+                        "MOP",
+                        "Neck",
+                        "Onyx",
+                        "Opal",
+                        "Pearl",
+                        "Peridot",
+                        "Religious",
+                        "Ring",
+                        "Ruby",
+                        "Saph",
+                        "Womens Silver Chain",
+                        "Wrist",
+                        "Grand Total",
+                      ].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Rolling Method Dropdown */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Rolling Method
+                    </label>
+                    <select
+                      value={rollingMethod}
+                      onChange={(e) =>
+                        handleFieldChange("Rolling_method", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "Rolling_method"
+                      }
+                    >
+                      <option value="YTD">YTD</option>
+                      <option value="Current MTH">Current MTH</option>
+                      <option value="SPRING">SPRING</option>
+                      <option value="FALL">FALL</option>
+                      <option value="LY FALL">LY FALL</option>
+                    </select>
+                  </div>
+
+                  {/* Forecasting Method Dropdown */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Forecasting Method
+                    </label>
+                    <select
+                      value={forecastingMethod}
+                      onChange={(e) =>
+                        handleFieldChange("Forecasting_Method", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "Forecasting_Method"
+                      }
+                    >
+                      {[
+                        "FC By Index",
+                        "FC By Trend",
+                        "Average",
+                        "Current Year",
+                        "Last Year",
+                      ].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Editable Trend */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Trend
+                    </label>
+                    <input
+                      type="number"
+                      value={editableTrend}
+                      onChange={(e) =>
+                        handleFieldChange("Trend", e.target.value)
+                      }
+                      step="0.1"
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      placeholder="Enter trend value"
+                      disabled={
+                        lastChangedField && lastChangedField !== "Trend"
+                      }
+                    />
+                  </div>
+
+                  {/* Editable 12 Month FC */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      12 Month FC
+                    </label>
+                    <input
+                      type="number"
+                      value={editable12MonthFC}
+                      onChange={(e) =>
+                        handleFieldChange("month_12_fc_index", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      placeholder="Enter 12 month FC"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "month_12_fc_index"
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Forecast Table */}
+              {renderRollingForecastTable()}
+            </div>
           </div>
         </div>
 
@@ -3765,6 +4097,35 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             </div>
           )}
         </div>
+        {/* Variables Modal - Add this right here */}
+        {showVariablesModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <BarChart3 className="text-white" size={24} />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">
+                    Forecast Algorithm Variables
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowVariablesModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="text-white" size={24} />
+                </button>
+              </div>
+
+              {/* Modal Content - Using the new component */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                <ForecastVariableCards productData={productData} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
