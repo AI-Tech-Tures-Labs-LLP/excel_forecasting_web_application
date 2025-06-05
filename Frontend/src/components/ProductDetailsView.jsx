@@ -1116,6 +1116,11 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             label: "12-Month FC Index",
             icon: BarChart3,
           },
+          {
+            key: "month_12_fc_index",
+            label: "12-Month FC Index",
+            icon: BarChart3,
+          },
           { key: "loss", label: "Loss (%)", icon: TrendingDown },
           {
             key: "month_12_fc_index_loss",
@@ -1273,7 +1278,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           com: [
             {
               key: "com_month_12_fc_index",
-              label: "COM 12-Month FC Index",
+              label: "12-Month FC Index",
               icon: BarChart3,
             },
             {
@@ -1968,6 +1973,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             label: "Country Holiday",
             type: "boolean",
           },
+          { key: "month_12_fc_index", label: "12-Month FC Index" },
+          { key: "loss", label: "Loss (%)" },
           { key: "month_12_fc_index", label: "12-Month FC Index" },
           { key: "loss", label: "Loss (%)" },
           {
