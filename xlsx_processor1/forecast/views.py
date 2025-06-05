@@ -57,7 +57,6 @@ def get_product_forecast_data(pid):
         product = get_object_or_404(ProductDetail, product_id=pid)
         return product.category, product.rolling_method, product.std_trend, product.STD_index_value, product.month_12_fc_index, product.forecasting_method,  product.total_added_qty
     
-
 def get_planned_data(pid, year):
     product = ProductDetail.objects.filter(product_id=pid).first()
     if not product:
@@ -136,22 +135,6 @@ class UploadXlsxAPIView(APIView):
         zip_rel = f'processed_files/{output_folder}.zip'
         zip_url = request.build_absolute_uri(settings.MEDIA_URL + zip_rel)
         return Response({'file_url': zip_url}, status=status.HTTP_200_OK)
-
-
-class DownloadFileAPIView(APIView):
-    def get(self, request):
-        file_path = request.query_params.get('file_path')
-
-        if not file_path:
-            return Response({'error': 'File path not provided'}, status=status.HTTP_400_BAD_REQUEST)
-
-        full_file_path = os.path.join(settings.MEDIA_ROOT, file_path.replace(settings.MEDIA_URL, ''))
-
-        if os.path.exists(full_file_path):
-            return FileResponse(open(full_file_path, 'rb'), content_type='application/zip',
-                                as_attachment=True, filename=os.path.basename(full_file_path))
-
-        return Response({'error': 'File not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
 class ProductDetailViewSet(viewsets.ViewSet):
@@ -459,133 +442,97 @@ class ForecastNoteViewSet(viewsets.ModelViewSet):
         return queryset
 
 
-class StoreForecastViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = StoreForecast.objects.all()
-    serializer_class = StoreForecastSerializer
+class FileCategoryDownloadAPIView(APIView):
+    def get(self, request):
+        """
+        API view to download specific category sheets from Excel files.
+        Query parameters:
+        - category: Single category name or comma-separated list of categories
+        Returns:
+        - Single Excel file for download if one category is requested
+        - Zip file containing multiple Excel files if multiple categories are requested
+        - Error response if categories are not found or invalid
+        category=Gold746,Diamond734%26737%26748&file_name=jkl
+        """
+        category_param = request.GET.get('category')
+        file_path = request.GET.get('file_path','')
 
-
-class ComForecastViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ComForecast.objects.all()
-    serializer_class = ComForecastSerializer
-
-
-class OmniForecastViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = OmniForecast.objects.all()
-    serializer_class = OmniForecastSerializer
-
-
-
-def download_category_sheet(request):
-    """
-    API view to download specific category sheets from Excel files.
-    
-    Query parameters:
-    - category: Single category name or comma-separated list of categories
-    
-    Returns:
-    - Single Excel file for download if one category is requested
-    - Zip file containing multiple Excel files if multiple categories are requested
-    - Error response if categories are not found or invalid
-    category=Gold746,Diamond734%26737%26748&file_name=jkl
-    """
-    category_param = request.GET.get('category')
-    file_path = request.GET.get('file_path','')
-
-    if not category_param:
-        return JsonResponse({'error': 'Category parameter is required'}, status=400)
-    
-    # Split the categories by comma to handle multiple categories
-    categories = [cat.strip() for cat in category_param.split(',')]
-    
-    # Define the media directory path
-    media_dir = os.path.join(settings.MEDIA_ROOT, 'processed_files', file_path)
-    
-    # Find all Excel files in the directory
-    try:
-        excel_files = [f for f in os.listdir(media_dir) if f.endswith('.xlsx')]
-    except FileNotFoundError:
-        return JsonResponse({'error': 'Directory not found'}, status=500)
-    
-    # Match requested categories with available files
-    matched_files = []
-    missing_categories = []
-    
-    for category in categories:
-        matched = False
-        for file in excel_files:
-            file_name_without_ext = os.path.splitext(file)[0]
-            if category.lower() in file_name_without_ext.lower():
-                matched_files.append((category, file))
-                matched = True
-                break
+        if not category_param:
+            return Response({'error': 'Category parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        if not matched:
-            missing_categories.append(category)
-    
-    if not matched_files:
-        return JsonResponse({
-            'error': 'No files found for the requested categories',
-            'missing_categories': missing_categories
-        }, status=404)
-    
-    # If there are missing categories, include that in the response but continue with the ones found
-    message = None
-    if missing_categories:
-        message = f"Categories not found: {', '.join(missing_categories)}"
-    
-    # If only one category is requested and found, return a single Excel file directly
-    if len(matched_files) == 1 and len(categories) == 1:
-        category, file_name = matched_files[0]
-        file_full_path = os.path.join(media_dir, file_name)
+        # Split the categories by comma to handle multiple categories
+        categories = [cat.strip() for cat in category_param.split(',')]
         
+        # Define the media directory path
+        media_dir = os.path.join(settings.MEDIA_ROOT, 'processed_files', file_path)
+        
+        # Find all Excel files in the directory
         try:
-            # Read file directly without pandas
-            with open(file_full_path, 'rb') as excel_file:
-                file_content = excel_file.read()
+            excel_files = [f for f in os.listdir(media_dir) if f.endswith('.xlsx')]
+        except FileNotFoundError:
+            return Response({'error': 'Directory not found'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Match requested categories with available files
+        matched_files = []
+        missing_categories = []
+        
+        for category in categories:
+            matched = False
+            for file in excel_files:
+                file_name_without_ext = os.path.splitext(file)[0]
+                if category.lower() in file_name_without_ext.lower():
+                    matched_files.append((category, file))
+                    matched = True
+                    break
             
-            # Create response with the raw Excel file content
-            response = HttpResponse(
-                file_content, 
-                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-            response['Content-Disposition'] = f'attachment; filename="{category}.xlsx"'
+            if not matched:
+                missing_categories.append(category)
+        
+        if not matched_files:
+            return Response({
+                'error': 'No files found for the requested categories',
+                'missing_categories': missing_categories
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # If there are missing categories, include that in the response but continue with the ones found
+        message = None
+        if missing_categories:
+            message = f"Categories not found: {', '.join(missing_categories)}"
+        
+        # If only one category is requested and found, return a single Excel file directly
+        if len(matched_files) == 1 and len(categories) == 1:
+            category, file_name = matched_files[0]
+            file_full_path = os.path.join(media_dir, file_name)
             
+            try:
+                with open(file_full_path, 'rb') as excel_file:
+                    file_content = excel_file.read()
+                response = HttpResponse(
+                    file_content, 
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = f'attachment; filename="{category}.xlsx"'
+                return response
+            except Exception as e:
+                return Response({'error': f'Error reading the file: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # If multiple categories are requested or found, create a zip file
+        else:
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for category, file_name in matched_files:
+                    file_full_path = os.path.join(media_dir, file_name)
+                    try:
+                        with open(file_full_path, 'rb') as excel_file:
+                            file_content = excel_file.read()
+                        zip_file.writestr(f"{category}.xlsx", file_content)
+                    except Exception as e:
+                        continue
+            zip_buffer.seek(0)
+            response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
+            response['Content-Disposition'] = 'attachment; filename="categories.zip"'
+            if message:
+                response['X-Missing-Categories'] = message
             return response
-        
-        except Exception as e:
-            return JsonResponse({'error': f'Error reading the file: {str(e)}'}, status=500)
-    
-    # If multiple categories are requested or found, create a zip file
-    else:
-        # Create a BytesIO object to store the zip file
-        zip_buffer = io.BytesIO()
-        
-        # Create a zip file
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            for category, file_name in matched_files:
-                file_full_path = os.path.join(media_dir, file_name)
-                
-                try:
-                    # Read the Excel file directly as binary
-                    with open(file_full_path, 'rb') as excel_file:
-                        file_content = excel_file.read()
-                    
-                    # Add the Excel file directly to the zip file
-                    zip_file.writestr(f"{category}.xlsx", file_content)
-                
-                except Exception as e:
-                    # If there's an error with one file, continue with the others
-                    continue
-        
-        # Prepare the response with the zip file
-        zip_buffer.seek(0)
-        response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
-        response['Content-Disposition'] = 'attachment; filename="categories.zip"'
-        
-        # If there's a message about missing categories, include it in a header
-        if message:
-            response['X-Missing-Categories'] = message
-        
-        return response
     
 

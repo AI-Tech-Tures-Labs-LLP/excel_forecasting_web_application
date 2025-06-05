@@ -8,8 +8,8 @@ import forecast
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
-    path('forecast/',include('forecast.urls')) , # Make sure this line is present
-    path('auth/', include('authentication.urls')),
+    path('api/v1/forecast/',include('forecast.urls')) , # Make sure this line is present
+    path('api/v1/auth/', include('authentication.urls')),
 
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

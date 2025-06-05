@@ -1,11 +1,42 @@
 from django.db import models
+from django.contrib.auth.models import User
+
+
+class SheetUpload(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
 
 
 class ProductDetail(models.Model):
     # Primary key and main identifiers
+    sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE)
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="assigned_to")
     product_id = models.CharField(max_length=50, primary_key=True, verbose_name="Cross Ref") #pid
     product_description = models.CharField(max_length=200, null=True, blank=True, verbose_name="PID Desc")
 
+    PRODUCT_TYPE_CHOICES = [
+        ('store', 'Store'),
+        ('com', 'Com'),
+        ('omni', 'Omni'),
+    ]
+    product_type = models.CharField(max_length=5, choices=PRODUCT_TYPE_CHOICES, verbose_name="Product Type")
+    STATUS_CHOICES = [
+        ("not_reviewed", "Not reviewed"),
+        ("pending",      "Pending"),
+        ("reviewed",     "Reviewed"),
+    ]
+    status      = models.CharField(max_length=13, choices=STATUS_CHOICES, default="not_reviewed", verbose_name="Status", null=True, blank=True)
+
+    # Item classification fields
+    safe_non_safe = models.CharField(max_length=100,null=True, blank=True, verbose_name="Safe/Non-Safe") #Safe/Non-Safe
+    item_code = models.CharField(max_length=100,null=True, blank=True, verbose_name="Item Code") #Item Code
+    # item_status = models.CharField(max_length=50, verbose_name="Item Status") #Item Status
+
+    # Store information
     blu = models.CharField(max_length=100,null=True, blank=True, verbose_name="Adjusted RLJ Item") #RLJ
     mkst = models.CharField(max_length=50,null=True, blank=True, verbose_name="Mkst")    #MKST
     currect_fc_index = models.CharField(max_length=50,null=True, blank=True, verbose_name="FC Index") #Current FC Index
@@ -116,9 +147,109 @@ class ProductDetail(models.Model):
     user_added_quantity = models.FloatField(null=True, blank=True)
     category = models.CharField(max_length=100, null=True, blank=True)
 
+    # Month fields
+    forecast_month = models.CharField(max_length=10)
+    next_forecast_month = models.CharField(max_length=10)
+
+    # Forecasting Core Fields
+    lead_time = models.FloatField()
+    leadtime_holiday_adjustment = models.BooleanField()
+    forecasting_method = models.CharField(max_length=100, null=True, blank=True)
+    forecasting_method_com = models.CharField(max_length=100, null=True, blank=True)
+    forecasting_method_store = models.CharField(max_length=100, null=True, blank=True)
+
+    # Index and Trend
+    month_12_fc_index = models.FloatField(null=True, blank=True)
+    month_12_fc_index_loss = models.FloatField(null=True, blank=True)
+    com_month_12_fc_index = models.FloatField(null=True, blank=True)
+    store_month_12_fc_index = models.FloatField(null=True, blank=True)
+    trend = models.FloatField(null=True, blank=True)
+    com_trend = models.FloatField(null=True, blank=True)
+    store_trend = models.FloatField(null=True, blank=True)
+    std_trend_original = models.FloatField(null=True, blank=True)
+    std_trend = models.FloatField(null=True, blank=True)
+    trend_index_difference = models.FloatField(null=True, blank=True)
+    trend_index_difference_com = models.FloatField(null=True, blank=True)
+    trend_index_difference_store = models.FloatField(null=True, blank=True)
+
+    # Inventory and OH
+    inventory_maintained = models.BooleanField(default=False)
+    com_inventory_maintained = models.BooleanField(default=False)
+    store_inventory_maintained = models.BooleanField(default=False)
+    minimum_required_oh_for_com = models.FloatField(null=True, blank=True)
+    average_com_oh = models.FloatField(null=True, blank=True)
+    average_store_sale_thru = models.FloatField(null=True, blank=True)
+    Macys_SOQ = models.FloatField(null=True, blank=True)
+    macy_SOQ_percentage = models.FloatField(null=True, blank=True)
+
+    # Quantities
+    forecast_month_required_quantity = models.FloatField(null=True, blank=True)
+    next_forecast_month_required_quantity = models.FloatField(null=True, blank=True)
+    forecast_month_required_quantity_com = models.FloatField(null=True, blank=True)
+    next_forecast_month_required_quantity_com = models.FloatField(null=True, blank=True)
+    forecast_month_required_quantity_store = models.FloatField(null=True, blank=True)
+    next_forecast_month_required_quantity_store = models.FloatField(null=True, blank=True)
+    forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
+    next_forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
+
+    forecast_month_planned_oh = models.FloatField(null=True, blank=True)
+    next_forecast_month_planned_oh = models.FloatField(null=True, blank=True)
+    forecast_month_planned_shipment = models.FloatField(null=True, blank=True)
+    next_forecast_month_planned_shipment = models.FloatField(null=True, blank=True)
+
+    qty_added_to_maintain_OH_forecast_month = models.FloatField(null=True, blank=True)
+    qty_added_to_maintain_OH_next_forecast_month = models.FloatField(null=True, blank=True)
+    qty_added_to_balance_SOQ_forecast_month = models.FloatField(null=True, blank=True)
+
+    total_added_qty = models.FloatField(null=True, blank=True)
+    vdf_status = models.BooleanField(default=False)
+    vdf_added_qty = models.FloatField(null=True, blank=True)
+
+    # Vendor Info
+    vendor = models.CharField(max_length=255, null=True, blank=True)
+    Min_order = models.FloatField(null=True, blank=True)
+    Qty_given_to_macys = models.FloatField(null=True, blank=True)
+
+    # Status Flags
+    Added_qty_using_macys_SOQ = models.BooleanField(default=False)
+    Below_min_order = models.BooleanField(default=False)
+    Over_macys_SOQ = models.BooleanField(default=False)
+    Added_only_to_balance_macys_SOQ = models.BooleanField(default=False)
+    Need_to_review_first = models.BooleanField(default=False)
+    red_box_item = models.BooleanField(default=False)
+
+    # Index Tracking
+    STD_index_value_original = models.FloatField(null=True, blank=True)
+    month_12_fc_index_original = models.FloatField(null=True, blank=True)
+
+    # Special Tags
+    RLJ = models.CharField(max_length=100, null=True, blank=True)
+
+    # Birthstone/Occasions
+    birthstone = models.CharField(max_length=100, null=True, blank=True)
+    birthstone_month = models.CharField(max_length=100, null=True, blank=True)
+    considered_birthstone_required_quantity = models.BooleanField(default=False)
+    Valentine_day = models.BooleanField(default=False)
+    Mothers_day = models.BooleanField(default=False)
+    Fathers_day = models.BooleanField(default=False)
+    Mens_day = models.BooleanField(default=False)
+    Womens_day = models.BooleanField(default=False)
+
+    # Logistics
+    fldc = models.FloatField(null=True, blank=True)
+    com_fldc = models.FloatField(null=True, blank=True)
+    store_fldc = models.FloatField(null=True, blank=True)
+    door_count = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['sheet', 'tagged_to']),
+            models.Index(fields=['sheet', 'assigned_to']),
+            models.Index(fields=['product_type']),
+        ]
+
     def __str__(self):
         return f"{self.product_id} - {self.product_description}"
-
 
 
 class MonthlyForecast(models.Model):
@@ -180,6 +311,7 @@ class MonthlyForecast(models.Model):
 
     ]
 
+    sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE)
     product = models.ForeignKey(ProductDetail, on_delete=models.CASCADE, verbose_name="Product")
     variable_name = models.CharField(max_length=50, choices=VARIABLE_CHOICES, verbose_name="Variable")
     year = models.PositiveIntegerField()
@@ -209,215 +341,28 @@ class MonthlyForecast(models.Model):
         return f"{self.product} - {self.variable_name} - {self.year}: Jan({self.jan}), Feb({self.feb}), ... Dec({self.dec})"
 
 
-  
-class StoreForecast(models.Model):
-    category = models.CharField(max_length=100)
-    pid = models.CharField(max_length=100)
-    lead_time = models.FloatField()
-    leadtime_holiday_adjustment = models.BooleanField()
-    month_12_fc_index = models.FloatField()
-    loss = models.FloatField()
-    month_12_fc_index_loss = models.FloatField()
-    selected_months = models.JSONField()
-    trend = models.FloatField()
-    inventory_maintained = models.BooleanField()
-    trend_index_difference = models.FloatField()
-    red_box_item = models.BooleanField()
-    forecasting_method = models.CharField(max_length=100)
-    door_count = models.FloatField()
-    average_com_oh = models.FloatField()
-    fldc = models.FloatField()
-    birthstone = models.CharField(max_length=100)
-    birthstone_month = models.CharField(max_length=100,null=True, blank=True)
-    considered_birthstone_required_quantity = models.BooleanField()
-    forecast_month = models.CharField(max_length=10)
-    forecast_month_required_quantity = models.FloatField()
-    forecast_month_planned_oh = models.FloatField()
-    next_forecast_month = models.CharField(max_length=10)
-    next_forecast_month_required_quantity = models.FloatField()
-    next_forecast_month_planned_oh = models.FloatField()
-    added_qty_macys_soq = models.FloatField()
-    forecast_month_planned_shipment = models.FloatField()
-    next_forecast_month_planned_shipment = models.FloatField()
-    qty_added_to_maintain_OH_forecast_month = models.FloatField(null=True, blank=True)
-    qty_added_to_maintain_OH_next_forecast_month = models.FloatField(null=True, blank=True)
-    qty_added_to_balance_SOQ_forecast_month = models.FloatField(null=True, blank=True)
-
-    total_added_qty = models.FloatField()
-    vendor = models.CharField(max_length=255, null=True, blank=True)
-    Valentine_day = models.BooleanField(default=False)
-    Mothers_day = models.BooleanField(default=False)
-    Fathers_day = models.BooleanField(default=False)
-    Mens_day = models.BooleanField(default=False)
-    Womens_day = models.BooleanField(default=False)
-    Min_order = models.FloatField(null=True, blank=True)
-    Macys_SOQ = models.FloatField(null=True, blank=True)
-    average_store_sale_thru = models.FloatField(null=True, blank=True)
-    macy_SOQ_percentage = models.FloatField(null=True, blank=True)
-    Qty_given_to_macys = models.FloatField(null=True, blank=True)
-    Added_qty_using_macys_SOQ = models.BooleanField(default=False)
-    Below_min_order = models.BooleanField(default=False)
-    Over_macys_SOQ = models.BooleanField(default=False)
-    Added_only_to_balance_macys_SOQ = models.BooleanField(default=False)
-    Need_to_review_first = models.BooleanField(default=False)
-    RLJ = models.CharField(max_length=100, null=True, blank=True)
-    STD_index_value_original = models.FloatField(null=True, blank=True)
-    month_12_fc_index_original = models.FloatField(null=True, blank=True)
-    std_trend_original = models.FloatField(null=True, blank=True)
-
-
-
-    class Meta:
-        # Define your unique fields to identify existing records
-        unique_together = ('category', 'pid', 'forecast_month')
-
-
-class ComForecast(models.Model):
-    category = models.CharField(max_length=100)
-    pid = models.CharField(max_length=100)
-    lead_time = models.FloatField()
-    leadtime_holiday_adjustment = models.BooleanField()
-    selected_months = models.JSONField()
-    com_month_12_fc_index = models.FloatField()
-    com_trend = models.FloatField()
-    trend = models.FloatField()
-    inventory_maintained = models.BooleanField()
-    trend_index_difference = models.FloatField()
-    red_box_item = models.BooleanField()
-    forecasting_method = models.CharField(max_length=100)
-    minimum_required_oh_for_com = models.FloatField()
-    fldc = models.FloatField()
-    forecast_month = models.CharField(max_length=10)
-    forecast_month_required_quantity = models.FloatField()
-    forecast_month_planned_oh = models.FloatField()
-    next_forecast_month = models.CharField(max_length=10)
-    next_forecast_month_required_quantity = models.FloatField()
-    next_forecast_month_planned_oh = models.FloatField()
-    added_qty_macys_soq = models.FloatField()
-    vdf_status = models.BooleanField()
-    vdf_added_qty = models.FloatField()
-    forecast_month_planned_shipment = models.FloatField()
-    next_forecast_month_planned_shipment = models.IntegerField()
-    qty_added_to_maintain_OH_forecast_month = models.FloatField(null=True, blank=True)
-    qty_added_to_maintain_OH_next_forecast_month = models.FloatField(null=True, blank=True)
-    qty_added_to_balance_SOQ_forecast_month = models.FloatField(null=True, blank=True)
-    total_added_qty = models.IntegerField()
-    vendor = models.CharField(max_length=255, null=True, blank=True)
-    Valentine_day = models.BooleanField(default=False)
-    Mothers_day = models.BooleanField(default=False)
-    Fathers_day = models.BooleanField(default=False)
-    Mens_day = models.BooleanField(default=False)
-    Womens_day = models.BooleanField(default=False)
-    Min_order = models.FloatField(null=True, blank=True)
-    Macys_SOQ = models.FloatField(null=True, blank=True)
-    average_store_sale_thru = models.FloatField(null=True, blank=True)
-    macy_SOQ_percentage = models.FloatField(null=True, blank=True)
-    Qty_given_to_macys = models.FloatField(null=True, blank=True)
-    Added_qty_using_macys_SOQ = models.BooleanField(default=False)
-    Below_min_order = models.BooleanField(default=False)
-    Over_macys_SOQ = models.BooleanField(default=False)
-    Added_only_to_balance_macys_SOQ = models.BooleanField(default=False)
-    Need_to_review_first = models.BooleanField(default=False)
-    RLJ = models.CharField(max_length=100, null=True, blank=True)
-    STD_index_value_original = models.FloatField(null=True, blank=True)
-    month_12_fc_index_original = models.FloatField(null=True, blank=True)
-    std_trend_original = models.FloatField(null=True, blank=True)
-
-
-    
-    class Meta:
-        unique_together = ('category', 'pid', 'forecast_month')
-
-
-class OmniForecast(models.Model):
-    category = models.CharField(max_length=100)
-    pid = models.CharField(max_length=100)
-    lead_time = models.FloatField()
-    leadtime_holiday_adjustment = models.BooleanField()
-    selected_months = models.JSONField()
-    com_month_12_fc_index = models.FloatField()
-    com_trend = models.FloatField()
-    com_inventory_maintained = models.BooleanField()
-    red_box_item = models.BooleanField()
-    
-    minimum_required_oh_for_com = models.FloatField()
-    com_fldc = models.FloatField()
-    forecast_month = models.CharField(max_length=10)
-    
-    next_forecast_month = models.CharField(max_length=10)
-    
-    store_month_12_fc_index = models.FloatField()
-    loss = models.FloatField()
-    store_month_12_fc_index_loss = models.FloatField()
-    store_trend = models.FloatField(null=True, blank=True)
-    store_inventory_maintained = models.BooleanField()
-    door_count = models.FloatField()
-    store_fldc = models.FloatField()
-    birthstone = models.CharField(max_length=100)
-    birthstone_month = models.CharField(max_length=100,null=True, blank=True)
-    considered_birthstone_required_quantity = models.BooleanField()
-    forecast_month_planned_oh = models.FloatField()
-    next_forecast_month_planned_oh = models.FloatField()
-    added_qty_macys_soq = models.FloatField()
-    forecast_month_planned_shipment = models.FloatField()
-    next_forecast_month_planned_shipment = models.FloatField()
-    qty_added_to_maintain_OH_forecast_month = models.FloatField(null=True, blank=True)
-    qty_added_to_maintain_OH_next_forecast_month = models.FloatField(null=True, blank=True)
-    qty_added_to_balance_SOQ_forecast_month = models.FloatField(null=True, blank=True)
-    total_added_qty = models.FloatField()
-    vendor = models.CharField(max_length=255, null=True, blank=True)
-    Valentine_day = models.BooleanField(default=False)
-    Mothers_day = models.BooleanField(default=False)
-    Fathers_day = models.BooleanField(default=False)
-    Mens_day = models.BooleanField(default=False)
-    Womens_day = models.BooleanField(default=False)
-    Min_order = models.FloatField(null=True, blank=True)
-    Macys_SOQ = models.FloatField(null=True, blank=True)
-    average_store_sale_thru = models.FloatField(null=True, blank=True)
-    macy_SOQ_percentage = models.FloatField(null=True, blank=True)
-    Qty_given_to_macys = models.FloatField(null=True, blank=True)
-    Added_qty_using_macys_SOQ = models.BooleanField(default=False)
-    Below_min_order = models.BooleanField(default=False)
-    Over_macys_SOQ = models.BooleanField(default=False)
-    Added_only_to_balance_macys_SOQ = models.BooleanField(default=False)
-    Need_to_review_first = models.BooleanField(default=False)
-    RLJ = models.CharField(max_length=100,null=True, blank=True)
-    trend_index_difference_com = models.FloatField(null=True, blank=True)
-    trend_index_difference_store = models.FloatField(null=True, blank=True)
-    forecasting_method_com = models.CharField(max_length=100)
-    forecasting_method_store = models.CharField(max_length=100,null=True, blank=True)
-    forecast_month_required_quantity_com = models.FloatField(null=True, blank=True)
-    next_forecast_month_required_quantity_com = models.FloatField(null=True, blank=True)
-    forecast_month_required_quantity_store = models.FloatField(null=True, blank=True)
-    next_forecast_month_required_quantity_store = models.FloatField(null=True, blank=True)
-    forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
-    next_forecast_month_required_quantity_total = models.FloatField(null=True, blank=True)
-    STD_index_value_original = models.FloatField(null=True, blank=True)
-    month_12_fc_index_original = models.FloatField(null=True, blank=True)
-    std_trend_original = models.FloatField(null=True, blank=True)
-    class Meta:
-        unique_together = ('category', 'pid', 'forecast_month')
-
 class ForecastNote(models.Model):
-    STATUS_CHOICES = [
-        ("not_reviewed", "Not reviewed"),
-        ("pending",      "Pending"),
-        ("reviewed",     "Reviewed"),
-    ]
-
-    pid         = models.CharField(max_length=100, db_index=True, verbose_name="Product ID")
-    note        = models.TextField(blank=True,null=True, verbose_name="Note Description")
-    assigned_to = models.CharField(max_length=100,null=True, blank=True, verbose_name="Assigned To")
-    product_assigned_to = models.CharField(max_length=100,null=True, blank=True, verbose_name="product_assigned_to")
-    status      = models.CharField(max_length=13, choices=STATUS_CHOICES, default="not_reviewed", verbose_name="Status", null=True, blank=True)
+    
+    sheet = models.ForeignKey("SheetUpload", on_delete=models.CASCADE)
+    product = models.ForeignKey("ProductDetail", on_delete=models.CASCADE, related_name="notes")
+    note      = models.TextField(blank=True,null=True, verbose_name="Note Description")
+    tagged_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name="tagged_to")
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['sheet', 'product']),
+            models.Index(fields=['status']),
+        ]
+
     def __str__(self):
-        return f"{self.pid} – {self.assigned_to or 'Unassigned'} – {self.get_status_display()}"
+        return f"{self.product} – {self.get_status_display()}"
 
 
 class RetailInfo(models.Model):
+
+    sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE)
     year_of_previous_month = models.CharField(max_length=100, null=True, blank=True)
     last_year_of_previous_month = models.CharField(max_length=100, null=True, blank=True)
     season = models.CharField(max_length=100, null=True, blank=True)
@@ -443,4 +388,16 @@ class RetailInfo(models.Model):
 
     def __str__(self):
         return f"RetailInfo ({self.current_month} - {self.year_of_previous_month})"
+    
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['sheet', 'product']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f"{self.product} – {self.assigned_to or 'Unassigned'} – {self.get_status_display()}"
     
