@@ -1,17 +1,13 @@
-from forecast.service.createDataframe import planning_df,Macys_Recpts,All_DATA,MCOM_Data,index_df
-from forecast.service.staticVariable import  year_of_previous_month,last_year_of_previous_month,STD_PERIOD
+from forecast.service.staticVariable import  year_of_previous_month,last_year_of_previous_month
 import pandas as pd
 from forecast.service.utils import calculate_store_unit_sales_and_OH,calculate_com_to_ttl_sales_and_OH,format_sales_data,calculate_omni_sell_through,calculate_store_sell_through,calculate_turn,calculate_diff
 class VariableLoader:
 
-    def __init__(self,cross_ref):
+    def __init__(self,cross_ref,matching_row,Macys_Recpts_matching_row,index_df,All_DATA,MCOM_Data,STD_PERIOD):
         # Find the matching row based on cross_ref
-        matching_row = planning_df.loc[planning_df['Cross ref'].str.upper() == cross_ref]
         if matching_row.empty:
-            raise ValueError(f"Cross ref '{cross_ref}' not found in 'planning_df'.")
-        
-        self.matched_row = matching_row # Store the matched row for later use in Database
-    
+            raise ValueError(f"Cross ref '{cross_ref}' not found in 'planning_df'.")       
+        self.matched_row = matching_row # Store the matched row for later use in Database    
         self.pid_value = matching_row['PID'].iloc[0]
         self.RLJ = matching_row['Adjusted RLJ Item'].iloc[0] 
         self.MKST = matching_row['Mkst'].iloc[0] # Get the first matching PID
@@ -72,8 +68,7 @@ class VariableLoader:
         self.STD_Store_Rtn=matching_row['STD Store Rtn %'].iloc[0]
         self.Prod_Desc=matching_row['Prod Desc'].iloc[0]
         self.Last_Proj_Review_Date=matching_row['Last Proj Review Date'].iloc[0]
-        self.Macys_Recpts_matching_row=Macys_Recpts.loc[Macys_Recpts['PID'].str.upper() == self.pid_value]
-        self.Macys_Spring_Proj_Notes =  f"Macy's Spring Proj Notes: {self.Macys_Recpts_matching_row['ACTION'].iloc[0]}" if not self.Macys_Recpts_matching_row.empty else "Macy's Spring Proj Notes: "
+        self.Macys_Spring_Proj_Notes =  f"Macy's Spring Proj Notes: {Macys_Recpts_matching_row['ACTION'].iloc[0]}" if not Macys_Recpts_matching_row.empty else "Macy's Spring Proj Notes: "
         self.Planner_Response=matching_row['Planner Response'].iloc[0] 
 
         self.Nav_Feb=matching_row['Feb'].iloc[0]
@@ -113,7 +108,6 @@ class VariableLoader:
         for month in months:
             self.index_value[month] = index_row_data[month].iloc[0] if not index_row_data.empty else 0
             
-        self.MCOM_Data_matching_row=MCOM_Data.loc[MCOM_Data['PID'].str.upper() == self.pid_value]
         this_year_value=year_of_previous_month
         last_year_value=last_year_of_previous_month
         self.this_year_data = All_DATA.loc[(All_DATA['PID'] == self.pid_value) & (All_DATA['Year'] == this_year_value)]

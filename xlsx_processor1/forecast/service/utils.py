@@ -5,10 +5,12 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from forecast.service.staticVariable import *
-from forecast.service.config import sheets
 from statistics import mean
 from decimal import Decimal, ROUND_HALF_UP
- 
+import os 
+from openpyxl import load_workbook
+import logging
+
 def round_half_up(value, digits):
     return float(Decimal(str(value)).quantize(Decimal('1.' + '0' * digits), rounding=ROUND_HALF_UP))
 
@@ -70,6 +72,7 @@ def calculate_forecast_date_basic(current_date: datetime, lead_time: int, countr
     If country is Italy and August is between current_date and forecast_date, skip August.
     """
     raw_forecast_date = current_date + timedelta(weeks=lead_time)
+    print(f"Raw forecast date calculated: {raw_forecast_date}")
     return raw_forecast_date
 
 def calculate_forecast_date(current_date: datetime, lead_time: int, country) -> datetime:
@@ -108,7 +111,7 @@ def adjust_lead_time(country, current_date, forecast_date, lead_time):
             return adjusted_lead_time,leadtime_holiday
    
     return lead_time,leadtime_holiday
-from datetime import datetime
+
 
 def extend_forecast_if_italy(forecast_date: datetime, country: str) -> datetime:
     """
@@ -262,7 +265,7 @@ def is_maintained(eom_oh_list, threshold, door_count):
 def is_maintained_for_com(units, threshold=2, ratio=0.2):
     near_zero_count = sum(1 for x in units if x <= threshold)
     return near_zero_count / len(units) < ratio 
-import logging
+
  
 def decide_forecasting_method(inventory_maintained):
     """
@@ -520,14 +523,14 @@ def extract_month(value):
     except:
         # If already like 'Feb-25' or 'Apr-25'
         return str(value)[:3]
-def get_return_quantity_dict(pid, df):
+def get_return_quantity_dict(pid, return_QA_df_row):
     # Filter rows for the given PID
-    filtered = df[df['PID'] == pid]
+
    
     # Ensure Month is uppercase
-    filtered['Month'] = filtered['Month'].str.upper()
+    return_QA_df_row['Month'] = return_QA_df_row['Month'].str.upper()
     # Group and sum quantities per month
-    monthly_qty = filtered.groupby('Month')['Quantity'].sum().to_dict()
+    monthly_qty = return_QA_df_row.groupby('Month')['Quantity'].sum().to_dict()
  
     # Create ordered dict with all months, filling 0 for missing
     return_quantity_dict = {month: monthly_qty.get(month, 0) for month in MONTHS}
@@ -627,7 +630,7 @@ def get_required_quantity_for_bsp(forecast_month, previous_month, category, KPI_
     else:
         return KPI_Door_count
 
-import logging
+
 
 def get_required_quantity_for_nonbsp(forecast_month, previous_month, KPI_Door_count):
     if forecast_month == previous_month or forecast_month == 'Nov':
@@ -694,11 +697,10 @@ def process_bsp_or_nonbsp_product(bsp_row, birthstone_sheet, forecast_month, KPI
 
     return required_quantity,birthstone_status,birthstone,birthstone_month
 
-def calculate_required_quantity(master_sheet, pid_value, birthstone_sheet, forecast_month, KPI_Door_count):
+def calculate_required_quantity(bsp_row, pid_value, birthstone_sheet, forecast_month, KPI_Door_count):
     required_quantity_month_dict = {}
 
     logging.info(f'Calculating required_quantity for PID: {pid_value}, Forecast Month: {forecast_month}')
-    bsp_row = master_sheet[master_sheet['PID'] == pid_value]
 
     if not bsp_row.empty:
         required_quantity,birthstone_status,birthstone,birthstone_month = process_bsp_or_nonbsp_product(
@@ -1057,7 +1059,7 @@ def required_quantity_for_com(forecast_month, planned_fc, average_com_oh):
     required_quantity_month_dict[next_month_after_forecast_month] = average_com_oh
     return required_quantity_month_dict,Calculate_FLDC
 
-    from datetime import datetime, timedelta
+
 
 def is_day_after_23(dt: datetime) -> bool:
     """
@@ -1286,12 +1288,9 @@ def calculate_index_value(Current_FC_Index):
 
     return index_value
 
-import os 
-from openpyxl import load_workbook
 
 
 def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
-    import forecast.service.staticVariable as st
     base_dir = os.path.join("media\processed_files", path) 
     
     filename = f"{category}.xlsx"

@@ -1,36 +1,35 @@
 import copy
 import logging
 from forecast.service.utils import *
-
+from forecast.service.staticVariable import CURRENT_DATE
 logging.basicConfig(filename=r'log_file_all1.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s',
                     filemode='w')
 
-def algorithm(loader,category,store,coms,omni,code):
-   
-    from forecast.service.getretailinfo import current_month,year_of_previous_month,season,previous_week_number
-    from forecast.service.staticVariable import month_week_dict,CURRENT_DATE,CURRENT_MONTH_SALES_PERCENTAGES,STD_PERIOD
-    from forecast.service.createDataframe import return_QA_df,master_sheet,vendor_sheet, birthstone_sheet
+def algorithm(current_month,year_of_previous_month,season,previous_week_number,vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA_df_row, loader, category, store, coms, omni, code,CURRENT_MONTH_SALES_PERCENTAGES,STD_PERIOD):
 
-    print("****************************************************************************************************************",CURRENT_MONTH_SALES_PERCENTAGES)
-    print("****************************************************************************************************************",STD_PERIOD)
-
-    vendor = get_vendor_by_pid(loader.pid_value, master_sheet)
+    print("****************************************************************************************************************", CURRENT_MONTH_SALES_PERCENTAGES)
+    print(f'category: {category}')
     country, lead_time = get_vendor_details(vendor, vendor_sheet)
     logging.info(f'pid: {loader.pid_value}')
     logging.info(f'RLJ: {loader.RLJ}')
     logging.info(f'country: {country}')
+    print(f'country: {country}')
+    print(f'lead_time: {lead_time}')
+
+    print("CURRENT_DATE: ", CURRENT_DATE)   
     forecast_date =calculate_forecast_date_basic(CURRENT_DATE, lead_time,country)
     logging.info(f'current_month: {current_month}')
-    logging.info(f'forecast_date: {forecast_date}')
     logging.info(f'forecast_date: {forecast_date}')
     logging.info(f'CURRENT_DATE: {CURRENT_DATE}')
     lead_time,leadtime_holiday = adjust_lead_time(country, CURRENT_DATE, forecast_date, lead_time)
     logging.info(f'previous_week_number: {leadtime_holiday}')
-    
+    print("done adjusting lead time")
+    print(f'lead_time: {lead_time}')
     
     if leadtime_holiday:
         forecast_date = calculate_forecast_date(CURRENT_DATE, lead_time, country)
+    print(f'forecast_date after lead time adjustment: {forecast_date}')
     forecast_month = get_forecast_info(forecast_date)
     week_of_forecast_month = get_week_of_month(forecast_date)
     actual_weeks=[feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks ]
@@ -49,6 +48,7 @@ def algorithm(loader,category,store,coms,omni,code):
     logging.info(f'forecast_month: {forecast_month}')
     logging.info(f'pid_type: {pid_type}')
     logging.info(f'index_value: {loader.index_value}')
+    print(f'pid_type: {pid_type}')
     forecast_month_next_month=find_next_month_after_forecast_month(forecast_month)
     forecast_month_next_next_month=find_next_month_after_forecast_month(forecast_month_next_month)
     rank =loader.Item_Code
@@ -56,12 +56,13 @@ def algorithm(loader,category,store,coms,omni,code):
     row17_values=[loader.TY_Unit_Sales[month] for month in MONTHS]
     row39_values=[loader.LY_Unit_Sales[month] for month in MONTHS]
     row41_values=[loader.LY_MCOM_Unit_Sales[month] for month in MONTHS]
-    return_quantity_dict, return_quantity_dict_80_percent = get_return_quantity_dict(loader.pid_value, return_QA_df)
+    return_quantity_dict, return_quantity_dict_80_percent = get_return_quantity_dict(loader.pid_value, return_QA_df_row)
     return_quantity_dict_80_percent=clean_return_dict(return_quantity_dict_80_percent,current_month)
     forecast_season=get_forecast_month_season(forecast_month)
     logging.info(f'forecast_season: {forecast_season}')
     logging.info(f'season: {season}')
     logging.info(f'Door count: {loader.KPI_Door_count}')
+    print(f'forecast_season: {forecast_season}')
     season='SPRING' if season == 'SP' else 'FALL'
     forecast_season_month=find_season_list(forecast_season)
     season_month=find_season_list(season)
@@ -78,11 +79,13 @@ def algorithm(loader,category,store,coms,omni,code):
     ttl_com_sale = count_ttl_com_sale(loader.LY_Unit_Sales,loader.LY_MCOM_Unit_Sales)
     logging.info(f'count_ttl_com_sale: {ttl_com_sale}')
     STD_index_value_original=calculate_std_index_value(loader.index_value,STD_PERIOD)
+    logging.info(f'STD_index_value_original: {STD_index_value_original}')
     month_12_fc_index_original=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value_original)
+    logging.info(f'month_12_fc_index_original: {month_12_fc_index_original}')
     std_trend_original=calculate_std_trend(loader.STD_TY_Unit_Sales_list, loader.STD_LY_Unit_Sales_list)
  
 
-
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     selected_months=None 
     pid_omni_status=False
     VDF_status=False
@@ -173,7 +176,7 @@ def algorithm(loader,category,store,coms,omni,code):
         planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month, override_value=None)
         logging.info(f'planned_oh: {planned_oh}')
         planned_oh_before_adding_qty = copy.deepcopy(planned_oh)
-        required_quantity ,birthstone_status,birthstone,birthstone_month= calculate_required_quantity(master_sheet, loader.pid_value, birthstone_sheet, forecast_month, loader.KPI_Door_count)
+        required_quantity ,birthstone_status,birthstone,birthstone_month= calculate_required_quantity(master_sheet_row, loader.pid_value, birthstone_sheet, forecast_month, loader.KPI_Door_count)
         logging.info(f'required_quantity: {required_quantity}')
         average_com_eom_oh = calculate_average_com_eom_oh(loader.TY_MCOM_OH_Units)
         logging.info(f'average_com_eom_oh: {average_com_eom_oh}')
@@ -457,7 +460,7 @@ def algorithm(loader,category,store,coms,omni,code):
             logging.info(f'current_month_fc: {current_month_fc}')
             actual_store_sale_unit= TY_store_sales_unit[current_month]
             planned_fc_store=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc_store,fc_by_trend,planned_fc_store,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status_store,std_trend,check_no_red_box,actual_store_sale_unit)
-            required_quantity_store ,birthstone_status,birthstone,birthstone_month= calculate_required_quantity(master_sheet, loader.pid_value, birthstone_sheet, forecast_month, loader.KPI_Door_count)
+            required_quantity_store ,birthstone_status,birthstone,birthstone_month= calculate_required_quantity(master_sheet_row, loader.pid_value, birthstone_sheet, forecast_month, loader.KPI_Door_count)
             average_com_eom_oh=0
             required_quantity_store,store_Calculate_FLDC = update_required_quantity_for_forecast_month(forecast_month, planned_fc_store, required_quantity_store, average_com_eom_oh, loader.KPI_Door_count,country,week_of_forecast_month)
             logging.info(f'required_quantity_store: {required_quantity_store}')
