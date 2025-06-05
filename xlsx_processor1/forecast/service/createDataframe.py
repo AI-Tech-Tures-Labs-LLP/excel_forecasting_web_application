@@ -4,6 +4,9 @@ from forecast.service import config
 
 sheets = config.sheets
 return_QA_df = config.return_QA_df
+holidays_df = config.holidays_df
+
+
 
 # Create DataFrames for each sheet, mimicking the original data structure
 # index_df = sheets["Index"].iloc[:41, :16]

@@ -10,14 +10,27 @@ def algorithm(loader,category,store,coms,omni,code):
    
     from forecast.service.getretailinfo import current_month,year_of_previous_month,season,previous_week_number
     from forecast.service.staticVariable import month_week_dict,CURRENT_DATE,CURRENT_MONTH_SALES_PERCENTAGES,STD_PERIOD
-    from forecast.service.createDataframe import return_QA_df,master_sheet,vendor_sheet, birthstone_sheet
+    from forecast.service.createDataframe import return_QA_df,master_sheet,vendor_sheet, birthstone_sheet,holidays_df
 
-    print("****************************************************************************************************************",CURRENT_MONTH_SALES_PERCENTAGES)
-    print("****************************************************************************************************************",STD_PERIOD)
+
+    #print("****************************************************************************************************************",CURRENT_MONTH_SALES_PERCENTAGES)
+    #print("****************************************************************************************************************",STD_PERIOD)
+    row = holidays_df[holidays_df['PID'] == loader.pid_value]
+    print("row_holiday",row)
+
+    if not row.empty:
+        Valentine_day = row['Valentine Day'].values[0]
+        Mothers_day = row['Mothers Day'].values[0]
+        Fathers_day = row['Fathers Day'].values[0]
+        Womens_day = row['Womens Day'].values[0]
+    else:
+        Valentine_day = Mothers_day = Fathers_day = Womens_day = False
 
     vendor = get_vendor_by_pid(loader.pid_value, master_sheet)
     country, lead_time = get_vendor_details(vendor, vendor_sheet)
     logging.info(f'pid: {loader.pid_value}')
+
+    
     logging.info(f'RLJ: {loader.RLJ}')
     logging.info(f'country: {country}')
     forecast_date =calculate_forecast_date_basic(CURRENT_DATE, lead_time,country)
@@ -115,7 +128,7 @@ def algorithm(loader,category,store,coms,omni,code):
             logging.info(f'updated_forecasting_method: {forecasting_method}')
         logging.info(f'forecasting_method: {forecasting_method}')
         loss=0
-        if forecasting_method =='FC By Index':
+        if forecasting_method =='FC By Index' and not is_maintained_status:
             average_value = sum(last_year_store_eom_oh_for_inventory_check) / len(last_year_store_eom_oh_for_inventory_check)
             logging.info(f'average_value: {average_value}')
             loss=calculate_loss(loader.KPI_Door_count, average_value)
@@ -418,6 +431,7 @@ def algorithm(loader,category,store,coms,omni,code):
 
                 STD_index_value=calculate_std_index_value(loader.index_value,selected_months)
                 new_store_month_12_fc_index=calculate_12th_month_forecast(TY_store_Unit_Sales_list_new, STD_index_value)
+                month_12_fc_index = new_store_month_12_fc_index
                 logging.info(f'new_com_month_12_fc_index: {new_com_month_12_fc_index}')
 
             last_year_store_eom_oh_for_inventory_check=last_year_eom_oh_season(loader.LY_OH_Units,loader.LY_MCOM_OH_Units,season_month)
@@ -427,7 +441,7 @@ def algorithm(loader,category,store,coms,omni,code):
             forecasting_method=decide_forecasting_method(is_maintained_status_store)
             loss=0
 
-            if forecasting_method =='FC By Index':
+            if forecasting_method =='FC By Index' and not is_maintained_status_store:
                 average_value = sum(last_year_store_eom_oh_for_inventory_check) / len(last_year_store_eom_oh_for_inventory_check)
                 logging.info(f'average_value: {average_value}')
                 loss=calculate_loss(loader.KPI_Door_count, average_value)
@@ -435,6 +449,9 @@ def algorithm(loader,category,store,coms,omni,code):
                 loss_percent =determine_loss_percent(loss,rank, loader.Own_Retail)
                 logging.info(f'loss_percent: {loss_percent}')
                 new_store_month_12_fc_index=update_12_month_forecast_by_loss(new_store_month_12_fc_index, loss_percent)
+                month_12_fc_index = new_store_month_12_fc_index
+
+            
             fc_by_index=calculate_fc_by_index(loader.index_value, new_store_month_12_fc_index)
             logging.info(f'fc_by_index_updated: {fc_by_index}')   
             row40_values=[LY_store_sales_unit[month] for month in MONTHS]
@@ -575,17 +592,18 @@ def algorithm(loader,category,store,coms,omni,code):
         is_over_macys_SOQ = True if macys_proj_receipt_upto_next_month_after_forecast_month < sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month else False
         is_need_to_review_first = True if total_added_quantity > macy_additional_units else False 
         is_added_by_only_SOQ = True if total_added_quantity == macy_additional_units else False
+
         if pid_type=='store_pid':
             data_store = {
             "category":f"{category.strip()}{code}",
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             "vendor":vendor,
-            "Valentine_day":False,
-            "Mothers_day":False,
-            "Fathers_day":False,
+            "Valentine_day":Valentine_day,
+            "Mothers_day":Mothers_day,
+            "Fathers_day":Fathers_day,
             "Mens_day":False,
-            "Womens_day":False,
+            "Womens_day":Womens_day,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
             "STD_index_value_original":STD_index_value_original,
@@ -642,11 +660,11 @@ def algorithm(loader,category,store,coms,omni,code):
             "RLJ": loader.RLJ,
             
             "vendor":vendor,
-            "Valentine_day":False,
-            "Mothers_day":False,
-            "Fathers_day":False,
+            "Valentine_day":Valentine_day,
+            "Mothers_day":Mothers_day,
+            "Fathers_day":Fathers_day,
             "Mens_day":False,
-            "Womens_day":False,
+            "Womens_day":Womens_day,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
             "STD_index_value_original":STD_index_value_original,
@@ -701,11 +719,11 @@ def algorithm(loader,category,store,coms,omni,code):
             "pid": loader.pid_value,
             "RLJ": loader.RLJ,
             "vendor":vendor,
-            "Valentine_day":False,
-            "Mothers_day":False,
-            "Fathers_day":False,
+            "Valentine_day":Valentine_day,
+            "Mothers_day":Mothers_day,
+            "Fathers_day":Fathers_day,
             "Mens_day":False,
-            "Womens_day":False,
+            "Womens_day":Womens_day,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
             "STD_index_value_original":STD_index_value_original,
@@ -785,5 +803,5 @@ def algorithm(loader,category,store,coms,omni,code):
         planned_fc={'FEB':0, 'MAR': 0, 'APR':0, 'MAY':0, 'JUN':0, 'JUL': 0, 'AUG': 0, 'SEP':0, 'OCT':0, 'NOV': 0, 'DEC':0, 'JAN':0}
         total_added_quantity=0
         logging.info(f'total_added_quantity: {total_added_quantity}')
-    return current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity
+    return week_of_forecast_month,current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity
 
