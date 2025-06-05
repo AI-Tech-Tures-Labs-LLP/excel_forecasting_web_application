@@ -1323,6 +1323,673 @@
 
 // export default ForecastVariableCards;
 // ForecastVariableCard.jsx
+// import React, { useState } from "react";
+// import {
+//   Clock,
+//   Calendar,
+//   BarChart3,
+//   TrendingDown,
+//   AlertTriangle,
+//   TrendingUp,
+//   Package,
+//   Box,
+//   Settings,
+//   Building2,
+//   MapPin,
+//   Gem,
+//   Star,
+//   ShoppingCart,
+//   Percent,
+//   CheckCircle,
+//   XCircle,
+//   AlertCircle,
+//   Info,
+//   X,
+//   Calculator,
+//   Target,
+//   Truck,
+// } from "lucide-react";
+
+// // Modal Components
+// const RequiredQuantityModal = ({ data, onClose }) => {
+//   // Check if this is for next forecast month (exclude FLDC)
+//   const isNextMonth = data.isNextMonth || false;
+//   const formula = isNextMonth
+//     ? "KPI Door Count + Average COM EOM OH"
+//     : "KPI Door Count + Average COM EOM OH + FLDC";
+
+//   const calculatedTotal = isNextMonth
+//     ? (data.kpiDoorCount || 0) + (data.avgComEOMOH || 0)
+//     : (data.kpiDoorCount || 0) + (data.avgComEOMOH || 0) + (data.fldc || 0);
+
+//   return (
+//     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+//         {/* Modal Header */}
+//         <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
+//           <div className="flex items-center gap-3">
+//             <div className="p-2 bg-white/10 rounded-lg">
+//               <Calculator className="text-white" size={24} />
+//             </div>
+//             <h2 className="text-xl font-bold text-white">
+//               Required EOH Quantity for {isNextMonth ? "Next " : ""}Lead
+//               Guideline Month
+//             </h2>
+//           </div>
+//           <button
+//             onClick={onClose}
+//             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+//           >
+//             <X className="text-white" size={24} />
+//           </button>
+//         </div>
+
+//         {/* Modal Content */}
+//         <div className="p-6">
+//           <div className="space-y-6">
+//             {/* Formula Display */}
+//             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+//               <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+//                 <Calculator className="text-gray-600" size={16} />
+//                 Calculation Formula
+//               </h4>
+//               <div className="bg-white rounded-lg p-4 border border-gray-300 font-mono text-sm text-gray-700">
+//                 {formula}
+//               </div>
+//               {isNextMonth && (
+//                 <div className="mt-2 text-xs text-amber-700 bg-amber-50 p-2 rounded">
+//                   Note: FLDC is not included in Next Forecast Month calculations
+//                 </div>
+//               )}
+//             </div>
+
+//             {/* Component Values */}
+//             <div
+//               className={`grid grid-cols-1 ${
+//                 isNextMonth ? "md:grid-cols-2" : "md:grid-cols-3"
+//               } gap-4`}
+//             >
+//               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+//                 <div className="flex items-center gap-2 mb-3">
+//                   <div className="p-2 bg-blue-50 rounded-lg">
+//                     <Building2 className="text-blue-600" size={16} />
+//                   </div>
+//                   <h5 className="text-sm font-semibold text-gray-700">
+//                     KPI Door Count
+//                   </h5>
+//                 </div>
+//                 <div className="text-2xl font-bold text-blue-600">
+//                   {data.kpiDoorCount?.toLocaleString() || "0"}
+//                 </div>
+//               </div>
+
+//               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+//                 <div className="flex items-center gap-2 mb-3">
+//                   <div className="p-2 bg-green-50 rounded-lg">
+//                     <Package className="text-green-600" size={16} />
+//                   </div>
+//                   <h5 className="text-sm font-semibold text-gray-700">
+//                     Average COM EOM OH
+//                   </h5>
+//                 </div>
+//                 <div className="text-2xl font-bold text-green-600">
+//                   {data.avgComEOMOH?.toLocaleString() || "0"}
+//                 </div>
+//               </div>
+
+//               {!isNextMonth && (
+//                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+//                   <div className="flex items-center gap-2 mb-3">
+//                     <div className="p-2 bg-purple-50 rounded-lg">
+//                       <MapPin className="text-purple-600" size={16} />
+//                     </div>
+//                     <h5 className="text-sm font-semibold text-gray-700">
+//                       FLDC
+//                     </h5>
+//                   </div>
+//                   <div className="text-2xl font-bold text-purple-600">
+//                     {data.fldc?.toLocaleString() || "0"}
+//                   </div>
+//                 </div>
+//               )}
+//             </div>
+
+//             {/* Calculation Steps */}
+//             <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-4 border border-amber-200">
+//               <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
+//                 <Target className="text-amber-600" size={16} />
+//                 Calculation
+//               </h4>
+//               <div className="space-y-2 text-sm">
+//                 <div className="flex items-center justify-between">
+//                   <span className="text-gray-600">KPI Door Count:</span>
+//                   <span className="font-medium">
+//                     {data.kpiDoorCount?.toLocaleString() || "0"}
+//                   </span>
+//                 </div>
+//                 <div className="flex items-center justify-between">
+//                   <span className="text-gray-600">+ Average COM EOM OH:</span>
+//                   <span className="font-medium">
+//                     {data.avgComEOMOH?.toLocaleString() || "0"}
+//                   </span>
+//                 </div>
+//                 {!isNextMonth && (
+//                   <div className="flex items-center justify-between">
+//                     <span className="text-gray-600">+ FLDC:</span>
+//                     <span className="font-medium">
+//                       {data.fldc?.toLocaleString() || "0"}
+//                     </span>
+//                   </div>
+//                 )}
+//                 <hr className="border-gray-300" />
+//                 <div className="flex items-center justify-between text-lg font-bold">
+//                   <span className="text-gray-800">
+//                     Required EOH for {data.forecastMonth}:
+//                   </span>
+//                   <span className="text-indigo-600">
+//                     {calculatedTotal.toLocaleString()}
+//                   </span>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // Generic Modal for other variables
+// const GenericVariableModal = ({ data, onClose }) => (
+//   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+//     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden">
+//       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+//         <div className="flex items-center gap-3">
+//           <div className="p-2 bg-white/10 rounded-lg">
+//             <Info className="text-white" size={24} />
+//           </div>
+//           <h2 className="text-xl font-bold text-white">Variable Information</h2>
+//         </div>
+//         <button
+//           onClick={onClose}
+//           className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+//         >
+//           <X className="text-white" size={24} />
+//         </button>
+//       </div>
+//       <div className="p-6">
+//         <div className="space-y-4">
+//           <div>
+//             <h3 className="text-lg font-semibold text-gray-800 mb-2">
+//               {data.label}
+//             </h3>
+//             <p className="text-gray-600 text-sm mb-4">
+//               {data.forecastType.toUpperCase()} Forecast Variable
+//             </p>
+//           </div>
+//           <div className="bg-gray-50 rounded-lg p-4">
+//             <div className="flex items-center justify-between">
+//               <span className="text-gray-600">Current Value:</span>
+//               <span className="font-bold text-lg text-gray-900">
+//                 {data.value}
+//               </span>
+//             </div>
+//           </div>
+//           <div className="bg-blue-50 rounded-lg p-4">
+//             <p className="text-sm text-gray-700">
+//               This variable is part of the {data.forecastType} forecast
+//               calculations. Click on other variables to see their detailed
+//               breakdowns and calculations.
+//             </p>
+//           </div>
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+// );
+
+// // Dynamic Variable Configuration - Creates cards for ALL fields in the data
+// const getDynamicVariableConfig = (data) => {
+//   // Fields to exclude from displaying (meta fields)
+//   const excludeFields = ["id", "category", "pid"];
+
+//   // Get all keys from the data object
+//   const allKeys = Object.keys(data).filter(
+//     (key) => !excludeFields.includes(key)
+//   );
+
+//   // Create variable config for each field dynamically
+//   return allKeys.map((key) => {
+//     const value = data[key];
+//     const config = {
+//       key,
+//       label: formatFieldName(key),
+//       icon: getIconForField(key, value),
+//       type: getFieldType(value),
+//     };
+
+//     // Add special properties for specific fields
+//     if (key.includes("forecast_month_required_quantity")) {
+//       config.clickable = true;
+//       config.modalType = "required_quantity";
+//     }
+
+//     return config;
+//   });
+// };
+
+// // Helper function to format field names into readable labels
+// const formatFieldName = (key) => {
+//   return key
+//     .split("_")
+//     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+//     .join(" ")
+//     .replace(/([A-Z])/g, " $1")
+//     .replace(/\s+/g, " ")
+//     .trim();
+// };
+
+// // Helper function to determine field type based on value
+// const getFieldType = (value) => {
+//   if (typeof value === "boolean") return "boolean";
+//   if (Array.isArray(value)) return "array";
+//   if (typeof value === "number" && value >= 0 && value <= 1)
+//     return "percentage";
+//   return "default";
+// };
+
+// // Helper function to get appropriate icon for field
+// const getIconForField = (key, value) => {
+//   const keyLower = key.toLowerCase();
+
+//   // Time related
+//   if (keyLower.includes("time") || keyLower.includes("lead")) return Clock;
+//   if (
+//     keyLower.includes("month") ||
+//     keyLower.includes("date") ||
+//     keyLower.includes("holiday")
+//   )
+//     return Calendar;
+
+//   // Quantity/Package related
+//   if (
+//     keyLower.includes("qty") ||
+//     keyLower.includes("quantity") ||
+//     keyLower.includes("shipment") ||
+//     keyLower.includes("order")
+//   )
+//     return Package;
+//   if (keyLower.includes("oh") || keyLower.includes("inventory")) return Box;
+
+//   // Financial/Performance
+//   if (
+//     keyLower.includes("trend") ||
+//     keyLower.includes("index") ||
+//     keyLower.includes("fc")
+//   )
+//     return BarChart3;
+//   if (keyLower.includes("loss") || keyLower.includes("diff"))
+//     return TrendingDown;
+//   if (
+//     keyLower.includes("sale") ||
+//     keyLower.includes("sell") ||
+//     keyLower.includes("thru")
+//   )
+//     return TrendingUp;
+//   if (keyLower.includes("macys") || keyLower.includes("soq")) return Star;
+//   if (keyLower.includes("percentage") || keyLower.includes("percent"))
+//     return Percent;
+
+//   // Location/Structure
+//   if (keyLower.includes("door") || keyLower.includes("count")) return Building2;
+//   if (keyLower.includes("fldc") || keyLower.includes("location")) return MapPin;
+
+//   // Product attributes
+//   if (keyLower.includes("birthstone") || keyLower.includes("gem")) return Gem;
+//   if (keyLower.includes("forecast") || keyLower.includes("method"))
+//     return Settings;
+//   if (keyLower.includes("vendor") || keyLower.includes("supplier"))
+//     return Truck;
+
+//   // Status/Flags
+//   if (typeof value === "boolean") {
+//     if (keyLower.includes("review") || keyLower.includes("need"))
+//       return AlertCircle;
+//     if (
+//       keyLower.includes("over") ||
+//       keyLower.includes("below") ||
+//       keyLower.includes("error")
+//     )
+//       return AlertTriangle;
+//     if (
+//       keyLower.includes("maintained") ||
+//       keyLower.includes("status") ||
+//       keyLower.includes("added")
+//     )
+//       return CheckCircle;
+//     if (keyLower.includes("box") || keyLower.includes("item")) return Box;
+//     return CheckCircle;
+//   }
+
+//   // Default icon
+//   return Info;
+// };
+
+// // Format value utility
+// const formatVariableValue = (value, config) => {
+//   if (value === null || value === undefined) return "-";
+
+//   switch (config.type) {
+//     case "boolean":
+//       return value ? "Yes" : "No";
+//     case "array":
+//       return Array.isArray(value) ? value.join(", ") : value;
+//     case "percentage":
+//       return typeof value === "number"
+//         ? `${(value * 100).toFixed(2)}%`
+//         : `${value}%`;
+//     default:
+//       const formattedValue =
+//         typeof value === "number" ? value.toLocaleString() : value;
+//       return config.suffix
+//         ? `${formattedValue}${config.suffix}`
+//         : formattedValue;
+//   }
+// };
+
+// // Individual Variable Card Component
+// const VariableCard = ({
+//   variable,
+//   value,
+//   bgColor,
+//   iconColor,
+//   forecastData,
+//   forecastType,
+// }) => {
+//   const [showModal, setShowModal] = useState(false);
+//   const IconComponent = variable.icon || Info;
+
+//   const handleCardClick = () => {
+//     if (!variable.clickable) return;
+
+//     if (variable.modalType === "required_quantity") {
+//       const isNextMonth = variable.key.includes("next");
+//       const forecastMonth = isNextMonth
+//         ? forecastData.next_forecast_month
+//         : forecastData.forecast_month;
+
+//       const modalData = {
+//         forecastType,
+//         forecastMonth,
+//         isNextMonth, // Add this flag
+//         kpiDoorCount: forecastData?.door_count || 0,
+//         avgComEOMOH: forecastData?.average_com_oh || 0,
+//         fldc: forecastData?.fldc || 0,
+//         requiredQty: isNextMonth
+//           ? forecastData?.next_forecast_month_required_quantity || 0
+//           : forecastData?.forecast_month_required_quantity || 0,
+//       };
+
+//       setShowModal({ type: "required_quantity", data: modalData });
+//     } else {
+//       // Generic modal for other variables
+//       const modalData = {
+//         label: variable.label,
+//         value: formatVariableValue(value, variable),
+//         forecastType,
+//         key: variable.key,
+//       };
+
+//       setShowModal({ type: "generic", data: modalData });
+//     }
+//   };
+
+//   return (
+//     <>
+//       <div
+//         className={`bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
+//           variable.clickable
+//             ? "cursor-pointer hover:border-blue-300 hover:scale-105"
+//             : ""
+//         }`}
+//         onClick={handleCardClick}
+//       >
+//         <div className="p-4">
+//           <div className="flex items-center gap-2 mb-3">
+//             <div className={`p-1.5 ${bgColor} rounded-md`}>
+//               <IconComponent className={iconColor} size={14} />
+//             </div>
+//             <span className="text-xs font-medium text-gray-600 leading-tight">
+//               {variable.label}
+//             </span>
+//             {variable.clickable && (
+//               <div className="ml-auto">
+//                 <Info className="text-blue-500" size={12} />
+//               </div>
+//             )}
+//           </div>
+//           <div className="text-sm font-bold text-gray-900">
+//             {variable.key === "trend_index_difference" ||
+//             variable.key === "loss"
+//               ? `${formatVariableValue(value, variable)}%`
+//               : formatVariableValue(value, variable)}
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Modals */}
+//       {showModal && showModal.type === "required_quantity" && (
+//         <RequiredQuantityModal
+//           data={showModal.data}
+//           onClose={() => setShowModal(false)}
+//         />
+//       )}
+
+//       {showModal && showModal.type === "generic" && (
+//         <GenericVariableModal
+//           data={showModal.data}
+//           onClose={() => setShowModal(false)}
+//         />
+//       )}
+//     </>
+//   );
+// };
+
+// // Main Forecast Variables Cards Component
+// const ForecastVariableCards = ({ productData }) => {
+//   // Debug logging
+//   console.log("ForecastVariableCards received productData:", productData);
+
+//   if (!productData) {
+//     return (
+//       <div className="text-center py-8 bg-gray-50 rounded-xl">
+//         <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+//         <p className="text-gray-600">No product data available</p>
+//       </div>
+//     );
+//   }
+
+//   const { store_forecast, com_forecast, omni_forecast } = productData;
+
+//   // Debug logging for each forecast type
+//   console.log("Store forecast data:", store_forecast);
+//   console.log("COM forecast data:", com_forecast);
+//   console.log("Omni forecast data:", omni_forecast);
+
+//   // Check which forecast types have data
+//   const hasStoreData = store_forecast && store_forecast.length > 0;
+//   const hasComData = com_forecast && com_forecast.length > 0;
+//   const hasOmniData = omni_forecast && omni_forecast.length > 0;
+
+//   console.log(
+//     "Data availability - Store:",
+//     hasStoreData,
+//     "COM:",
+//     hasComData,
+//     "Omni:",
+//     hasOmniData
+//   );
+
+//   // If no forecast data exists
+//   if (!hasStoreData && !hasComData && !hasOmniData) {
+//     return (
+//       <div className="text-center py-8 bg-gray-50 rounded-xl">
+//         <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
+//         <p className="text-gray-600">
+//           No forecast variables available for this product
+//         </p>
+//         <p className="text-gray-500 text-sm mt-2">
+//           This product may not have been processed through the forecasting
+//           system yet.
+//         </p>
+//         <div className="mt-4 p-4 bg-white rounded border text-left">
+//           <h4 className="font-semibold text-gray-700 mb-2">Debug Info:</h4>
+//           <div className="text-xs text-gray-600 space-y-1">
+//             <div>Store forecast: {JSON.stringify(store_forecast)}</div>
+//             <div>COM forecast: {JSON.stringify(com_forecast)}</div>
+//             <div>Omni forecast: {JSON.stringify(omni_forecast)}</div>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   const renderForecastCards = (
+//     forecastData,
+//     type,
+//     title,
+//     bgColor,
+//     iconColor,
+//     Icon
+//   ) => {
+//     if (!forecastData || !forecastData[0]) {
+//       console.log(`No data for ${type} forecast:`, forecastData);
+//       return null;
+//     }
+
+//     const data = forecastData[0];
+//     console.log(`${type.toUpperCase()} forecast data:`, data);
+
+//     // Use dynamic variable configuration instead of predefined ones
+//     const variables = getDynamicVariableConfig(data);
+//     console.log(
+//       `Dynamic variables for ${type}:`,
+//       variables.map((v) => ({ key: v.key, label: v.label, value: data[v.key] }))
+//     );
+
+//     return (
+//       <div className="mb-8">
+//         <div className="flex items-center gap-3 mb-4">
+//           <div className={`p-2 ${bgColor} rounded-lg`}>
+//             <Icon className={iconColor} size={20} />
+//           </div>
+//           <h5 className="text-lg font-semibold text-gray-800">{title}</h5>
+//           <div className="ml-auto">
+//             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+//               {variables.length} Variables
+//             </span>
+//           </div>
+//         </div>
+
+//         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+//           {variables.map((variable) => {
+//             const value = data[variable.key];
+
+//             return (
+//               <VariableCard
+//                 key={variable.key}
+//                 variable={variable}
+//                 value={value}
+//                 bgColor={bgColor}
+//                 iconColor={iconColor}
+//                 forecastData={data}
+//                 forecastType={type}
+//               />
+//             );
+//           })}
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   return (
+//     <div className="space-y-6">
+//       {/* Product Type Summary */}
+//       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 mb-6">
+//         <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+//           <Info className="text-blue-600" size={18} />
+//           Forecast Type Summary
+//         </h4>
+//         <div className="flex items-center gap-4 text-sm">
+//           <div
+//             className={`flex items-center gap-2 ${
+//               hasStoreData ? "text-blue-600" : "text-gray-400"
+//             }`}
+//           >
+//             <Building2 size={16} />
+//             <span className="font-medium">
+//               Store: {hasStoreData ? "Available" : "Not Available"}
+//             </span>
+//           </div>
+//           <div
+//             className={`flex items-center gap-2 ${
+//               hasComData ? "text-green-600" : "text-gray-400"
+//             }`}
+//           >
+//             <ShoppingCart size={16} />
+//             <span className="font-medium">
+//               COM: {hasComData ? "Available" : "Not Available"}
+//             </span>
+//           </div>
+//           <div
+//             className={`flex items-center gap-2 ${
+//               hasOmniData ? "text-purple-600" : "text-gray-400"
+//             }`}
+//           >
+//             <Package size={16} />
+//             <span className="font-medium">
+//               Omni: {hasOmniData ? "Available" : "Not Available"}
+//             </span>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* Render only the forecast types that have data */}
+//       {hasStoreData &&
+//         renderForecastCards(
+//           store_forecast,
+//           "store",
+//           "Store Forecast Variables",
+//           "bg-blue-50",
+//           "text-blue-600",
+//           Building2
+//         )}
+
+//       {hasComData &&
+//         renderForecastCards(
+//           com_forecast,
+//           "com",
+//           "COM Forecast Variables",
+//           "bg-green-50",
+//           "text-green-600",
+//           ShoppingCart
+//         )}
+
+//       {hasOmniData &&
+//         renderForecastCards(
+//           omni_forecast,
+//           "omni",
+//           "Omni Forecast Variables",
+//           "bg-purple-50",
+//           "text-purple-600",
+//           Package
+//         )}
+//     </div>
+//   );
+// };
+
+// export default ForecastVariableCards;
+
 import React, { useState } from "react";
 import {
   Clock,
@@ -1348,11 +2015,12 @@ import {
   Calculator,
   Target,
   Truck,
+  Search,
+  Filter,
 } from "lucide-react";
 
-// Modal Components
+// Modal Components (keeping existing modal components)
 const RequiredQuantityModal = ({ data, onClose }) => {
-  // Check if this is for next forecast month (exclude FLDC)
   const isNextMonth = data.isNextMonth || false;
   const formula = isNextMonth
     ? "KPI Door Count + Average COM EOM OH"
@@ -1365,7 +2033,6 @@ const RequiredQuantityModal = ({ data, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-        {/* Modal Header */}
         <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-white/10 rounded-lg">
@@ -1384,10 +2051,8 @@ const RequiredQuantityModal = ({ data, onClose }) => {
           </button>
         </div>
 
-        {/* Modal Content */}
         <div className="p-6">
           <div className="space-y-6">
-            {/* Formula Display */}
             <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
               <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <Calculator className="text-gray-600" size={16} />
@@ -1403,7 +2068,6 @@ const RequiredQuantityModal = ({ data, onClose }) => {
               )}
             </div>
 
-            {/* Component Values */}
             <div
               className={`grid grid-cols-1 ${
                 isNextMonth ? "md:grid-cols-2" : "md:grid-cols-3"
@@ -1454,7 +2118,6 @@ const RequiredQuantityModal = ({ data, onClose }) => {
               )}
             </div>
 
-            {/* Calculation Steps */}
             <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-4 border border-amber-200">
               <h4 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <Target className="text-amber-600" size={16} />
@@ -1499,7 +2162,6 @@ const RequiredQuantityModal = ({ data, onClose }) => {
   );
 };
 
-// Generic Modal for other variables
 const GenericVariableModal = ({ data, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden">
@@ -1548,17 +2210,13 @@ const GenericVariableModal = ({ data, onClose }) => (
   </div>
 );
 
-// Dynamic Variable Configuration - Creates cards for ALL fields in the data
+// Dynamic Variable Configuration
 const getDynamicVariableConfig = (data) => {
-  // Fields to exclude from displaying (meta fields)
   const excludeFields = ["id", "category", "pid"];
-
-  // Get all keys from the data object
   const allKeys = Object.keys(data).filter(
     (key) => !excludeFields.includes(key)
   );
 
-  // Create variable config for each field dynamically
   return allKeys.map((key) => {
     const value = data[key];
     const config = {
@@ -1568,7 +2226,6 @@ const getDynamicVariableConfig = (data) => {
       type: getFieldType(value),
     };
 
-    // Add special properties for specific fields
     if (key.includes("forecast_month_required_quantity")) {
       config.clickable = true;
       config.modalType = "required_quantity";
@@ -1578,7 +2235,6 @@ const getDynamicVariableConfig = (data) => {
   });
 };
 
-// Helper function to format field names into readable labels
 const formatFieldName = (key) => {
   return key
     .split("_")
@@ -1589,7 +2245,6 @@ const formatFieldName = (key) => {
     .trim();
 };
 
-// Helper function to determine field type based on value
 const getFieldType = (value) => {
   if (typeof value === "boolean") return "boolean";
   if (Array.isArray(value)) return "array";
@@ -1598,11 +2253,9 @@ const getFieldType = (value) => {
   return "default";
 };
 
-// Helper function to get appropriate icon for field
 const getIconForField = (key, value) => {
   const keyLower = key.toLowerCase();
 
-  // Time related
   if (keyLower.includes("time") || keyLower.includes("lead")) return Clock;
   if (
     keyLower.includes("month") ||
@@ -1610,8 +2263,6 @@ const getIconForField = (key, value) => {
     keyLower.includes("holiday")
   )
     return Calendar;
-
-  // Quantity/Package related
   if (
     keyLower.includes("qty") ||
     keyLower.includes("quantity") ||
@@ -1620,8 +2271,6 @@ const getIconForField = (key, value) => {
   )
     return Package;
   if (keyLower.includes("oh") || keyLower.includes("inventory")) return Box;
-
-  // Financial/Performance
   if (
     keyLower.includes("trend") ||
     keyLower.includes("index") ||
@@ -1639,19 +2288,14 @@ const getIconForField = (key, value) => {
   if (keyLower.includes("macys") || keyLower.includes("soq")) return Star;
   if (keyLower.includes("percentage") || keyLower.includes("percent"))
     return Percent;
-
-  // Location/Structure
   if (keyLower.includes("door") || keyLower.includes("count")) return Building2;
   if (keyLower.includes("fldc") || keyLower.includes("location")) return MapPin;
-
-  // Product attributes
   if (keyLower.includes("birthstone") || keyLower.includes("gem")) return Gem;
   if (keyLower.includes("forecast") || keyLower.includes("method"))
     return Settings;
   if (keyLower.includes("vendor") || keyLower.includes("supplier"))
     return Truck;
 
-  // Status/Flags
   if (typeof value === "boolean") {
     if (keyLower.includes("review") || keyLower.includes("need"))
       return AlertCircle;
@@ -1671,11 +2315,9 @@ const getIconForField = (key, value) => {
     return CheckCircle;
   }
 
-  // Default icon
   return Info;
 };
 
-// Format value utility
 const formatVariableValue = (value, config) => {
   if (value === null || value === undefined) return "-";
 
@@ -1721,7 +2363,7 @@ const VariableCard = ({
       const modalData = {
         forecastType,
         forecastMonth,
-        isNextMonth, // Add this flag
+        isNextMonth,
         kpiDoorCount: forecastData?.door_count || 0,
         avgComEOMOH: forecastData?.average_com_oh || 0,
         fldc: forecastData?.fldc || 0,
@@ -1732,7 +2374,6 @@ const VariableCard = ({
 
       setShowModal({ type: "required_quantity", data: modalData });
     } else {
-      // Generic modal for other variables
       const modalData = {
         label: variable.label,
         value: formatVariableValue(value, variable),
@@ -1777,7 +2418,6 @@ const VariableCard = ({
         </div>
       </div>
 
-      {/* Modals */}
       {showModal && showModal.type === "required_quantity" && (
         <RequiredQuantityModal
           data={showModal.data}
@@ -1795,9 +2435,11 @@ const VariableCard = ({
   );
 };
 
-// Main Forecast Variables Cards Component
+// Main Forecast Variables Cards Component with Search
 const ForecastVariableCards = ({ productData }) => {
-  // Debug logging
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedForecastType, setSelectedForecastType] = useState("all");
+
   console.log("ForecastVariableCards received productData:", productData);
 
   if (!productData) {
@@ -1811,26 +2453,10 @@ const ForecastVariableCards = ({ productData }) => {
 
   const { store_forecast, com_forecast, omni_forecast } = productData;
 
-  // Debug logging for each forecast type
-  console.log("Store forecast data:", store_forecast);
-  console.log("COM forecast data:", com_forecast);
-  console.log("Omni forecast data:", omni_forecast);
-
-  // Check which forecast types have data
   const hasStoreData = store_forecast && store_forecast.length > 0;
   const hasComData = com_forecast && com_forecast.length > 0;
   const hasOmniData = omni_forecast && omni_forecast.length > 0;
 
-  console.log(
-    "Data availability - Store:",
-    hasStoreData,
-    "COM:",
-    hasComData,
-    "Omni:",
-    hasOmniData
-  );
-
-  // If no forecast data exists
   if (!hasStoreData && !hasComData && !hasOmniData) {
     return (
       <div className="text-center py-8 bg-gray-50 rounded-xl">
@@ -1842,17 +2468,28 @@ const ForecastVariableCards = ({ productData }) => {
           This product may not have been processed through the forecasting
           system yet.
         </p>
-        <div className="mt-4 p-4 bg-white rounded border text-left">
-          <h4 className="font-semibold text-gray-700 mb-2">Debug Info:</h4>
-          <div className="text-xs text-gray-600 space-y-1">
-            <div>Store forecast: {JSON.stringify(store_forecast)}</div>
-            <div>COM forecast: {JSON.stringify(com_forecast)}</div>
-            <div>Omni forecast: {JSON.stringify(omni_forecast)}</div>
-          </div>
-        </div>
       </div>
     );
   }
+
+  // Filter forecast data based on search query and selected type
+  const filterVariables = (variables, data) => {
+    if (!searchQuery.trim()) return variables;
+
+    return variables.filter((variable) => {
+      const labelMatch = variable.label
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const keyMatch = variable.key
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const valueMatch = String(data[variable.key] || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+      return labelMatch || keyMatch || valueMatch;
+    });
+  };
 
   const renderForecastCards = (
     forecastData,
@@ -1867,11 +2504,21 @@ const ForecastVariableCards = ({ productData }) => {
       return null;
     }
 
+    // Filter by forecast type
+    if (selectedForecastType !== "all" && selectedForecastType !== type) {
+      return null;
+    }
+
     const data = forecastData[0];
     console.log(`${type.toUpperCase()} forecast data:`, data);
 
-    // Use dynamic variable configuration instead of predefined ones
     const variables = getDynamicVariableConfig(data);
+    const filteredVariables = filterVariables(variables, data);
+
+    if (filteredVariables.length === 0 && searchQuery.trim()) {
+      return null; // Don't render section if no variables match search
+    }
+
     console.log(
       `Dynamic variables for ${type}:`,
       variables.map((v) => ({ key: v.key, label: v.label, value: data[v.key] }))
@@ -1886,36 +2533,150 @@ const ForecastVariableCards = ({ productData }) => {
           <h5 className="text-lg font-semibold text-gray-800">{title}</h5>
           <div className="ml-auto">
             <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
-              {variables.length} Variables
+              {filteredVariables.length} Variable
+              {filteredVariables.length !== 1 ? "s" : ""}
+              {searchQuery.trim() &&
+                filteredVariables.length !== variables.length &&
+                ` (${variables.length} total)`}
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {variables.map((variable) => {
-            const value = data[variable.key];
+        {filteredVariables.length === 0 ? (
+          <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-500 text-sm">
+              No variables match your search criteria
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredVariables.map((variable) => {
+              const value = data[variable.key];
 
-            return (
-              <VariableCard
-                key={variable.key}
-                variable={variable}
-                value={value}
-                bgColor={bgColor}
-                iconColor={iconColor}
-                forecastData={data}
-                forecastType={type}
-              />
-            );
-          })}
-        </div>
+              return (
+                <VariableCard
+                  key={variable.key}
+                  variable={variable}
+                  value={value}
+                  bgColor={bgColor}
+                  iconColor={iconColor}
+                  forecastData={data}
+                  forecastType={type}
+                />
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
 
+  // Get all available forecast types for the filter dropdown
+  const availableForecastTypes = [
+    {
+      value: "all",
+      label: "All Forecast Types",
+      count:
+        (hasStoreData ? 1 : 0) + (hasComData ? 1 : 0) + (hasOmniData ? 1 : 0),
+    },
+    ...(hasStoreData ? [{ value: "store", label: "Store", count: 1 }] : []),
+    ...(hasComData ? [{ value: "com", label: "COM", count: 1 }] : []),
+    ...(hasOmniData ? [{ value: "omni", label: "Omni", count: 1 }] : []),
+  ];
+
+  // Check if there are any visible sections after filtering
+  const hasVisibleResults = () => {
+    if (selectedForecastType === "all") {
+      return hasStoreData || hasComData || hasOmniData;
+    }
+    if (selectedForecastType === "store") return hasStoreData;
+    if (selectedForecastType === "com") return hasComData;
+    if (selectedForecastType === "omni") return hasOmniData;
+    return false;
+  };
+
   return (
     <div className="space-y-6">
-      {/* Product Type Summary */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200 mb-6">
+      {/* Search and Filter Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={18}
+              />
+              <input
+                type="text"
+                placeholder="Search variables by name, key, or value..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white placeholder-gray-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Forecast Type Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="text-gray-500" size={18} />
+            <select
+              value={selectedForecastType}
+              onChange={(e) => setSelectedForecastType(e.target.value)}
+              className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white min-w-[140px]"
+            >
+              {availableForecastTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Clear All Button */}
+          {(searchQuery || selectedForecastType !== "all") && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedForecastType("all");
+              }}
+              className="px-4 py-2.5 bg-gray-500 text-white text-sm rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
+
+        {/* Search Results Summary */}
+        {searchQuery.trim() && (
+          <div className="mt-3 text-sm text-blue-700">
+            <span className="font-medium">Search: "{searchQuery}"</span>
+            {selectedForecastType !== "all" && (
+              <span className="ml-2">
+                in{" "}
+                {
+                  availableForecastTypes.find(
+                    (t) => t.value === selectedForecastType
+                  )?.label
+                }{" "}
+                forecast
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Forecast Type Summary */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
         <h4 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
           <Info className="text-blue-600" size={18} />
           Forecast Type Summary
@@ -1954,7 +2715,7 @@ const ForecastVariableCards = ({ productData }) => {
         </div>
       </div>
 
-      {/* Render only the forecast types that have data */}
+      {/* Render forecast sections */}
       {hasStoreData &&
         renderForecastCards(
           store_forecast,
@@ -1984,6 +2745,36 @@ const ForecastVariableCards = ({ productData }) => {
           "text-purple-600",
           Package
         )}
+
+      {/* No Results Message */}
+      {(!hasVisibleResults() ||
+        (searchQuery.trim() &&
+          ((selectedForecastType === "all" &&
+            !hasStoreData &&
+            !hasComData &&
+            !hasOmniData) ||
+            (selectedForecastType === "store" && !hasStoreData) ||
+            (selectedForecastType === "com" && !hasComData) ||
+            (selectedForecastType === "omni" && !hasOmniData)))) && (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
+          <Search className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-700 mb-2">
+            No Results Found
+          </h3>
+          <p className="text-gray-500 mb-4">
+            No variables match your current search and filter criteria.
+          </p>
+          <button
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedForecastType("all");
+            }}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Clear Filters
+          </button>
+        </div>
+      )}
     </div>
   );
 };

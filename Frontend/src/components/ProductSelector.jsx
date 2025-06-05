@@ -2533,8 +2533,8 @@ function ProductSelector() {
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
                           Category
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
-                          Original Qty
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
+                          Old User Added Qty
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase border-b border-gray-200">
                           New Qty
