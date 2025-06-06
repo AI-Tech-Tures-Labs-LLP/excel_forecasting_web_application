@@ -2,6 +2,7 @@ Frontend/finaldeploy/node_modules/
 xlsx_processor1/img_all/
 img_all/
 xlsx_processor1/forecast_summaryfor_april_4.xlsx
+macrequirements.txt
 
 # Django #
 *.log
