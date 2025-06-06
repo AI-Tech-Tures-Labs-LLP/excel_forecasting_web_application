@@ -296,7 +296,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
         get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
 
         print("Data saved to DB Successfully")
-        return Response({"pid": pid, "updated_context": updated_context})
+        return Response({"success": True},status=status.HTTP_200_OK)
 
 
 
