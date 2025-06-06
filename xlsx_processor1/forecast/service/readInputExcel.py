@@ -26,7 +26,9 @@ def readInputExcel(input_path):
         r"forecast/service/Macys returns 2025.xlsx",
         engine='openpyxl'
     )
-
+    config.holidays_df = pd.read_excel(r"forecast/service/Images & Category List Replen Items.xlsx", sheet_name="Replen Items Images & Category")
+    print("holidays_df shape:", config.holidays_df.shape)
+    print("holidays_df columns:", config.holidays_df.columns.tolist())
     print("Sheets in the Excel file:")
     for sheet in config.sheets.keys():
         print(sheet)

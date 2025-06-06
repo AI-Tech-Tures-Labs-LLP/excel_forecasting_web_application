@@ -157,7 +157,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     )
 
     args_list = [
-        (index_df, config.sheets, config.return_QA_df,category, code, num_products, static_data, file_path,std_period,percentage)
+        (index_df, config.sheets, config.return_QA_df,config.holidays_df,category, code, num_products, static_data, file_path,std_period,percentage)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -642,9 +642,9 @@ def process_category(args):
     print("Importing algorithm...")
     from forecast.service.staticVariable import month_data, month_col_map, H_VALUES, ALL_VALUES, MONTHLY_VALUES
     print("Importing static variables...")
-    
-    
-    index_df,sheets,return_QA_df, category, code, num_products, static_data, file_path,std_period,percentage = args
+
+
+    index_df,sheets,return_QA_df,holidays_df, category, code, num_products, static_data, file_path,std_period,percentage = args
     import forecast.service.staticVariable as st
 
     st.CURRENT_MONTH_SALES_PERCENTAGES = float(percentage)
@@ -656,6 +656,7 @@ def process_category(args):
     
     config.sheets = sheets
     config.return_QA_df = return_QA_df
+    config.holidays_df = holidays_df
 
     from forecast.service.var import VariableLoader
     print("Importing VariableLoader...")
@@ -925,7 +926,7 @@ def process_category(args):
 
         # Find the matching rows
         loader = VariableLoader(cross_ref)
-        current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_eoh, planned_sell_thru,total_added_quantity= algorithm(loader,category,store,coms,omni,code)
+        week_of_forecast_month,current_month_upper,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_eoh, planned_sell_thru,total_added_quantity= algorithm(loader,category,store,coms,omni,code)
         print("################################################################3",total_added_quantity)
 
         def safe_int(value):
@@ -1113,6 +1114,7 @@ def process_category(args):
                 "total_added_qty" : total_added_quantity if total_added_quantity > 0 else 0,
                 "category": f"{category}{code}",
                 "user_added_quantity": total_added_quantity if total_added_quantity > 0 else 0,
+                "week_of_forecast_month": week_of_forecast_month
             }
         )
 

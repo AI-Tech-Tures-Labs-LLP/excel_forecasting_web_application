@@ -77,7 +77,7 @@ def get_planned_data(pid, year):
 
         if forecast:
             result[variable] = {
-                "JAN": forecast.jan,
+                
                 "FEB": forecast.feb,
                 "MAR": forecast.mar,
                 "APR": forecast.apr,
@@ -89,6 +89,7 @@ def get_planned_data(pid, year):
                 "OCT": forecast.oct,
                 "NOV": forecast.nov,
                 "DEC": forecast.dec,
+                "JAN": forecast.jan,
             }
 
     return result
