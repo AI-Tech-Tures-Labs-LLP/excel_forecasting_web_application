@@ -152,18 +152,63 @@ class ProductDetail(models.Model):
 
 
 
+    #store 
 
-    # loss
-    # selected_months_for_index_trend
-    # new_trend
+    loss = models.FloatField(null=True, blank=True)
+    new_month_12_fc_index = models.FloatField(null=True, blank=True)
+    
+    new_trend = models.FloatField(null=True, blank=True)
     is_inventory_maintained = models.BooleanField(default=False)
     trend_index_difference = models.FloatField(null=True, blank=True)
     average_com_oh = models.FloatField(null=True, blank=True)
     fldc = models.FloatField(null=True, blank=True)
+    forecasting_method = models.CharField(max_length=50, null=True, blank=True)
 
-    month_12_fc_index_loss = models.FloatField(null=True, blank=True)
+
+   
+    #com
+    new_month_12_fc_index = models.FloatField(null=True, blank=True)
+    trend_of_total_sales = models.FloatField(null=True, blank=True)
+    trend_of_com_sales_for_selected_month = models.FloatField(null=True, blank=True)
+    is_inventory_maintained_com_sales = models.BooleanField(default=False)
+
+    month_12_fc_index_for_com_sales = models.FloatField(null=True, blank=True)
+    forecasting_method = models.CharField(max_length=50, null=True, blank=True)
+    minimum_required_oh_for_com = models.FloatField(null=True, blank=True)
+    fldc = models.FloatField(null=True, blank=True)
+    vdf_added_quantity = models.FloatField(null=True, blank=True)
+    
+    #omni
+
     com_month_12_fc_index = models.FloatField(null=True, blank=True)
+    com_trend = models.FloatField(null=True, blank=True)
+    is_com_inventory_maintained = models.BooleanField(default=False)
+    trend_index_difference_com = models.FloatField(null=True, blank=True)
+    forecasting_method_for_com = models.CharField(max_length=50, null=True, blank=True)
+    minimum_required_oh_for_com = models.FloatField(null=True, blank=True)
+    com_fldc = models.FloatField(null=True, blank=True)
+
     store_month_12_fc_index = models.FloatField(null=True, blank=True)
+    loss = models.FloatField(null=True, blank=True)
+    store_month_12_fc_index_loss = models.FloatField(null=True, blank=True)
+    store_trend = models.FloatField(null=True, blank=True)
+    is_store_inventory_maintained = models.BooleanField(default=False)
+    trend_index_difference_store = models.FloatField(null=True, blank=True)
+    forecasting_method_for_store = models.CharField(max_length=50, null=True, blank=True)
+    store_fldc = models.FloatField(null=True, blank=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
     trend = models.FloatField(null=True, blank=True)
     com_trend = models.FloatField(null=True, blank=True)
     store_trend = models.FloatField(null=True, blank=True)
@@ -175,7 +220,7 @@ class ProductDetail(models.Model):
     inventory_maintained = models.BooleanField(default=False)
     com_inventory_maintained = models.BooleanField(default=False)
     store_inventory_maintained = models.BooleanField(default=False)
-    minimum_required_oh_for_com = models.FloatField(null=True, blank=True)
+    
     average_com_oh = models.FloatField(null=True, blank=True)
     forecast_month_required_quantity_com = models.FloatField(null=True, blank=True)
     next_forecast_month_required_quantity_com = models.FloatField(null=True, blank=True)
