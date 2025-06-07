@@ -17,68 +17,41 @@ from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
 from openpyxl import load_workbook
-
+from datetime import datetime
 
 # Local application imports
-from .readInputExcel import readInputExcel
+from .readInputExcel import read_input_excel
 from forecast.service.adddatabase import save_macys_projection_receipts, save_monthly_forecasts, save_rolling_forecasts
 from forecast.models import MonthlyForecast, ProductDetail, StoreForecast, ComForecast, OmniForecast, RetailInfo
-from forecast.service.staticVariable import omni_rename_map, com_rename_map, store_rename_map
+from forecast.service.staticVariable import OMNI_RENAME_MAP, COM_RENAME_MAP, STORE_RENAME_MAP
 import calendar
-from forecast.service.getretailinfo import year_of_previous_month, last_year_of_previous_month, current_month, current_month_number, previous_week_number, last_month_of_previous_month_numeric, season, rolling_method, feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks, dec_weeks, jan_weeks
+from forecast.service.getretailinfo import get_previous_retail_week
 from forecast.service.createDataframe import DataFrameBuilder
 from forecast.service.sales_forecasting_algorithmpartwithcom_new_log import algorithm
 from forecast.service.var import VariableLoader
+import logging
+from forecast.service.utils import generate_std_period
+
 
 def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple):
+    current_date = datetime(2025,5,8)
+    logging.info(f"Input path: {input_path}, File path: {file_path}, Month from: {month_from}, Month to: {month_to}, Percentage: {percentage}, Input tuple: {input_tuple}, Current date: {current_date}")
 
-    print("Input path:", input_path)
-    sheets, return_QA_df = readInputExcel(input_path)
+    sheets, return_qty_df = read_input_excel(input_path)
 
-    # Map full month name to 3-letter uppercase abbreviation
-    def get_month_abbr(month_name):
-        try:
-            month_index = list(calendar.month_name).index(month_name.capitalize())
-            return calendar.month_abbr[month_index].upper()  # e.g., "November" → "NOV"
-        except ValueError:
-            raise ValueError(f"Invalid month name: {month_name}")
+    std_period = generate_std_period(month_from, month_to)
+    current_month_sales_percentage = float(percentage)
 
-    # Convert input to abbreviations
-    month_from_abbr = get_month_abbr(month_from)
-    month_to_abbr = get_month_abbr(month_to)
+    logging.info(f"Current month sales percentage: {current_month_sales_percentage} , Standard period: {std_period}")
 
-    # Generate STD_PERIOD from month_from_abbr to month_to_abbr
-    all_months = list(calendar.month_abbr)[1:]  # ['Jan', ..., 'Dec']
-    month_map = {m.upper(): i+1 for i, m in enumerate(all_months)}  # 'JAN' -> 1
+    builder = DataFrameBuilder(sheets, return_qty_df)
 
-    start_idx = month_map[month_from_abbr]
-    end_idx = month_map[month_to_abbr]
-
-    # Handle wrap-around (e.g., NOV to FEB)
-    if start_idx <= end_idx:
-        selected_months = all_months[start_idx-1:end_idx]
-    else:
-        selected_months = all_months[start_idx-1:] + all_months[:end_idx]
-
-    std_period = [m.upper() for m in selected_months]
-
-    CURRENT_MONTH_SALES_PERCENTAGES = float(percentage)
-    STD_PERIOD = std_period
-
-
-    # Step 3: Create instance
-    builder = DataFrameBuilder(sheets, return_QA_df)
-
-    # Step 4: Run all logic
     builder.build()
 
-    # Step 5: Access outputs
     df_outputs = builder.get_outputs()
 
-    print("Report Grouping DataFrame:", df_outputs['report_grouping_df'].head())
+    logging.info("Report Grouping DataFrame: %s", df_outputs['report_grouping_df'].head())
 
-    print("Processing data...")
-    print(df_outputs['report_grouping_df'])
 
     # category = [
     #     ('Bridge Gem', '742'),
@@ -95,7 +68,9 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     # ]
 
     category = input_tuple
-    print("Category:", category)
+    logging.info(f"Category: {category}")
+
+    
     dynamic_categories = []
     for category_name, code in category:
         try:
@@ -118,15 +93,17 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             print(f"Error processing {category_name} {code}: {e}")
             dynamic_categories.append((category_name, code, None))
 
-    # Shared static data
-    static_data = (
+
+    (
         year_of_previous_month, last_year_of_previous_month, season,
         current_month, current_month_number, previous_week_number,
         last_month_of_previous_month_numeric, rolling_method,
         feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks,
         jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks,
         dec_weeks, jan_weeks
-    )
+    ) = static_data = get_previous_retail_week(current_date)
+
+    logging.info(f"Retail info: {year_of_previous_month}, {last_year_of_previous_month}, {season}, {current_month}, {current_month_number}, {previous_week_number}, {last_month_of_previous_month_numeric}, {rolling_method}, {feb_weeks}, {mar_weeks}, {apr_weeks}, {may_weeks}, {jun_weeks}, {jul_weeks}, {aug_weeks}, {sep_weeks}, {oct_weeks}, {nov_weeks}, {dec_weeks}, {jan_weeks}")
 
     RetailInfo.objects.create(
     year_of_previous_month=year_of_previous_month,
@@ -152,9 +129,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     jan_weeks=jan_weeks
 
     )
+    logging.info("RetailInfo saved successfully.")
 
     args_list = [
-        (df_outputs,sheets,return_QA_df,category, code, num_products, static_data, file_path,STD_PERIOD,CURRENT_MONTH_SALES_PERCENTAGES)
+        (sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -568,21 +546,18 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     print("OmniForecast data saved/updated successfully.")
     # Write to different sheets in one Excel file
     file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
-    df_store_renamed = df_store.rename(columns=store_rename_map)
-    df_coms_renamed = df_coms.rename(columns=com_rename_map)
-    df_omni_renamed = df_omni.rename(columns=omni_rename_map)
-    # df_omni_renamed = df_omni.rename(columns=omni_rename_map)  # Optional if needed
- 
-    # ---------------------------------------
-    # 3. Now filter the columns as in previous answer
-    # ---------------------------------------
-    df_store_filtered = df_store_renamed[[col for col in store_rename_map.values()]]
-    df_coms_filtered = df_coms_renamed[[col for col in com_rename_map.values()]]
-    df_omni_filtered = df_omni_renamed[[col for col in omni_rename_map.values()]]
+    df_store_renamed = df_store.rename(columns=STORE_RENAME_MAP)
+    df_coms_renamed = df_coms.rename(columns=COM_RENAME_MAP)
+    df_omni_renamed = df_omni.rename(columns=OMNI_RENAME_MAP)
+
+
+    df_store_filtered = df_store_renamed[[col for col in STORE_RENAME_MAP.values()]]
+    df_coms_filtered = df_coms_renamed[[col for col in COM_RENAME_MAP.values()]]
+    df_omni_filtered = df_omni_renamed[[col for col in OMNI_RENAME_MAP.values()]]
    
     output_file = file_path
 
-    # Reopen and format
+
     wb = load_workbook(output_file)
     for sheet_name in wb.sheetnames:
         ws = wb[sheet_name]
@@ -625,17 +600,16 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                     "columns": [{"header": col} for col in df.columns],
                     "style": "Table Style Medium 9"
                 }
-            )
- 
-
+            ) 
     
     print("Data written to Excel file successfully.")    
 
 
 def process_category(args):    
 
-    df_outputs,sheets,return_QA_df,category, code, num_products, static_data, file_path,STD_PERIOD,CURRENT_MONTH_SALES_PERCENTAGES= args
-    print(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
+    sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date= args
+    
+    logging.info(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
 
     (year_of_previous_month, last_year_of_previous_month, season,
     current_month, current_month_number, previous_week_number,
@@ -646,9 +620,9 @@ def process_category(args):
     store = []
     coms = []
     omni = []
-    print('num_products',num_products)
-   
-   
+
+    logging.info(f'num_products: {num_products}')
+
     for loop in range(num_products):
         g_value = loop + 1
         cross_ref = f"{g_value}{category.upper()}{code}"  # Ensure no spaces in category
@@ -656,22 +630,21 @@ def process_category(args):
         pid_value = matching_row['PID'].iloc[0]
         Macys_Recpts_matching_row=df_outputs['Macys_Recpts'].loc[df_outputs['Macys_Recpts']['PID'].str.upper() == pid_value]
         # Find the matching rows
-        print("pid_value:", pid_value)
-        loader = VariableLoader(cross_ref,matching_row,Macys_Recpts_matching_row,df_outputs['index_df'],df_outputs['All_DATA'],df_outputs['MCOM_Data'],STD_PERIOD)
-        print("Processing PID:", pid_value)
-        print("Loader object created successfully.")
-        print("df_outputs['master_sheet']:", df_outputs['master_sheet'])
-        print("df_outputs['vendor_sheet']:", df_outputs['vendor_sheet'])
-        print("df_outputs['birthstone_sheet']:", df_outputs['birthstone_sheet'])
-        print("df_outputs['return_QA_df']:", df_outputs['return_QA_df'])
-        
+        logging.info(f"pid_value: {pid_value}")
+        loader = VariableLoader(cross_ref,matching_row,Macys_Recpts_matching_row,df_outputs['index_df'],df_outputs['All_DATA'],df_outputs['MCOM_Data'],std_period,year_of_previous_month,last_year_of_previous_month)
+        logging.info(f"Processing PID: {pid_value}")
+        logging.info(f"Loader object created successfully.")
+        logging.info(f"df_outputs['master_sheet']: {df_outputs['master_sheet']}")
+        logging.info(f"df_outputs['vendor_sheet']: {df_outputs['vendor_sheet']}")
+        logging.info(f"df_outputs['birthstone_sheet']: {df_outputs['birthstone_sheet']}")
+        logging.info(f"df_outputs['return_qty_df']: {df_outputs['return_qty_df']}")
         vendor = df_outputs['master_sheet'].loc[df_outputs['master_sheet']['PID'] == pid_value, 'Vendor Name'].values[0] if not df_outputs['master_sheet'].loc[df_outputs['master_sheet']['PID'] == pid_value, 'Vendor Name'].empty else None
-        print("Vendor:", vendor)
-        return_QA_df_row = df_outputs['return_QA_df'][df_outputs['return_QA_df']['PID'] == pid_value]
-        print("Return QA DataFrame row:", return_QA_df_row)
+        logging.info(f"Vendor: {vendor}")
+        return_qty_df_row = df_outputs['return_qty_df'][df_outputs['return_qty_df']['PID'] == pid_value]
+        logging.info(f"Return Quantity DataFrame row: {return_qty_df_row}")
         master_sheet_row = df_outputs['master_sheet'].loc[df_outputs['master_sheet']['PID'] == pid_value]
         print("Master sheet row:", master_sheet_row)
-        current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity = algorithm(current_month,year_of_previous_month,season,previous_week_number,vendor,master_sheet_row, df_outputs['vendor_sheet'],df_outputs['birthstone_sheet'], return_QA_df_row, loader, category, store, coms, omni, code,CURRENT_MONTH_SALES_PERCENTAGES,STD_PERIOD)
+        current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity = algorithm(vendor,master_sheet_row, df_outputs['vendor_sheet'],df_outputs['birthstone_sheet'], return_qty_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data )
         print("################################################################3",total_added_quantity)
 
         def safe_int(value):

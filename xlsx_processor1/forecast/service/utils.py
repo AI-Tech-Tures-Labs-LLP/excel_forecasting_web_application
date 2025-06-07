@@ -10,6 +10,33 @@ from decimal import Decimal, ROUND_HALF_UP
 import os 
 from openpyxl import load_workbook
 import logging
+import calendar
+
+
+def get_month_abbr(month_name: str) -> str:
+    """Convert full month name to its 3-letter uppercase abbreviation."""
+    try:
+        month_index = list(calendar.month_name).index(month_name.capitalize())
+        return calendar.month_abbr[month_index].upper()
+    except ValueError:
+        raise ValueError(f"Invalid month name: {month_name}")
+
+def generate_std_period(month_from: str, month_to: str) -> list[str]:
+    """Generate a list of 3-letter month abbreviations from month_from to month_to."""
+    all_months = list(calendar.month_abbr)[1:]  # ['Jan', ..., 'Dec']
+    month_map = {m.upper(): i + 1 for i, m in enumerate(all_months)}
+
+    start_abbr = get_month_abbr(month_from)
+    end_abbr = get_month_abbr(month_to)
+    start_idx = month_map[start_abbr]
+    end_idx = month_map[end_abbr]
+
+    if start_idx <= end_idx:
+        selected = all_months[start_idx - 1:end_idx]
+    else:
+        selected = all_months[start_idx - 1:] + all_months[:end_idx]
+
+    return [m.upper() for m in selected]
 
 def round_half_up(value, digits):
     return float(Decimal(str(value)).quantize(Decimal('1.' + '0' * digits), rounding=ROUND_HALF_UP))
@@ -30,9 +57,9 @@ def count_ttl_com_sale(LY_Unit_Sales, LY_MCOM_Unit_Sales):
 
 def find_pid_type(Safe_Non_Safe,pid_value,LY_Unit_Sales,LY_MCOM_Unit_Sales,Door_count):
     pid_type=None
-    if Safe_Non_Safe  in not_forecast_status and Door_count in [0,1,2]:
+    if Safe_Non_Safe  in NOT_FORECAST_STATUS and Door_count in [0,1,2]:
         pid_type='Not forecast'
-    elif ((Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or pid_value in VDF_item) and  Door_count <3) or (Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
+    elif ((Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or pid_value in VDF_ITEMS) and  Door_count <3) or (Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
         pid_type='com_pid'
         if Safe_Non_Safe=='OMNI' and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)<=65:
             print('com sale',count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales))
@@ -450,14 +477,14 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
  
     return planned_fc
  
-def calculate_current_month_fc(current_month, ty_unit_sales):
+def calculate_current_month_fc(current_month, ty_unit_sales,current_month_sales_percentages):
     """
     Calculate current month forecast using TY sales and sales percentage.
     """
     # Get TY sales and percentage for current month
     ty_sales = ty_unit_sales[current_month]
-    percentage = CURRENT_MONTH_SALES_PERCENTAGES
- 
+    percentage = current_month_sales_percentages
+
     # Compute forecast
     current_month_fc = round(ty_sales / (percentage / 100))
     return current_month_fc
@@ -810,7 +837,8 @@ def calculate_week_and_month(start_month_abbr, start_week, year, weeks_to_add):
    
     return target_month_abbr,target_week
  
-def check_holiday(target_month_abbr, target_week ,df_holidays):  
+def check_holiday(target_month_abbr, target_week ,holidays_data):  
+    df_holidays = pd.DataFrame(holidays_data)
     # Filter the dataframe based on the target month and week
     result = df_holidays[(df_holidays['Month'] == target_month_abbr) & (df_holidays['Week'] == target_week)]
    

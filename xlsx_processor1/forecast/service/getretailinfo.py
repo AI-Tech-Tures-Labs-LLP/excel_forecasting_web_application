@@ -1,130 +1,84 @@
 from datetime import datetime, timedelta
 from calendar import monthrange
+from typing import Tuple
 
-CURRENT_DATE=datetime(2025,5,8)
-def get_previous_retail_week(current_date):
+def get_retail_weeks(year: int, month: int) -> int:
     """
-    Get the previous week's month, year of the previous month,
-    last year's occurrence of that month, last month before the previous month in numeric format,
-    determine SP (Spring) or FA (Fall) based on the previous month,
-    and calculate the number of retail weeks for each month individually.
+    Calculate the number of retail weeks in a given month.
+    Retail weeks run Sunday to Saturday and are attributed to the month they start in.
     """
+    first_day = datetime(year, month, 1)
+    last_day = datetime(year, month, monthrange(year, month)[1])
 
+    first_sunday = first_day + timedelta(days=(6 - first_day.weekday()) % 7)
+    last_saturday = last_day - timedelta(days=last_day.weekday() + 1)
+
+    week_count = 0
+    current_week_start = first_sunday
+
+    while current_week_start <= last_saturday:
+        week_count += 1
+        current_week_start += timedelta(days=7)
+
+    if current_week_start <= last_day:
+        week_count += 1
+
+    return week_count
+
+
+def get_previous_retail_week(current_date: datetime) -> Tuple:
+    """
+    Calculate retail calendar details for the week before the given date.
+    Returns current month, rolling method, retail week info, and retail week counts for all months.
+    """
     current_sunday = current_date - timedelta(days=current_date.weekday() + 1)
+    previous_sunday = current_sunday - timedelta(days=7)
+    previous_week_number = (previous_sunday.day - 1) // 7 + 1
+    current_month = previous_sunday.strftime('%b')
 
-    # Calculate the previous week's Sunday
-    previous_week_sunday = current_sunday - timedelta(days=7)
+    retail_year = previous_sunday.year if previous_sunday.month >= 2 else previous_sunday.year - 1
+    last_retail_year = retail_year - 1
 
-    # Determine the previous week number in the retail month
-    previous_week_number = (previous_week_sunday.day - 1) // 7 + 1
+    last_month_date = previous_sunday.replace(day=1) - timedelta(days=1)
+    last_month_abbr = last_month_date.strftime('%b').upper()
 
-    # Get the month and retail year of the previous week
-    current_month = previous_week_sunday.strftime('%b')
-
-    # Determine the retail year logic:
-    # Retail year starts from February of the previous year and ends in January of the current year
-    if previous_week_sunday.month >= 2:
-        retail_year_of_previous_month = previous_week_sunday.year
-    else:
-        retail_year_of_previous_month = previous_week_sunday.year - 1
-
-    # Last year's retail occurrence of the same month
-    last_retail_year_of_previous_month = retail_year_of_previous_month - 1
-    # Determine the last month before the previous month
-    last_month_of_previous_month_date = previous_week_sunday.replace(day=1) - timedelta(days=1)
-    last_month = last_month_of_previous_month_date.strftime('%b').upper()
-
-    # Custom mapping for months
-    month_mapping = {
-        'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4,
-        'JUN': 5, 'JUL': 6, 'AUG': 7, 'SEP': 8,
-        'OCT': 9, 'NOV': 10, 'DEC': 11, 'JAN': 12
+    month_map = {
+        'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6,
+        'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11, 'JAN': 12
     }
-    last_month_of_previous_month_numeric = month_mapping[last_month]
+    last_month_number = month_map[last_month_abbr]
 
-    # Determine SP (Spring) or FA (Fall/Winter) based on the previous month
-    spring_months = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL']
-    fall_months = ['AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']
+    season = "SP" if current_month.upper() in {'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL'} else "FA"
 
-    season = "SP" if current_month.upper() in spring_months else "FA"
+    months = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']
+    retail_weeks = {
+        month.lower(): get_retail_weeks(retail_year + (1 if month == 'JAN' else 0), month_map[month])
+        for month in months
+    }
 
-    # Calculate the number of retail weeks for each month of the current year
-    current_year = retail_year_of_previous_month
-    # Individual variables for retail weeks of each month
+    month_dict = {month: i + 1 for i, month in enumerate(['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan'])}
+    current_month_number = month_dict.get(current_month, 0)
+    rolling_method = "Current MTH" if current_month in {'Oct', 'Nov', 'Dec', 'Jan'} else "YTD"
 
-
-    def get_retail_weeks(year, month):
-        """
-        Calculate the number of retail weeks in a given month.
-        Retail weeks follow the Sunday-to-Saturday structure,
-        and all days in a week belong to the month in which the week starts.
-    
-        Args:
-            year (int): The year of the month.
-            month (int): The month (1 for January, 12 for December).
-
-        Returns:
-            int: Number of retail weeks in the month.
-        """
-        # Get the first day and last day of the month
-        first_day = datetime(year, month, 1)
-        last_day = datetime(year, month, monthrange(year, month)[1])
-
-        # Find the first Sunday of the month
-        first_sunday = first_day + timedelta(days=(6 - first_day.weekday()) % 7)
-
-        # Find the last Saturday of the month
-        last_saturday = last_day - timedelta(days=last_day.weekday() + 1)
-
-        # Count retail weeks
-        current_week_start = first_sunday
-        week_count = 0
-
-        while current_week_start <= last_saturday:
-            week_count += 1
-            current_week_start += timedelta(days=7)  # Move to the next Sunday
-
-        # Check if the final week starts in the current month (partial week rule)
-        if current_week_start <= last_day:
-            week_count += 1
-
-        return week_count
-
-    feb_weeks = get_retail_weeks(current_year,2)
-    mar_weeks = get_retail_weeks(current_year,3)
-    apr_weeks = get_retail_weeks(current_year,4)
-    may_weeks = get_retail_weeks(current_year,5)
-    jun_weeks = get_retail_weeks(current_year,6)
-    jul_weeks = get_retail_weeks(current_year,7)
-    aug_weeks = get_retail_weeks(current_year,8)
-    sep_weeks = get_retail_weeks(current_year,9)
-    oct_weeks = get_retail_weeks(current_year,10)
-    nov_weeks = get_retail_weeks(current_year,11)
-    dec_weeks = get_retail_weeks(current_year,12)
-    jan_weeks = get_retail_weeks(current_year + 1, 1)
-
-
-
-
-    month_dict = {
-    "Feb": 1,
-    "Mar": 2,
-    "Apr": 3,
-    "May": 4,
-    "Jun": 5,
-    "Jul": 6,
-    "Aug": 7,
-    "Sep": 8,
-    "Oct": 9,
-    "Nov": 10,
-    "Dec": 11,
-    "Jan": 12
-}  # January belongs to the next year
-    current_month_number = month_dict.get(current_month, "Month not found")
-    if current_month in [ "Oct","Nov" "Dec","Jan"]:
-        rolling_method="Current MTH"
-    else:
-        rolling_method="YTD"
-    return current_month,current_month_number,rolling_method, previous_week_number, retail_year_of_previous_month,last_retail_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks
-
-current_month,current_month_number,rolling_method, previous_week_number, year_of_previous_month,last_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks = get_previous_retail_week(CURRENT_DATE)
+    return (
+        current_month,
+        current_month_number,
+        rolling_method,
+        previous_week_number,
+        retail_year,
+        last_retail_year,
+        last_month_number,
+        season,
+        retail_weeks['feb'],
+        retail_weeks['mar'],
+        retail_weeks['apr'],
+        retail_weeks['may'],
+        retail_weeks['jun'],
+        retail_weeks['jul'],
+        retail_weeks['aug'],
+        retail_weeks['sep'],
+        retail_weeks['oct'],
+        retail_weeks['nov'],
+        retail_weeks['dec'],
+        retail_weeks['jan']
+    )

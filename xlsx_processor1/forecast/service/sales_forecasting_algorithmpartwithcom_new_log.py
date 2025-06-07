@@ -1,14 +1,19 @@
 import copy
 import logging
 from forecast.service.utils import *
-from forecast.service.staticVariable import CURRENT_DATE
 logging.basicConfig(filename=r'log_file_all1.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s',
                     filemode='w')
 
-def algorithm(current_month,year_of_previous_month,season,previous_week_number,vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA_df_row, loader, category, store, coms, omni, code,CURRENT_MONTH_SALES_PERCENTAGES,STD_PERIOD):
+def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data):
 
-    print("****************************************************************************************************************", CURRENT_MONTH_SALES_PERCENTAGES)
+    (year_of_previous_month, last_year_of_previous_month, season,
+    current_month, current_month_number, previous_week_number,
+    last_month_of_previous_month_numeric, rolling_method,
+    feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks,
+    jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks,
+    dec_weeks, jan_weeks ) = static_data
+    print("****************************************************************************************************************", current_month_sales_percentage)
     print(f'category: {category}')
     country, lead_time = get_vendor_details(vendor, vendor_sheet)
     logging.info(f'pid: {loader.pid_value}')
@@ -17,18 +22,18 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
     print(f'country: {country}')
     print(f'lead_time: {lead_time}')
 
-    print("CURRENT_DATE: ", CURRENT_DATE)   
-    forecast_date =calculate_forecast_date_basic(CURRENT_DATE, lead_time,country)
+    print("current_date: ", current_date)   
+    forecast_date =calculate_forecast_date_basic(current_date, lead_time,country)
     logging.info(f'current_month: {current_month}')
     logging.info(f'forecast_date: {forecast_date}')
-    logging.info(f'CURRENT_DATE: {CURRENT_DATE}')
-    lead_time,leadtime_holiday = adjust_lead_time(country, CURRENT_DATE, forecast_date, lead_time)
+    logging.info(f'current_date: {current_date}')
+    lead_time,leadtime_holiday = adjust_lead_time(country, current_date, forecast_date, lead_time)
     logging.info(f'previous_week_number: {leadtime_holiday}')
     print("done adjusting lead time")
     print(f'lead_time: {lead_time}')
     
     if leadtime_holiday:
-        forecast_date = calculate_forecast_date(CURRENT_DATE, lead_time, country)
+        forecast_date = calculate_forecast_date(current_date, lead_time, country)
     print(f'forecast_date after lead time adjustment: {forecast_date}')
     forecast_month = get_forecast_info(forecast_date)
     week_of_forecast_month = get_week_of_month(forecast_date)
@@ -78,7 +83,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
     check_no_red_box = contains_no_longer_red_box(loader.Planner_Response)
     ttl_com_sale = count_ttl_com_sale(loader.LY_Unit_Sales,loader.LY_MCOM_Unit_Sales)
     logging.info(f'count_ttl_com_sale: {ttl_com_sale}')
-    STD_index_value_original=calculate_std_index_value(loader.index_value,STD_PERIOD)
+    STD_index_value_original=calculate_std_index_value(loader.index_value,std_period)
     logging.info(f'STD_index_value_original: {STD_index_value_original}')
     month_12_fc_index_original=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value_original)
     logging.info(f'month_12_fc_index_original: {month_12_fc_index_original}')
@@ -96,7 +101,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
     planned_sell_thru={}
     STD_index_value = 0
     if pid_type=='store_pid':
-        STD_index_value=calculate_std_index_value(loader.index_value,STD_PERIOD)
+        STD_index_value=calculate_std_index_value(loader.index_value,std_period)
         logging.info(f'STD_index_value: {STD_index_value}')
         month_12_fc_index=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value)
         logging.info(f'month_12_fc_index: {month_12_fc_index}')
@@ -135,7 +140,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
                 logging.info(f'selected_months: {selected_months}')
                 TY_Unit_Sales_list_new_trend = [loader.TY_Unit_Sales[month] for month in selected_months]
                 if current_month_weeks > 2:
-                    TY_Unit_Sales_list_new_trend[-1] = round(TY_Unit_Sales_list_new_trend[-1] / (CURRENT_MONTH_SALES_PERCENTAGES/100))
+                    TY_Unit_Sales_list_new_trend[-1] = round(TY_Unit_Sales_list_new_trend[-1] / (current_month_sales_percentage/100))
                 LY_Unit_Sales_list_new_trend=[loader.LY_Unit_Sales[month] for month in selected_months]
                 logging.info(f'TY_Unit_Sales_list_new_trend: {TY_Unit_Sales_list_new_trend}')
                 logging.info(f'LY_Unit_Sales_list_new_trend: {LY_Unit_Sales_list_new_trend}')
@@ -167,7 +172,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
         planned_fc=calculate_planned_fc(row4_values, recommended_fc, loader.TY_Unit_Sales, loader.LY_OH_Units,rolling_method, current_month_number)
         logging.info(f'rolling_method: {rolling_method}')
         logging.info(f'planned_fc: {planned_fc}')
-        current_month_fc=calculate_current_month_fc(current_month, loader.TY_Unit_Sales)
+        current_month_fc=calculate_current_month_fc(current_month, loader.TY_Unit_Sales,)
         logging.info(f'current_month_fc: {current_month_fc}')
         actual_sale_unit= loader.TY_Unit_Sales[current_month]
         planned_fc=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc,fc_by_trend,planned_fc,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status,std_trend,check_no_red_box,actual_sale_unit)
@@ -212,9 +217,9 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
         # Add the dictionary key-values as new columns
     elif pid_type=='com_pid':
         # if loader.Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or loader.pid_value in VDF_item or (loader.Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(loader.LY_Unit_Sales,loader.LY_MCOM_Unit_Sales)>=70 ) :
-        if loader.Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or loader.pid_value in VDF_item :
+        if loader.Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or loader.pid_value in VDF_ITEMS :
 
-            STD_index_value=calculate_std_index_value(loader.index_value,STD_PERIOD)
+            STD_index_value=calculate_std_index_value(loader.index_value,std_period)
             logging.info(f'STD_index_value: {STD_index_value}')
             month_12_fc_index=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value)
             logging.info(f'month_12_fc_index: {month_12_fc_index}')
@@ -226,7 +231,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
                 logging.info(f'selected_months: {selected_months}')
                 TY_com_Unit_Sales_list_new= [loader.TY_MCOM_Unit_Sales[month] for month in selected_months]
                 if current_month_weeks > 2:
-                    TY_com_Unit_Sales_list_new[-1] = round(TY_com_Unit_Sales_list_new[-1] / (CURRENT_MONTH_SALES_PERCENTAGES/100))
+                    TY_com_Unit_Sales_list_new[-1] = round(TY_com_Unit_Sales_list_new[-1] / (current_month_sales_percentage/100))
                 logging.info(f'current month com: {TY_com_Unit_Sales_list_new[-1]}')
                 LY_com_Unit_Sales_list_new=[loader.LY_MCOM_Unit_Sales[month] for month in selected_months]
 
@@ -314,7 +319,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
             logging.info(f'planned_oh last {planned_oh}')
             VDF_added_qty=0
 
-            if loader.pid_value in VDF_item or loader.Safe_Non_Safe in ['VDF REPLEN'] :
+            if loader.pid_value in VDF_ITEMS or loader.Safe_Non_Safe in ['VDF REPLEN'] :
                 VDF_status=True
                 logging.info(f'This is VDF item')
                 sell_base_min_value=10 if ttl_com_sale >70 else 5
@@ -332,7 +337,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
             pid_omni_status=True
             ###########com calculation#####################
             logging.info(f'com calculation for omni')
-            STD_index_value=calculate_std_index_value(loader.index_value,STD_PERIOD)
+            STD_index_value=calculate_std_index_value(loader.index_value,std_period)
             logging.info(f'STD_index_value: {STD_index_value}')
             month_12_fc_index=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value)
             logging.info(f'month_12_fc_index: {month_12_fc_index}')
@@ -344,7 +349,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
                 logging.info(f'selected_months: {selected_months}')
                 TY_com_Unit_Sales_list_new= [loader.TY_MCOM_Unit_Sales[month] for month in selected_months]
                 if current_month_weeks > 2:
-                    TY_com_Unit_Sales_list_new[-1] = round(TY_com_Unit_Sales_list_new[-1] / (CURRENT_MONTH_SALES_PERCENTAGES/100))
+                    TY_com_Unit_Sales_list_new[-1] = round(TY_com_Unit_Sales_list_new[-1] / (current_month_sales_percentage/100))
                 logging.info(f'current month com: {TY_com_Unit_Sales_list_new[-1]}')
                 LY_com_Unit_Sales_list_new=[loader.LY_MCOM_Unit_Sales[month] for month in selected_months]
 
@@ -411,7 +416,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
                 logging.info(f'selected_months: {selected_months}')
                 TY_store_Unit_Sales_list_new= [TY_store_sales_unit[month] for month in selected_months]
                 if current_month_weeks > 2:
-                    TY_store_Unit_Sales_list_new[-1] = round(TY_store_Unit_Sales_list_new[-1] / (CURRENT_MONTH_SALES_PERCENTAGES/100))
+                    TY_store_Unit_Sales_list_new[-1] = round(TY_store_Unit_Sales_list_new[-1] / (current_month_sales_percentage/100))
                 logging.info(f'current store com: {TY_store_Unit_Sales_list_new[-1]}')
                 LY_store_Unit_Sales_list_new=[LY_store_sales_unit[month] for month in selected_months]
                 store_std_trend=calculate_std_trend(TY_store_Unit_Sales_list_new,LY_store_Unit_Sales_list_new)  
@@ -503,7 +508,7 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
         target_month_abbr, target_week = calculate_week_and_month(forecast_month, week_of_forecast_month, year_of_previous_month, WEEK_TO_ADD_FOR_HOLIDAY)
         logging.info(f'target_month_abbr: {target_month_abbr}, target_week: {target_week}')
 
-        holiday_name, check_is_holiday = check_holiday(target_month_abbr, target_week, df_holidays)
+        holiday_name, check_is_holiday = check_holiday(target_month_abbr, target_week, HOLIDAYS_DATA)
         logging.info(f'holiday_name: {holiday_name}, check_is_holiday: {check_is_holiday}')
 
         planned_shp = adjust_planned_shp_for_holiday(check_is_holiday, category, holiday_name, forecast_month, required_quantity, planned_shp)
@@ -788,5 +793,6 @@ def algorithm(current_month,year_of_previous_month,season,previous_week_number,v
         planned_fc={'FEB':0, 'MAR': 0, 'APR':0, 'MAY':0, 'JUN':0, 'JUL': 0, 'AUG': 0, 'SEP':0, 'OCT':0, 'NOV': 0, 'DEC':0, 'JAN':0}
         total_added_quantity=0
         logging.info(f'total_added_quantity: {total_added_quantity}')
+        
     return current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity
 

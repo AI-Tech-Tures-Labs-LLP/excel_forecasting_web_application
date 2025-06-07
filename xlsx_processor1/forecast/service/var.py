@@ -1,9 +1,9 @@
-from forecast.service.staticVariable import  year_of_previous_month,last_year_of_previous_month
+
 import pandas as pd
 from forecast.service.utils import calculate_store_unit_sales_and_OH,calculate_com_to_ttl_sales_and_OH,format_sales_data,calculate_omni_sell_through,calculate_store_sell_through,calculate_turn,calculate_diff
 class VariableLoader:
 
-    def __init__(self,cross_ref,matching_row,Macys_Recpts_matching_row,index_df,All_DATA,MCOM_Data,STD_PERIOD):
+    def __init__(self,cross_ref,matching_row,Macys_Recpts_matching_row,index_df,All_DATA,MCOM_Data,STD_PERIOD,year_of_previous_month,last_year_of_previous_month):
         # Find the matching row based on cross_ref
         if matching_row.empty:
             raise ValueError(f"Cross ref '{cross_ref}' not found in 'planning_df'.")       
