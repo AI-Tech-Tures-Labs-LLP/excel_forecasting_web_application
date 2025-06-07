@@ -1,5 +1,3 @@
-
-
 // import React, { useState } from 'react';
 // import {
 //   Clock,
@@ -84,7 +82,7 @@
 //       color: "rose",
 //       keywords: ["holiday", "valentine", "mothers_day", "fathers_day", "mens_day", "womens_day", "christmas", "easter", "thanksgiving", "new_year", "leadtime_holiday"]
 //     },
-    
+
 //     indexing: {
 //       title: "Index & Performance Metrics",
 //       icon: BarChart3,
@@ -159,7 +157,7 @@
 //       title: "Product Attributes",
 //       icon: Gem,
 //       color: "violet",
-//       keywords: ["birthstone", "considered_birthstone", "red_box", "vdf_status"]
+//       keywords: ["birthstone", "considered_birthstone", "red_box", ""]
 //     },
 
 //     flags: {
@@ -192,8 +190,8 @@
 //   const getDynamicVariableConfig = (data) => {
 //     const excludeFields = ["id", "category", "pid"];
 //     const allKeys = Object.keys(data).filter(
-//       (key) => !excludeFields.includes(key) && 
-//                data[key] !== null && 
+//       (key) => !excludeFields.includes(key) &&
+//                data[key] !== null &&
 //                data[key] !== undefined
 //     );
 
@@ -238,11 +236,11 @@
 //     const keyLower = key.toLowerCase();
 
 //     // Special days and holidays first
-//     if (keyLower.includes("holiday") || keyLower.includes("valentine") || 
-//         keyLower.includes("mothers") || keyLower.includes("fathers") || 
+//     if (keyLower.includes("holiday") || keyLower.includes("valentine") ||
+//         keyLower.includes("mothers") || keyLower.includes("fathers") ||
 //         keyLower.includes("mens_day") || keyLower.includes("womens_day") ||
 //         keyLower.includes("christmas") || keyLower.includes("easter")) return Calendar;
-    
+
 //     if (keyLower.includes("time") || keyLower.includes("lead")) return Clock;
 //     if (keyLower.includes("month") || keyLower.includes("date"))
 //       return Calendar;
@@ -283,13 +281,13 @@
 //   // Determine which group a field belongs to
 //   const determineGroupForField = (key) => {
 //     const keyLower = key.toLowerCase();
-    
+
 //     for (const [groupKey, group] of Object.entries(variableGroups)) {
 //       if (group.keywords.some(keyword => keyLower.includes(keyword.toLowerCase()))) {
 //         return groupKey;
 //       }
 //     }
-    
+
 //     return 'other'; // Default group for unmatched fields
 //   };
 
@@ -308,12 +306,12 @@
 //       default:
 //         const formattedValue =
 //           typeof value === "number" ? value.toLocaleString() : value;
-        
+
 //         // Handle special cases that should show as percentages
 //         if (config.key === "trend_index_difference" || config.key === "loss") {
 //           return `${formattedValue}%`;
 //         }
-        
+
 //         return config.suffix
 //           ? `${formattedValue}${config.suffix}`
 //           : formattedValue;
@@ -328,13 +326,13 @@
 //   // Filter variables based on search
 //   const getFilteredVariables = (variables, data) => {
 //     return variables.filter(variable => {
-//       const matchesSearch = !searchQuery || 
+//       const matchesSearch = !searchQuery ||
 //                            variable.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
 //                            variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
 //                            String(data[variable.key] || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
+
 //       const matchesGroup = selectedGroup === "all" || selectedGroup === variable.groupKey;
-      
+
 //       return matchesSearch && matchesGroup;
 //     });
 //   };
@@ -374,7 +372,7 @@
 //           <div className="text-sm font-bold text-gray-900 break-words">
 //             {formatVariableValue(value, variable)}
 //           </div>
-          
+
 //           {/* Value indicator for booleans */}
 //           {variable.type === "boolean" && (
 //             <div className="mt-2 flex justify-end">
@@ -409,7 +407,7 @@
 //     });
 
 //     // Only show groups that have variables
-//     const visibleGroups = Object.keys(groupedVariables).filter(groupKey => 
+//     const visibleGroups = Object.keys(groupedVariables).filter(groupKey =>
 //       groupedVariables[groupKey].length > 0
 //     );
 
@@ -438,10 +436,10 @@
 
 //         <div className="space-y-8">
 //           {visibleGroups.map((groupKey) => {
-//             const group = variableGroups[groupKey] || { 
-//               title: 'Other Variables', 
-//               icon: Info, 
-//               color: 'gray' 
+//             const group = variableGroups[groupKey] || {
+//               title: 'Other Variables',
+//               icon: Info,
+//               color: 'gray'
 //             };
 //             const groupVariables = groupedVariables[groupKey];
 //             const colorScheme = colorSchemes[group.color] || colorSchemes.blue;
@@ -534,7 +532,7 @@
 //   // Get unique groups that actually exist in data
 //   const getAvailableGroups = () => {
 //     const allGroups = new Set();
-    
+
 //     [store_forecast, com_forecast, omni_forecast].forEach(forecast => {
 //       if (forecast && forecast[0]) {
 //         const variables = getAllVariablesFromData(forecast[0]);
@@ -649,27 +647,26 @@
 //       </div>
 
 //       {/* Content */}
-//       {(selectedForecastType === "all" || selectedForecastType === "store") && 
+//       {(selectedForecastType === "all" || selectedForecastType === "store") &&
 //        hasStoreData && (
-//         viewMode === "grouped" 
+//         viewMode === "grouped"
 //           ? renderGroupedView(store_forecast, "store", "Store Forecast Variables", "bg-blue-50")
 //           : renderFlatView(store_forecast, "store", "Store Forecast Variables", "bg-blue-50")
 //       )}
 
-//       {(selectedForecastType === "all" || selectedForecastType === "com") && 
+//       {(selectedForecastType === "all" || selectedForecastType === "com") &&
 //        hasComData && (
-//         viewMode === "grouped" 
+//         viewMode === "grouped"
 //           ? renderGroupedView(com_forecast, "com", "COM Forecast Variables", "bg-green-50")
 //           : renderFlatView(com_forecast, "com", "COM Forecast Variables", "bg-green-50")
 //       )}
 
-//       {(selectedForecastType === "all" || selectedForecastType === "omni") && 
+//       {(selectedForecastType === "all" || selectedForecastType === "omni") &&
 //        hasOmniData && (
-//         viewMode === "grouped" 
+//         viewMode === "grouped"
 //           ? renderGroupedView(omni_forecast, "omni", "Omni Forecast Variables", "bg-purple-50")
 //           : renderFlatView(omni_forecast, "omni", "Omni Forecast Variables", "bg-purple-50")
 //       )}
-    
 
 //     </div>
 //   );
@@ -677,7 +674,7 @@
 
 // export default ForecastVariableCards;
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Clock,
   Calendar,
@@ -710,8 +707,8 @@ import {
   X,
   Calculator,
   Truck,
-  AlertCircle
-} from 'lucide-react';
+  AlertCircle,
+} from "lucide-react";
 
 const ForecastVariableCards = ({ productData }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -738,9 +735,12 @@ const ForecastVariableCards = ({ productData }) => {
     return (
       <div className="text-center py-8 bg-gray-50 rounded-xl">
         <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-        <p className="text-gray-600">No forecast variables available for this product</p>
+        <p className="text-gray-600">
+          No forecast variables available for this product
+        </p>
         <p className="text-gray-500 text-sm mt-2">
-          This product may not have been processed through the forecasting system yet.
+          This product may not have been processed through the forecasting
+          system yet.
         </p>
       </div>
     );
@@ -752,91 +752,198 @@ const ForecastVariableCards = ({ productData }) => {
       title: "Lead time calculation",
       icon: Clock,
       color: "blue",
-      keywords: ["leadtime_holiday_adjustment", "lead_time"]
+      keywords: ["vendor", "leadtime_holiday_adjustment", "lead_time"],
     },
 
     trends_index: {
       title: "Trend and Index calculation",
       icon: BarChart3,
       color: "purple",
-      keywords: ["selected_months", "month_12_fc_index", "loss", "month_12_fc_index_loss", "trend"]
+      keywords: [
+        "selected_months",
+        "std_index",
+        "month_12_fc_index",
+        "loss",
+        "month_12_fc_index_loss",
+        "trend",
+      ],
     },
 
     forecasting_method: {
       title: "Selecting forecasting method",
       icon: Settings,
       color: "indigo",
-      keywords: ["inventory_maintained", "trend_index_difference", "red_box_item", "forecasting_method"]
+      keywords: [
+        "inventory_maintained",
+        "trend_index_difference",
+        "red_box_item",
+        "forecasting_method",
+      ],
     },
 
     forecast_month_req: {
       title: "Required qty for forecast month",
       icon: Target,
       color: "green",
-      keywords: ["forecast_month", "door_count", "average_com_oh", "fldc", "birthstone", "birthstone_month", "considered_birthstone", "considered_birthstone_required_quantity", "forecast_month_required_quantity"]
+      keywords: [
+        "forecast_month",
+        "door_count",
+        "minimum",
+        "average_com_oh",
+        "fldc",
+        "birthstone",
+        "birthstone_month",
+        "considered_birthstone",
+        "considered_birthstone_required_quantity",
+        "forecast_month_required_quantity_store",
+        "forecast_month_required_quantity",
+      ],
     },
 
     next_forecast_month_req: {
       title: "Required qty for Next forecast month",
       icon: Calendar,
       color: "emerald",
-      keywords: ["next_forecast_month", "next_forecast_month_required_quantity"]
+      keywords: [
+        "next_forecast_month",
+        "door_count",
+        "minimum_required_oh",
+        "average_com_oh",
+        "next_forecast_month_required_quantity",
+      ],
     },
 
     planned_shipment: {
       title: "Planned Shipment",
       icon: Truck,
       color: "cyan",
-      keywords: ["forecast_month_planned_oh", "forecast_month_planned_shipment"]
+      keywords: [
+        "forecast_month_planned_oh",
+        "forecast_month_planned_shipment",
+      ],
     },
 
     next_planned_shipment: {
       title: "Next Planned Shipment",
       icon: Package,
       color: "teal",
-      keywords: ["next_forecast_month_planned_oh", "next_forecast_month_planned_shipment"]
+      keywords: [
+        "next_forecast_month_planned_oh",
+        "next_forecast_month_planned_shipment",
+      ],
     },
 
     macys_soq: {
       title: "Macy SOQ",
       icon: Star,
       color: "yellow",
-      keywords: ["Macys_SOQ", "Qty_given_to_macys", "average_store_sale_thru", "macys_owned_retail", "macy_SOQ_percentage", "macys_soq_qty_added", "qty_added_to_balance_SOQ_forecast_month"]
+      keywords: [
+        "Macys_SOQ",
+        "Qty_given_to_macys",
+        "average_store_sale_thru",
+        "macys_owned_retail",
+        "macy_SOQ_percentage",
+        "qty_added_to_balance_SOQ_forecast_month",
+      ],
     },
 
     final_qty: {
       title: "Final Qty",
       icon: Calculator,
       color: "red",
-      keywords: ["qty_added_to_maintain_OH_forecast_month", "qty_added_to_maintain_OH_next_forecast_month", "Min_order", "Added_qty_using_macys_SOQ", "Below_min_order", "Over_macys_SOQ", "Need_to_review_first", "total_added_qty"]
-    }
+      keywords: [
+        "qty_added_to_maintain_OH_forecast_month",
+        "qty_added_to_maintain_OH_next_forecast_month",
+        "Min_order",
+        "Added_qty_using_macys_SOQ",
+        "Below_min_order",
+        "Over_macys_SOQ",
+        "Need_to_review_first",
+        "total_added_qty",
+        "vdf_added",
+        "vdf_status",
+      ],
+    },
   };
 
   // Color schemes for each group
   const colorSchemes = {
-    blue: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
-    purple: { bg: "bg-purple-50", text: "text-purple-600", border: "border-purple-200" },
-    indigo: { bg: "bg-indigo-50", text: "text-indigo-600", border: "border-indigo-200" },
-    green: { bg: "bg-green-50", text: "text-green-600", border: "border-green-200" },
-    emerald: { bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-200" },
-    cyan: { bg: "bg-cyan-50", text: "text-cyan-600", border: "border-cyan-200" },
-    teal: { bg: "bg-teal-50", text: "text-teal-600", border: "border-teal-200" },
-    yellow: { bg: "bg-yellow-50", text: "text-yellow-600", border: "border-yellow-200" },
+    blue: {
+      bg: "bg-blue-50",
+      text: "text-blue-600",
+      border: "border-blue-200",
+    },
+    purple: {
+      bg: "bg-purple-50",
+      text: "text-purple-600",
+      border: "border-purple-200",
+    },
+    indigo: {
+      bg: "bg-indigo-50",
+      text: "text-indigo-600",
+      border: "border-indigo-200",
+    },
+    green: {
+      bg: "bg-green-50",
+      text: "text-green-600",
+      border: "border-green-200",
+    },
+    emerald: {
+      bg: "bg-emerald-50",
+      text: "text-emerald-600",
+      border: "border-emerald-200",
+    },
+    cyan: {
+      bg: "bg-cyan-50",
+      text: "text-cyan-600",
+      border: "border-cyan-200",
+    },
+    teal: {
+      bg: "bg-teal-50",
+      text: "text-teal-600",
+      border: "border-teal-200",
+    },
+    yellow: {
+      bg: "bg-yellow-50",
+      text: "text-yellow-600",
+      border: "border-yellow-200",
+    },
     red: { bg: "bg-red-50", text: "text-red-600", border: "border-red-200" },
-    orange: { bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-200" },
-    rose: { bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-200" },
-    pink: { bg: "bg-pink-50", text: "text-pink-600", border: "border-pink-200" },
-    violet: { bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-200" },
-    amber: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" }
+    orange: {
+      bg: "bg-orange-50",
+      text: "text-orange-600",
+      border: "border-orange-200",
+    },
+    rose: {
+      bg: "bg-rose-50",
+      text: "text-rose-600",
+      border: "border-rose-200",
+    },
+    pink: {
+      bg: "bg-pink-50",
+      text: "text-pink-600",
+      border: "border-pink-200",
+    },
+    violet: {
+      bg: "bg-violet-50",
+      text: "text-violet-600",
+      border: "border-violet-200",
+    },
+    amber: {
+      bg: "bg-amber-50",
+      text: "text-amber-600",
+      border: "border-amber-200",
+    },
   };
 
   // Dynamic variable configuration (from your original code)
   const getDynamicVariableConfig = (data) => {
     const excludeFields = ["id", "category", "pid"];
     const allKeys = Object.keys(data).filter(
-      (key) => !excludeFields.includes(key) && 
-               data[key] !== null && 
-               data[key] !== undefined
+      (key) =>
+        !excludeFields.includes(key) &&
+        data[key] !== null &&
+        data[key] !== undefined
     );
 
     return allKeys.map((key) => {
@@ -846,7 +953,7 @@ const ForecastVariableCards = ({ productData }) => {
         label: formatFieldName(key),
         icon: getIconForField(key, value),
         type: getFieldType(value),
-        groupKey: determineGroupForField(key)
+        groupKey: determineGroupForField(key),
       };
 
       if (key.includes("forecast_month_required_quantity")) {
@@ -880,28 +987,50 @@ const ForecastVariableCards = ({ productData }) => {
     const keyLower = key.toLowerCase();
 
     // Special days and holidays first
-    if (keyLower.includes("holiday") || keyLower.includes("valentine") || 
-        keyLower.includes("mothers") || keyLower.includes("fathers") || 
-        keyLower.includes("mens_day") || keyLower.includes("womens_day") ||
-        keyLower.includes("christmas") || keyLower.includes("easter")) return Calendar;
-    
+    if (
+      keyLower.includes("holiday") ||
+      keyLower.includes("valentine") ||
+      keyLower.includes("mothers") ||
+      keyLower.includes("fathers") ||
+      keyLower.includes("mens_day") ||
+      keyLower.includes("womens_day") ||
+      keyLower.includes("christmas") ||
+      keyLower.includes("easter")
+    )
+      return Calendar;
+
     if (keyLower.includes("time") || keyLower.includes("lead")) return Clock;
     if (keyLower.includes("month") || keyLower.includes("date"))
       return Calendar;
-    if (keyLower.includes("qty") || keyLower.includes("quantity") || keyLower.includes("shipment") || keyLower.includes("order"))
+    if (
+      keyLower.includes("qty") ||
+      keyLower.includes("quantity") ||
+      keyLower.includes("shipment") ||
+      keyLower.includes("order")
+    )
       return Package;
     if (keyLower.includes("oh") || keyLower.includes("inventory")) return Box;
-    if (keyLower.includes("trend") || keyLower.includes("index") || keyLower.includes("fc"))
+    if (
+      keyLower.includes("trend") ||
+      keyLower.includes("index") ||
+      keyLower.includes("fc")
+    )
       return BarChart3;
     if (keyLower.includes("loss") || keyLower.includes("diff"))
       return TrendingDown;
-    if (keyLower.includes("sale") || keyLower.includes("sell") || keyLower.includes("thru"))
+    if (
+      keyLower.includes("sale") ||
+      keyLower.includes("sell") ||
+      keyLower.includes("thru")
+    )
       return TrendingUp;
     if (keyLower.includes("macys") || keyLower.includes("soq")) return Star;
     if (keyLower.includes("percentage") || keyLower.includes("percent"))
       return Percent;
-    if (keyLower.includes("door") || keyLower.includes("count")) return Building2;
-    if (keyLower.includes("fldc") || keyLower.includes("location")) return MapPin;
+    if (keyLower.includes("door") || keyLower.includes("count"))
+      return Building2;
+    if (keyLower.includes("fldc") || keyLower.includes("location"))
+      return MapPin;
     if (keyLower.includes("birthstone") || keyLower.includes("gem")) return Gem;
     if (keyLower.includes("forecast") || keyLower.includes("method"))
       return Settings;
@@ -911,9 +1040,17 @@ const ForecastVariableCards = ({ productData }) => {
     if (typeof value === "boolean") {
       if (keyLower.includes("review") || keyLower.includes("need"))
         return AlertCircle;
-      if (keyLower.includes("over") || keyLower.includes("below") || keyLower.includes("error"))
+      if (
+        keyLower.includes("over") ||
+        keyLower.includes("below") ||
+        keyLower.includes("error")
+      )
         return AlertTriangle;
-      if (keyLower.includes("maintained") || keyLower.includes("status") || keyLower.includes("added"))
+      if (
+        keyLower.includes("maintained") ||
+        keyLower.includes("status") ||
+        keyLower.includes("added")
+      )
         return CheckCircle;
       if (keyLower.includes("box") || keyLower.includes("item")) return Box;
       return CheckCircle;
@@ -925,64 +1062,68 @@ const ForecastVariableCards = ({ productData }) => {
   // Determine which group a field belongs to
   const determineGroupForField = (key) => {
     const keyLower = key.toLowerCase();
-    
+
     // Exact matches first for better accuracy
     const exactMatches = {
-      'leadtime_holiday_adjustment': 'leadtime',
-      'lead_time': 'leadtime',
-      'selected_months': 'trends_index',
-      'month_12_fc_index': 'trends_index',
-      'loss': 'trends_index',
-      'month_12_fc_index_loss': 'trends_index',
-      'trend': 'trends_index',
-      'inventory_maintained': 'forecasting_method',
-      'trend_index_difference': 'forecasting_method',
-      'red_box_item': 'forecasting_method',
-      'forecasting_method': 'forecasting_method',
-      'forecast_month': 'forecast_month_req',
-      'door_count': 'forecast_month_req',
-      'average_com_oh': 'forecast_month_req',
-      'fldc': 'forecast_month_req',
-      'birthstone': 'forecast_month_req',
-      'birthstone_month': 'forecast_month_req',
-      'considered_birthstone': 'forecast_month_req',
-      'considered_birthstone_required_quantity': 'forecast_month_req',
-      'forecast_month_required_quantity': 'forecast_month_req',
-      'next_forecast_month': 'next_forecast_month_req',
-      'next_forecast_month_required_quantity': 'next_forecast_month_req',
-      'forecast_month_planned_oh': 'planned_shipment',
-      'forecast_month_planned_shipment': 'planned_shipment',
-      'next_forecast_month_planned_oh': 'next_planned_shipment',
-      'next_forecast_month_planned_shipment': 'next_planned_shipment',
-      'macys_soq': 'macys_soq',
-      'qty_given_to_macys': 'macys_soq',
-      'average_store_sale_thru': 'macys_soq',
-      'macys_owned_retail': 'macys_soq',
-      'macy_soq_percentage': 'macys_soq',
-      'macys_soq_qty_added': 'macys_soq',
-      'qty_added_to_balance_soq_forecast_month': 'macys_soq',
-      'qty_added_to_maintain_oh_forecast_month': 'final_qty',
-      'qty_added_to_maintain_oh_next_forecast_month': 'final_qty',
-      'min_order': 'final_qty',
-      'added_qty_using_macys_soq': 'final_qty',
-      'below_min_order': 'final_qty',
-      'over_macys_soq': 'final_qty',
-      'need_to_review_first': 'final_qty',
-      'total_added_qty': 'final_qty'
+      leadtime_holiday_adjustment: "leadtime",
+      lead_time: "leadtime",
+      selected_months: "trends_index",
+      month_12_fc_index: "trends_index",
+      loss: "trends_index",
+      month_12_fc_index_loss: "trends_index",
+      trend: "trends_index",
+      inventory_maintained: "forecasting_method",
+      trend_index_difference: "forecasting_method",
+      red_box_item: "forecasting_method",
+      forecasting_method: "forecasting_method",
+      forecast_month: "forecast_month_req",
+      door_count: "forecast_month_req",
+      average_com_oh: "forecast_month_req",
+      fldc: "forecast_month_req",
+      birthstone: "forecast_month_req",
+      birthstone_month: "forecast_month_req",
+      considered_birthstone: "forecast_month_req",
+      considered_birthstone_required_quantity: "forecast_month_req",
+      forecast_month_required_quantity: "forecast_month_req",
+      next_forecast_month: "next_forecast_month_req",
+      next_forecast_month_required_quantity: "next_forecast_month_req",
+      forecast_month_planned_oh: "planned_shipment",
+      forecast_month_planned_shipment: "planned_shipment",
+      next_forecast_month_planned_oh: "next_planned_shipment",
+      next_forecast_month_planned_shipment: "next_planned_shipment",
+      macys_soq: "macys_soq",
+      qty_given_to_macys: "macys_soq",
+      average_store_sale_thru: "macys_soq",
+      macys_owned_retail: "macys_soq",
+      macy_soq_percentage: "macys_soq",
+      macys_soq_qty_added: "macys_soq",
+      qty_added_to_balance_soq_forecast_month: "macys_soq",
+      qty_added_to_maintain_oh_forecast_month: "final_qty",
+      qty_added_to_maintain_oh_next_forecast_month: "final_qty",
+      min_order: "final_qty",
+      added_qty_using_macys_soq: "final_qty",
+      below_min_order: "final_qty",
+      over_macys_soq: "final_qty",
+      need_to_review_first: "final_qty",
+      total_added_qty: "final_qty",
     };
 
     if (exactMatches[keyLower]) {
       return exactMatches[keyLower];
     }
-    
+
     // Fallback to keyword matching
     for (const [groupKey, group] of Object.entries(variableGroups)) {
-      if (group.keywords.some(keyword => keyLower.includes(keyword.toLowerCase()))) {
+      if (
+        group.keywords.some((keyword) =>
+          keyLower.includes(keyword.toLowerCase())
+        )
+      ) {
         return groupKey;
       }
     }
-    
-    return 'other'; // Default group for unmatched fields
+
+    return "other"; // Default group for unmatched fields
   };
 
   const formatVariableValue = (value, config) => {
@@ -1000,12 +1141,12 @@ const ForecastVariableCards = ({ productData }) => {
       default:
         const formattedValue =
           typeof value === "number" ? value.toLocaleString() : value;
-        
+
         // Handle special cases that should show as percentages
         if (config.key === "trend_index_difference" || config.key === "loss") {
           return `${formattedValue}%`;
         }
-        
+
         return config.suffix
           ? `${formattedValue}${config.suffix}`
           : formattedValue;
@@ -1019,14 +1160,18 @@ const ForecastVariableCards = ({ productData }) => {
 
   // Filter variables based on search
   const getFilteredVariables = (variables, data) => {
-    return variables.filter(variable => {
-      const matchesSearch = !searchQuery || 
-                           variable.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           String(data[variable.key] || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesGroup = selectedGroup === "all" || selectedGroup === variable.groupKey;
-      
+    return variables.filter((variable) => {
+      const matchesSearch =
+        !searchQuery ||
+        variable.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(data[variable.key] || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+
+      const matchesGroup =
+        selectedGroup === "all" || selectedGroup === variable.groupKey;
+
       return matchesSearch && matchesGroup;
     });
   };
@@ -1039,7 +1184,9 @@ const ForecastVariableCards = ({ productData }) => {
       <div
         key={variable.key}
         className={`bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
-          variable.clickable ? "cursor-pointer hover:border-blue-300 hover:scale-105" : ""
+          variable.clickable
+            ? "cursor-pointer hover:border-blue-300 hover:scale-105"
+            : ""
         }`}
       >
         <div className="p-4">
@@ -1051,9 +1198,9 @@ const ForecastVariableCards = ({ productData }) => {
               <span className="text-xs font-medium text-gray-600 leading-tight block">
                 {variable.label}
               </span>
-              {viewMode === "flat" && variable.groupKey !== 'other' && (
+              {viewMode === "flat" && variable.groupKey !== "other" && (
                 <span className="text-xs text-gray-400 mt-1 block">
-                  {variableGroups[variable.groupKey]?.title || 'Other'}
+                  {variableGroups[variable.groupKey]?.title || "Other"}
                 </span>
               )}
             </div>
@@ -1066,7 +1213,7 @@ const ForecastVariableCards = ({ productData }) => {
           <div className="text-sm font-bold text-gray-900 break-words">
             {formatVariableValue(value, variable)}
           </div>
-          
+
           {/* Value indicator for booleans */}
           {variable.type === "boolean" && (
             <div className="mt-2 flex justify-end">
@@ -1092,8 +1239,8 @@ const ForecastVariableCards = ({ productData }) => {
 
     // Group variables by their determined group
     const groupedVariables = {};
-    filteredVariables.forEach(variable => {
-      const groupKey = variable.groupKey || 'other';
+    filteredVariables.forEach((variable) => {
+      const groupKey = variable.groupKey || "other";
       if (!groupedVariables[groupKey]) {
         groupedVariables[groupKey] = [];
       }
@@ -1101,15 +1248,17 @@ const ForecastVariableCards = ({ productData }) => {
     });
 
     // Only show groups that have variables
-    const visibleGroups = Object.keys(groupedVariables).filter(groupKey => 
-      groupedVariables[groupKey].length > 0
+    const visibleGroups = Object.keys(groupedVariables).filter(
+      (groupKey) => groupedVariables[groupKey].length > 0
     );
 
     if (visibleGroups.length === 0) {
       return (
         <div className="text-center py-8 bg-gray-50 rounded-xl">
           <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No variables match your search criteria</p>
+          <p className="text-gray-600">
+            No variables match your search criteria
+          </p>
         </div>
       );
     }
@@ -1118,38 +1267,55 @@ const ForecastVariableCards = ({ productData }) => {
       <div className="mb-12">
         <div className="flex items-center gap-3 mb-6">
           <div className={`p-3 ${groupBgColor} rounded-xl`}>
-            {type === "store" && <Building2 className="text-blue-600" size={24} />}
-            {type === "com" && <ShoppingCart className="text-green-600" size={24} />}
-            {type === "omni" && <Layers className="text-purple-600" size={24} />}
+            {type === "store" && (
+              <Building2 className="text-blue-600" size={24} />
+            )}
+            {type === "com" && (
+              <ShoppingCart className="text-green-600" size={24} />
+            )}
+            {type === "omni" && (
+              <Layers className="text-purple-600" size={24} />
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-            <p className="text-gray-600">{filteredVariables.length} variables found</p>
+            <p className="text-gray-600">
+              {filteredVariables.length} variables found
+            </p>
           </div>
         </div>
 
         <div className="space-y-8">
           {visibleGroups.map((groupKey) => {
-            const group = variableGroups[groupKey] || { 
-              title: 'Other Variables', 
-              icon: Info, 
-              color: 'gray' 
+            const group = variableGroups[groupKey] || {
+              title: "Special Days",
+              icon: Info,
+              color: "gray",
             };
             const groupVariables = groupedVariables[groupKey];
             const colorScheme = colorSchemes[group.color] || colorSchemes.blue;
             const IconComponent = group.icon;
 
             return (
-              <div key={groupKey} className={`border-2 ${colorScheme.border} rounded-xl overflow-hidden`}>
+              <div
+                key={groupKey}
+                className={`border-2 ${colorScheme.border} rounded-xl overflow-hidden`}
+              >
                 {/* Group Header */}
-                <div className={`${colorScheme.bg} px-6 py-4 border-b ${colorScheme.border}`}>
+                <div
+                  className={`${colorScheme.bg} px-6 py-4 border-b ${colorScheme.border}`}
+                >
                   <div className="flex items-center gap-3">
                     <div className={`p-2 bg-white rounded-lg shadow-sm`}>
                       <IconComponent className={colorScheme.text} size={20} />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800">{group.title}</h3>
-                      <p className="text-sm text-gray-600">{groupVariables.length} variables</p>
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        {group.title}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        {groupVariables.length} variables
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1159,7 +1325,13 @@ const ForecastVariableCards = ({ productData }) => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {groupVariables.map((variable) => {
                       const value = data[variable.key];
-                      return renderVariableCard(variable, value, data, colorScheme.bg, colorScheme.text);
+                      return renderVariableCard(
+                        variable,
+                        value,
+                        data,
+                        colorScheme.bg,
+                        colorScheme.text
+                      );
                     })}
                   </div>
                 </div>
@@ -1183,32 +1355,58 @@ const ForecastVariableCards = ({ productData }) => {
       return (
         <div className="text-center py-8 bg-gray-50 rounded-xl">
           <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">No variables match your search criteria</p>
+          <p className="text-gray-600">
+            No variables match your search criteria
+          </p>
         </div>
       );
     }
 
-    const bgColor = type === "store" ? "bg-blue-50" : type === "com" ? "bg-green-50" : "bg-purple-50";
-    const iconColor = type === "store" ? "text-blue-600" : type === "com" ? "text-green-600" : "text-purple-600";
+    const bgColor =
+      type === "store"
+        ? "bg-blue-50"
+        : type === "com"
+        ? "bg-green-50"
+        : "bg-purple-50";
+    const iconColor =
+      type === "store"
+        ? "text-blue-600"
+        : type === "com"
+        ? "text-green-600"
+        : "text-purple-600";
 
     return (
       <div className="mb-12">
         <div className="flex items-center gap-3 mb-6">
           <div className={`p-3 ${groupBgColor} rounded-xl`}>
-            {type === "store" && <Building2 className="text-blue-600" size={24} />}
-            {type === "com" && <ShoppingCart className="text-green-600" size={24} />}
-            {type === "omni" && <Layers className="text-purple-600" size={24} />}
+            {type === "store" && (
+              <Building2 className="text-blue-600" size={24} />
+            )}
+            {type === "com" && (
+              <ShoppingCart className="text-green-600" size={24} />
+            )}
+            {type === "omni" && (
+              <Layers className="text-purple-600" size={24} />
+            )}
           </div>
           <div>
             <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-            <p className="text-gray-600">{filteredVariables.length} variables found</p>
+            <p className="text-gray-600">
+              {filteredVariables.length} variables found
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredVariables.map((variable) => {
             const value = data[variable.key];
-            return renderVariableCard(variable, value, data, bgColor, iconColor);
+            return renderVariableCard(
+              variable,
+              value,
+              data,
+              bgColor,
+              iconColor
+            );
           })}
         </div>
       </div>
@@ -1226,12 +1424,12 @@ const ForecastVariableCards = ({ productData }) => {
   // Get unique groups that actually exist in data
   const getAvailableGroups = () => {
     const allGroups = new Set();
-    
-    [store_forecast, com_forecast, omni_forecast].forEach(forecast => {
+
+    [store_forecast, com_forecast, omni_forecast].forEach((forecast) => {
       if (forecast && forecast[0]) {
         const variables = getAllVariablesFromData(forecast[0]);
-        variables.forEach(variable => {
-          if (variable.groupKey && variable.groupKey !== 'other') {
+        variables.forEach((variable) => {
+          if (variable.groupKey && variable.groupKey !== "other") {
             allGroups.add(variable.groupKey);
           }
         });
@@ -1240,10 +1438,10 @@ const ForecastVariableCards = ({ productData }) => {
 
     return [
       { value: "all", label: "All Groups" },
-      ...Array.from(allGroups).map(groupKey => ({
+      ...Array.from(allGroups).map((groupKey) => ({
         value: groupKey,
-        label: variableGroups[groupKey]?.title || groupKey
-      }))
+        label: variableGroups[groupKey]?.title || groupKey,
+      })),
     ];
   };
 
@@ -1260,8 +1458,12 @@ const ForecastVariableCards = ({ productData }) => {
               <BarChart3 className="text-blue-600" size={32} />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">Forecast Algorithm Variables</h1>
-              <p className="text-gray-600">Comprehensive view of forecasting variables</p>
+              <h1 className="text-2xl font-bold text-gray-800">
+                Forecast Algorithm Variables
+              </h1>
+              <p className="text-gray-600">
+                Comprehensive view of forecasting variables
+              </p>
             </div>
           </div>
 
@@ -1269,7 +1471,10 @@ const ForecastVariableCards = ({ productData }) => {
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={20}
+              />
               <input
                 type="text"
                 placeholder="Search variables..."
@@ -1319,8 +1524,10 @@ const ForecastVariableCards = ({ productData }) => {
               onChange={(e) => setSelectedForecastType(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             >
-              {availableForecastTypes.map(type => (
-                <option key={type.value} value={type.value}>{type.label}</option>
+              {availableForecastTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
               ))}
             </select>
 
@@ -1331,8 +1538,10 @@ const ForecastVariableCards = ({ productData }) => {
                 onChange={(e) => setSelectedGroup(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
               >
-                {availableGroups.map(group => (
-                  <option key={group.value} value={group.value}>{group.label}</option>
+                {availableGroups.map((group) => (
+                  <option key={group.value} value={group.value}>
+                    {group.label}
+                  </option>
                 ))}
               </select>
             )}
@@ -1341,26 +1550,53 @@ const ForecastVariableCards = ({ productData }) => {
       </div>
 
       {/* Content */}
-      {(selectedForecastType === "all" || selectedForecastType === "store") && 
-       hasStoreData && (
-        viewMode === "grouped" 
-          ? renderGroupedView(store_forecast, "store", "Store Forecast Variables", "bg-blue-50")
-          : renderFlatView(store_forecast, "store", "Store Forecast Variables", "bg-blue-50")
-      )}
+      {(selectedForecastType === "all" || selectedForecastType === "store") &&
+        hasStoreData &&
+        (viewMode === "grouped"
+          ? renderGroupedView(
+              store_forecast,
+              "store",
+              "Store Forecast Variables",
+              "bg-blue-50"
+            )
+          : renderFlatView(
+              store_forecast,
+              "store",
+              "Store Forecast Variables",
+              "bg-blue-50"
+            ))}
 
-      {(selectedForecastType === "all" || selectedForecastType === "com") && 
-       hasComData && (
-        viewMode === "grouped" 
-          ? renderGroupedView(com_forecast, "com", "COM Forecast Variables", "bg-green-50")
-          : renderFlatView(com_forecast, "com", "COM Forecast Variables", "bg-green-50")
-      )}
+      {(selectedForecastType === "all" || selectedForecastType === "com") &&
+        hasComData &&
+        (viewMode === "grouped"
+          ? renderGroupedView(
+              com_forecast,
+              "com",
+              "COM Forecast Variables",
+              "bg-green-50"
+            )
+          : renderFlatView(
+              com_forecast,
+              "com",
+              "COM Forecast Variables",
+              "bg-green-50"
+            ))}
 
-      {(selectedForecastType === "all" || selectedForecastType === "omni") && 
-       hasOmniData && (
-        viewMode === "grouped" 
-          ? renderGroupedView(omni_forecast, "omni", "Omni Forecast Variables", "bg-purple-50")
-          : renderFlatView(omni_forecast, "omni", "Omni Forecast Variables", "bg-purple-50")
-      )}
+      {(selectedForecastType === "all" || selectedForecastType === "omni") &&
+        hasOmniData &&
+        (viewMode === "grouped"
+          ? renderGroupedView(
+              omni_forecast,
+              "omni",
+              "Omni Forecast Variables",
+              "bg-purple-50"
+            )
+          : renderFlatView(
+              omni_forecast,
+              "omni",
+              "Omni Forecast Variables",
+              "bg-purple-50"
+            ))}
     </div>
   );
 };
