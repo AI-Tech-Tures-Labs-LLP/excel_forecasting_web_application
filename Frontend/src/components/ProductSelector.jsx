@@ -596,96 +596,99 @@ function ProductSelector() {
     }
   };
 
-  const applyBulkExternalFactor = async () => {
-    if (!isValidInput()) return;
-    if (!bulkFactor || selectedProductIds.length === 0) return;
+ const applyBulkExternalFactor = async () => {
+  if (!isValidInput()) return;
+  if (!bulkFactor || selectedProductIds.length === 0) return;
 
-    setIsApplying(true);
-    setError("");
+  setIsApplying(true);
+  setError("");
 
-    try {
-      // Get the products before applying changes to track the differences
-      const productsToUpdate = currentProducts.filter((p) =>
-        selectedProductIds.includes(p.pid)
+  try {
+    // FIXED: Use processedProducts instead of currentProducts to get all filtered products
+    // This ensures we update all selected products, not just those on the current page
+    const productsToUpdate = processedProducts.filter((p) =>
+      selectedProductIds.includes(p.pid)
+    );
+
+    console.log(`Updating ${productsToUpdate.length} products:`, productsToUpdate.map(p => p.pid));
+
+    const updatePromises = productsToUpdate.map(async (product) => {
+      // Calculate the new user_added_quantity based on external factor percentage
+      const originalQty = product.user_added_quantity || 0;
+      const newUserAddedQty = Math.round(
+        originalQty * (1 + parseFloat(bulkFactor) / 100)
       );
 
-      const updatePromises = productsToUpdate.map(async (product) => {
-        // Calculate the new user_added_quantity based on external factor percentage
-        const originalQty = product.user_added_quantity || 0;
-        const newUserAddedQty = Math.round(
-          originalQty * (1 + parseFloat(bulkFactor) / 100)
-        );
-
-        const response = await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/${
-            product.pid
-          }/`,
-          {
-            product_details: {
-              external_factor_percentage: parseFloat(bulkFactor),
-              user_added_quantity: newUserAddedQty, // Set the calculated quantity
-              external_factor: bulkFactorNote,
-            },
-          }
-        );
-
-        return {
-          pid: product.pid,
-          category: product.category,
-          originalQty: originalQty,
-          newQty: newUserAddedQty,
-          factorApplied: parseFloat(bulkFactor),
-          response: response.data,
-        };
-      });
-
-      const results = await Promise.all(updatePromises);
-
-      // Store the results for display
-      setLastAppliedResults({
-        timestamp: new Date(),
-        factorPercentage: parseFloat(bulkFactor),
-        factorNote: bulkFactorNote,
-        totalProductsUpdated: results.length,
-        results: results,
-        summary: {
-          totalOriginalQty: results.reduce((sum, r) => sum + r.originalQty, 0),
-          totalNewQty: results.reduce((sum, r) => sum + r.newQty, 0),
-          totalDifference: results.reduce(
-            (sum, r) => sum + (r.newQty - r.originalQty),
-            0
-          ),
-        },
-      });
-
-      // Refresh the products data to get updated values
-      await dispatch(
-        fetchProducts({
-          productType: selectedProductType,
-          filters: selectedFilters,
-        })
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/${
+          product.pid
+        }/`,
+        {
+          product_details: {
+            external_factor_percentage: parseFloat(bulkFactor),
+            user_added_quantity: newUserAddedQty, // Set the calculated quantity
+            external_factor: bulkFactorNote,
+          },
+        }
       );
 
-      // Also refresh the product notes data to ensure everything is up to date
-      await loadProductNotesData();
+      return {
+        pid: product.pid,
+        category: product.category,
+        originalQty: originalQty,
+        newQty: newUserAddedQty,
+        factorApplied: parseFloat(bulkFactor),
+        response: response.data,
+      };
+    });
 
-      setSuccess(true);
-      setShowResults(true);
+    const results = await Promise.all(updatePromises);
 
-      // Reset form after showing success
-      setTimeout(() => {
-        setShowBulkModal(false);
-        setSuccess(false);
-        setBulkFactor("");
-        setBulkFactorNote("");
-      }, 2000);
-    } catch (error) {
-      console.error("Error applying bulk external factor:", error);
-      setError("Failed to apply external factor. Please try again.");
-    } finally {
-      setIsApplying(false);
-    }
-  };
+    // Store the results for display
+    setLastAppliedResults({
+      timestamp: new Date(),
+      factorPercentage: parseFloat(bulkFactor),
+      factorNote: bulkFactorNote,
+      totalProductsUpdated: results.length,
+      results: results,
+      summary: {
+        totalOriginalQty: results.reduce((sum, r) => sum + r.originalQty, 0),
+        totalNewQty: results.reduce((sum, r) => sum + r.newQty, 0),
+        totalDifference: results.reduce(
+          (sum, r) => sum + (r.newQty - r.originalQty),
+          0
+        ),
+      },
+    });
+
+    // Refresh the products data to get updated values
+    await dispatch(
+      fetchProducts({
+        productType: selectedProductType,
+        filters: selectedFilters,
+      })
+    );
+
+    // Also refresh the product notes data to ensure everything is up to date
+    await loadProductNotesData();
+
+    setSuccess(true);
+    setShowResults(true);
+
+    // Reset form after showing success
+    setTimeout(() => {
+      setShowBulkModal(false);
+      setSuccess(false);
+      setBulkFactor("");
+      setBulkFactorNote("");
+    }, 2000);
+  } catch (error) {
+    console.error("Error applying bulk external factor:", error);
+    setError("Failed to apply external factor. Please try again.");
+  } finally {
+    setIsApplying(false);
+  }
+};
 
   // Pagination calculations
   const totalPages = Math.ceil(processedProducts.length / itemsPerPage);
