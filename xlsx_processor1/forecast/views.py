@@ -4,6 +4,7 @@ import json
 import io
 import zipfile 
 import pandas as pd
+from datetime import datetime
 
 from django.conf import settings
 from django.http import FileResponse
@@ -20,7 +21,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 
 
-from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote
+from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote, SheetUpload
 from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer
 from .service.exportExcel import process_data
 from forecast.service.rollingfc import recalculate_all
@@ -101,9 +102,17 @@ class UploadXlsxAPIView(APIView):
         month_from = request.data.get('month_from')
         month_to = request.data.get('month_to')
         percentage = request.data.get('percentage')
-        categories = request.data.get('categories')
+        categories = request.data.get('categories')    
+        print(f"Received file: {uploaded_file.name} with output folder: {output_folder}, month_from: {month_from}, month_to: {month_to}, percentage: {percentage}, categories: {categories}")   
 
-
+        sheet = SheetUpload.objects.create(
+            user=request.user,
+            name=uploaded_file.name,
+            file=uploaded_file,
+            is_processed=False
+        )
+        print(f"Sheet uploaded:",sheet)
+        print(f"File uploaded: {uploaded_file.name} by user: {request.user.username}")
         if not uploaded_file or not output_folder:
             return Response({'error': 'File or output folder not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -122,10 +131,11 @@ class UploadXlsxAPIView(APIView):
             for chunk in uploaded_file.chunks():
                 dest.write(chunk)
         input_path = save_path
+        current_date = datetime(2025,5,8)
 
         try:
             start_time = time.time()
-            process_data(input_path, output_folder_path, month_from, month_to, percentage, input_tuple)
+            process_data(input_path, output_folder_path, month_from, month_to, percentage, input_tuple, sheet, current_date)
             elapsed_time = time.time() - start_time
             print(f"Processing took {elapsed_time:.3f}s")
             make_zip_and_delete(output_folder_path)

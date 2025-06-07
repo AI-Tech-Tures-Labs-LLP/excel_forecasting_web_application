@@ -13,13 +13,12 @@ from django.db import transaction
 
 
 
-
-def save_macys_projection_receipts(product, matching_row, year):
+# MonthlyForecast model Operations 1
+def save_macys_projection_receipts(product, matching_row, year, sheet ):
     """
     Saves Macy's Projection Receipts data into the MonthlyForecast model.
     Updates fields: jan, feb, mar, ..., dec instead of a single month field.
     """
-    # Map DataFrame columns to the corresponding month fields in the model
     receipts_data = {
         'jan': matching_row['JAN RECPT'].iloc[0],
         'feb': matching_row['FEB RECPT'].iloc[0],
@@ -45,173 +44,175 @@ def save_macys_projection_receipts(product, matching_row, year):
     # Update or create the forecast entry for the entire year
     with transaction.atomic():
         MonthlyForecast.objects.update_or_create(
-            product=product,
-            variable_name='MacysProjectionReciepts',
+            sheet=sheet,
+            productdetail=product,
+            variable_name='macys_proj_receipts',
             year=year,
             defaults=receipts_data  # Updates all month fields at once
         )
 
-
-# Use this 
-# from datetime import datetime
-# current_year = datetime.now().year
-
-def save_monthly_forecasts(product, current_year, months, TY_Unit_Sales, LY_Unit_Sales, LY_OH_Units, TY_OH_Units, TY_Receipts, LY_Receipts, TY_MCOM_Unit_Sales, LY_MCOM_Unit_Sales, TY_OH_MCOM_Units, LY_MCOM_OH_Units, PTD_TY_Sales, LY_PTD_Sales, MCOM_PTD_TY_Sales, MCOM_PTD_LY_Sales, OO_Total_Units, OO_MCOM_Total_Units, LY_store_unit_sales, LY_store_EOM_OH, LY_COM_to_TTL, LY_COM_to_TTL_OH, LY_omni_sell_through, LY_store_sell_through, LY_omni_turn, LY_store_turn, LY_Omni_AUR_Diff_Own, TY_store_unit_sales, TY_store_EOM_OH, TY_COM_to_TTL, TY_COM_to_TTL_OH, TY_Omni_AUR_Diff_Own, TY_Omni_sell_through, TY_store_sell_through, TY_omni_turn, TY_store_turn, TY_store_unit_sales_diff, TY_com_unit_sales_diff, TY_store_eom_oh_diff):
+# MonthlyForecast model Operations 2
+def save_monthly_forecasts(
+    product, sheet, current_year, months,
+    ty_total_sales_units, ly_total_sales_units,
+    ly_total_eom_oh, ty_total_eom_oh,
+    ty_omni_receipts, ly_omni_receipts,
+    ty_com_sales_units, ly_com_sales_units,
+    ty_com_eom_oh, ly_com_eom_oh,
+    ly_store_sales_units, ly_store_eom_oh,
+    ly_com_to_ttl_sales_pct, ly_com_to_ttl_eoh_pct,
+    ly_omni_sell_thru_pct, ly_store_sell_thru_pct,
+    ly_omni_turn, ly_store_turn,
+    ly_omni_aur_diff_own,
+    ty_store_sales_units, ty_store_eom_oh,
+    ty_com_to_ttl_sales_pct, ty_com_to_ttl_eoh_pct,
+    ty_omni_aur_diff_own, ty_omni_sell_thru_pct,
+    ty_store_sell_thru_pct, ty_omni_turn, ty_store_turn,
+    ty_store_sales_vs_ly, ty_com_sales_vs_ly, ty_store_eoh_vs_ly,
+    ty_omni_oo_units, ty_com_oo_units,
+    ty_omni_sales_usd, ly_omni_sales_usd,
+    ty_com_sales_usd, ly_com_sales_usd
+):
     """
     Saves forecast data for all variables in MonthlyForecast, 
     updating fields: jan, feb, mar, ..., dec instead of a single month field.
     """
 
-    # Dictionary mapping month names to model fields
     month_mapping = {
         'JAN': 'jan', 'FEB': 'feb', 'MAR': 'mar', 'APR': 'apr', 'MAY': 'may', 'JUN': 'jun',
         'JUL': 'jul', 'AUG': 'aug', 'SEP': 'sep', 'OCT': 'oct', 'NOV': 'nov', 'DEC': 'dec'
     }
 
-    # All data dictionaries
-    all_variables = {
-        'TY_Unit_Sales': TY_Unit_Sales,
-        'LY_Unit_Sales': LY_Unit_Sales,
-        'LY_OH_Units': LY_OH_Units,
-        'TY_OH_Units': TY_OH_Units,
-        'TY_Receipts': TY_Receipts,
-        'LY_Receipts': LY_Receipts,
-        'TY_MCOM_Unit_Sales': TY_MCOM_Unit_Sales,
-        'LY_MCOM_Unit_Sales': LY_MCOM_Unit_Sales,
-        'TY_OH_MCOM_Units': TY_OH_MCOM_Units,
-        'LY_MCOM_OH_Units': LY_MCOM_OH_Units,
-        'PTD_TY_Sales': PTD_TY_Sales,
-        'LY_PTD_Sales': LY_PTD_Sales,
-        'MCOM_PTD_TY_Sales': MCOM_PTD_TY_Sales,
-        'MCOM_PTD_LY_Sales': MCOM_PTD_LY_Sales,
-        'OO_Total_Units': OO_Total_Units,
-        'OO_MCOM_Total_Units': OO_MCOM_Total_Units
+    variable_map = {
+        'ty_total_sales_units': ty_total_sales_units,
+        'ly_total_sales_units': ly_total_sales_units,
+        'ly_total_eom_oh': ly_total_eom_oh,
+        'ty_total_eom_oh': ty_total_eom_oh,
+        'ty_omni_receipts': ty_omni_receipts,
+        'ly_omni_receipts': ly_omni_receipts,
+        'ty_com_sales_units': ty_com_sales_units,
+        'ly_com_sales_units': ly_com_sales_units,
+        'ty_com_eom_oh': ty_com_eom_oh,
+        'ly_com_eom_oh': ly_com_eom_oh,
+        'ly_store_sales_units': ly_store_sales_units,
+        'ly_store_eom_oh': ly_store_eom_oh,
+        'ly_com_to_ttl_sales_pct': ly_com_to_ttl_sales_pct,
+        'ly_com_to_ttl_eoh_pct': ly_com_to_ttl_eoh_pct,
+        'ly_omni_sell_thru_pct': ly_omni_sell_thru_pct,
+        'ly_store_sell_thru_pct': ly_store_sell_thru_pct,
+        'ly_omni_turn': ly_omni_turn,
+        'ly_store_turn': ly_store_turn,
+        'ly_omni_aur_diff_own': ly_omni_aur_diff_own,
+        'ty_store_sales_units': ty_store_sales_units,
+        'ty_store_eom_oh': ty_store_eom_oh,
+        'ty_com_to_ttl_sales_pct': ty_com_to_ttl_sales_pct,
+        'ty_com_to_ttl_eoh_pct': ty_com_to_ttl_eoh_pct,
+        'ty_omni_aur_diff_own': ty_omni_aur_diff_own,
+        'ty_omni_sell_thru_pct': ty_omni_sell_thru_pct,
+        'ty_store_sell_thru_pct': ty_store_sell_thru_pct,
+        'ty_omni_turn': ty_omni_turn,
+        'ty_store_turn': ty_store_turn,
+        'ty_store_sales_vs_ly': ty_store_sales_vs_ly,
+        'ty_com_sales_vs_ly': ty_com_sales_vs_ly,
+        'ty_store_eoh_vs_ly': ty_store_eoh_vs_ly,
+        'ty_omni_oo_units': ty_omni_oo_units,
+        'ty_com_oo_units': ty_com_oo_units,
+        'ty_omni_sales_usd': ty_omni_sales_usd,
+        'ly_omni_sales_usd': ly_omni_sales_usd,
+        'ty_com_sales_usd': ty_com_sales_usd,
+        'ly_com_sales_usd': ly_com_sales_usd,
     }
 
-    # Define the year mapping (last year for LY_ variables, this year for TY_ variables)
     year_mapping = {
-        'TY_Unit_Sales': current_year,
-        'LY_Unit_Sales': current_year - 1,
-        'LY_OH_Units': current_year - 1,
-        'TY_OH_Units': current_year,
-        'TY_Receipts': current_year,
-        'LY_Receipts': current_year - 1,
-        'TY_MCOM_Unit_Sales': current_year,
-        'LY_MCOM_Unit_Sales': current_year - 1,
-        'TY_OH_MCOM_Units': current_year,
-        'LY_MCOM_OH_Units': current_year - 1,
-        'PTD_TY_Sales': current_year,
-        'LY_PTD_Sales': current_year - 1,
-        'MCOM_PTD_TY_Sales': current_year,
-        'MCOM_PTD_LY_Sales': current_year - 1,
-        'OO_Total_Units': current_year,
-        'OO_MCOM_Total_Units': current_year
+        'ty_total_sales_units': current_year,
+        'ly_total_sales_units': current_year - 1,
+        'ly_total_eom_oh': current_year - 1,
+        'ty_total_eom_oh': current_year,
+        'ty_omni_receipts': current_year,
+        'ly_omni_receipts': current_year - 1,
+        'ty_com_sales_units': current_year,
+        'ly_com_sales_units': current_year - 1,
+        'ty_com_eom_oh': current_year,
+        'ly_com_eom_oh': current_year - 1,
+        'ly_store_sales_units': current_year - 1,
+        'ly_store_eom_oh': current_year - 1,
+        'ly_com_to_ttl_sales_pct': current_year - 1,
+        'ly_com_to_ttl_eoh_pct': current_year - 1,
+        'ly_omni_sell_thru_pct': current_year - 1,
+        'ly_store_sell_thru_pct': current_year - 1,
+        'ly_omni_turn': current_year - 1,
+        'ly_store_turn': current_year - 1,
+        'ly_omni_aur_diff_own': current_year - 1,
+        'ty_store_sales_units': current_year,
+        'ty_store_eom_oh': current_year,
+        'ty_com_to_ttl_sales_pct': current_year,
+        'ty_com_to_ttl_eoh_pct': current_year,
+        'ty_omni_aur_diff_own': current_year,
+        'ty_omni_sell_thru_pct': current_year,
+        'ty_store_sell_thru_pct': current_year,
+        'ty_omni_turn': current_year,
+        'ty_store_turn': current_year,
+        'ty_store_sales_vs_ly': current_year,
+        'ty_com_sales_vs_ly': current_year,
+        'ty_store_eoh_vs_ly': current_year,
+        'ty_omni_oo_units': current_year,
+        'ty_com_oo_units': current_year,
+        'ty_omni_sales_usd': current_year,
+        'ly_omni_sales_usd': current_year - 1,
+        'ty_com_sales_usd': current_year,
+        'ly_com_sales_usd': current_year - 1,
     }
 
-    loader_computed_variables = {
-        'LY_store_unit_sales': LY_store_unit_sales,
-        'LY_store_EOM_OH': LY_store_EOM_OH,
-        'LY_COM_to_TTL': LY_COM_to_TTL,
-        'LY_COM_to_TTL_OH': LY_COM_to_TTL_OH,
-        'LY_omni_sell_through': LY_omni_sell_through,
-        'LY_store_sell_through': LY_store_sell_through,
-        'LY_omni_turn': LY_omni_turn,
-        'LY_store_turn': LY_store_turn,
-        'LY_Omni_AUR_Diff_Own': LY_Omni_AUR_Diff_Own,
 
-        'TY_store_unit_sales': TY_store_unit_sales,
-        'TY_store_EOM_OH': TY_store_EOM_OH,
-        'TY_COM_to_TTL': TY_COM_to_TTL,
-        'TY_COM_to_TTL_OH': TY_COM_to_TTL_OH,
-        'TY_Omni_AUR_Diff_Own': TY_Omni_AUR_Diff_Own,
-        'TY_Omni_sell_through': TY_Omni_sell_through,
-        'TY_store_sell_through': TY_store_sell_through,
-        'TY_omni_turn': TY_omni_turn,
-        'TY_store_turn': TY_store_turn,
-        'TY_store_unit_sales_diff': TY_store_unit_sales_diff,
-        'TY_com_unit_sales_diff': TY_com_unit_sales_diff,
-        'TY_store_eom_oh_diff': TY_store_eom_oh_diff
-    }
-
-    # Merge both dictionaries
-    all_variables.update(loader_computed_variables)
-
-    # Update year_mapping for these variables
-    loader_year_mapping = {key: current_year if key.startswith('TY_') else current_year - 1 for key in loader_computed_variables}
-    year_mapping.update(loader_year_mapping)
-
-    # Process each variable and construct the forecast data
-    for variable_name, data_dict in all_variables.items():
+    for variable_name, data_dict in variable_map.items():
         year = year_mapping[variable_name]
-        
-        # Initialize a dictionary to store month values
         monthly_values = {month_field: None for month_field in month_mapping.values()}
 
         for month_name in months:
             month_field = month_mapping.get(month_name.upper())
             if month_field is None:
-                continue  # Skip invalid month names
-
+                continue
             value = data_dict.get(month_name)
-            
-            # Convert value to integer if valid, else None
             if pd.isna(value):
                 value = None
             else:
                 try:
-                    value = round(value,2)
+                    value = round(float(value), 2)
                 except (ValueError, TypeError):
                     value = None
-            
-            # Assign value to corresponding month field
             monthly_values[month_field] = value
 
-        # Update or create the record for the entire year
         with transaction.atomic():
-
             MonthlyForecast.objects.update_or_create(
-                product=product,
+                sheet=sheet,
+                productdetail=product,
                 variable_name=variable_name,
                 year=year,
-                defaults=monthly_values  # Updates all month fields at once
+                defaults=monthly_values
             )
+            print("Monthly Forecast Data Saved Successfully")
 
-def save_rolling_forecasts(product, year, forecast_data_dict):
+# MonthlyForecast model Operations 3
+def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
     """
     Save or update MonthlyForecast records for a given product and year.
     Handles invalid numeric entries like '-' gracefully.
-    
+
     Args:
         product (ProductDetail): ProductDetail instance
         year (int): Forecast year
         forecast_data_dict (dict): {
-            "MacysProjectionReciepts": {"JAN": "100", "FEB": "-", ...},
+            "planned_eoh_cal": {"JAN": "100", "FEB": "-", ...},
             ...
         }
     """
-    allowed_vars = {
-        'MacysProjectionReciepts',
-        'PlannedEOH',
-        'PlannedShipment',
-        'PlannedForecast',
-        'RecommendedForecast',
-        'ForecastByTrend',
-        'ForecastByIndex',
-        'PlannedSellThru',
-        'IndexPercentage',
-        'GrossProjection'
-    }
-
     month_map = {
         'JAN': 'jan', 'FEB': 'feb', 'MAR': 'mar', 'APR': 'apr',
         'MAY': 'may', 'JUN': 'jun', 'JUL': 'jul', 'AUG': 'aug',
         'SEP': 'sep', 'OCT': 'oct', 'NOV': 'nov', 'DEC': 'dec',
     }
 
-    for variable, monthly_data in forecast_data_dict.items():
-        if variable not in allowed_vars:
-            continue
-
+    for variable_name, monthly_data in forecast_data_dict.items():
         defaults = {}
         for month_abbr, value in monthly_data.items():
             month_field = month_map.get(month_abbr.upper())
@@ -223,68 +224,78 @@ def save_rolling_forecasts(product, year, forecast_data_dict):
                     continue
                 defaults[month_field] = float(value)
             except (ValueError, TypeError):
-                # Log or skip invalid numeric entry
                 continue
 
         # Only create/update if there's at least one valid month value
         if defaults:
             with transaction.atomic():
                 MonthlyForecast.objects.update_or_create(
-                    product=product,
-                    variable_name=variable,
+                    sheet=sheet,
+                    productdetail=product,
+                    variable_name=variable_name,
                     year=year,
                     defaults=defaults
                 )
+                print("Monthly Forecast Data Saved Successfully")
 
+# MonthlyForecast & ProductDetail model Operations
+def save_forecast_data(pid, sheet, updated_context):
+    """
+    Updates ProductDetail fields and saves rolling forecast data to MonthlyForecast.
+    Expects updated_context to have keys matching MonthlyForecast.variable_name and
+    values as dicts of month abbreviations to values.
+    """
 
-def save_forecast_data(pid, updated_context):
-        # Fetch related product
-        product = ProductDetail.objects.get(product_id=pid)
-        year = datetime.now().year  # You can change this if needed
-        # print("Updated Context",updated_context)
+    product = ProductDetail.objects.get(product_id=pid)
+    year = datetime.now().year  # You can change this if needed
 
-        # Update ProductDetail fields
-        product.rolling_method = updated_context.get("Rolling_method", product.rolling_method)
-        product.std_trend = updated_context.get("Trend", product.std_trend)
-        product.forecasting_method = updated_context.get("Forecasting_Method", product.forecasting_method)
-        product.month_12_fc_index = updated_context.get("month_12_fc_index", product.month_12_fc_index)
-        product.currect_fc_index = updated_context.get("Current_FC_Index", product.currect_fc_index)
-        with transaction.atomic():
-            product.save()
-        print("Product Updated Values Saved Successfully ")
+    # Update ProductDetail fields
+    product.rolling_method = updated_context.get("Rolling_method", product.rolling_method)
+    product.std_trend_original = updated_context.get("Trend", product.std_trend_original)
+    product.forecasting_method_original = updated_context.get("Forecasting_Method", product.forecasting_method_original)
+    product.month_12_fc_index_original = updated_context.get("month_12_fc_index", product.month_12_fc_index_original)
+    product.current_fc_index = updated_context.get("Current_FC_Index", product.current_fc_index)
 
-        month_keys = {
-            "JAN": "jan", "FEB": "feb", "MAR": "mar", "APR": "apr",
-            "MAY": "may", "JUN": "jun", "JUL": "jul", "AUG": "aug",
-            "SEP": "sep", "OCT": "oct", "NOV": "nov", "DEC": "dec"
-        }
+    with transaction.atomic():
+        product.save()
+    print("Product Updated Values Saved Successfully ")
 
-        field_map = {
-            "Planned_EOH": "PlannedEOH",
-            "Planned_Shipments": "PlannedShipment",
-            "Planned_FC": "PlannedForecast",
-            "Recommended_FC": "RecommendedForecast",
-            "FC_by_Trend": "ForecastByTrend",
-            "FC_by_Index": "ForecastByIndex",
-            "Planned_sell_thru": "PlannedSellThru",
-            "Index_value": "IndexPercentage",
-        }
+    month_keys = {
+        "JAN": "jan", "FEB": "feb", "MAR": "mar", "APR": "apr",
+        "MAY": "may", "JUN": "jun", "JUL": "jul", "AUG": "aug",
+        "SEP": "sep", "OCT": "oct", "NOV": "nov", "DEC": "dec"
+    }
 
-        with transaction.atomic():
-            for key, var_name in field_map.items():
-                data = updated_context.get(key)
-                if not data:
-                    continue
+    # Save rolling forecast data for each variable_name present in updated_context
+    with transaction.atomic():
+        for variable_name, data in updated_context.items():
+            # Only process keys that are valid variable_names for MonthlyForecast
+            if variable_name not in [
+                "planned_eoh_cal", "planned_shipments", "planned_fc", "recommended_fc",
+                "fc_by_trend", "fc_by_index", "planned_sell_thru_pct", "index",
+                "gross_projection_nav", "macys_proj_receipts"
+            ]:
+                continue
+            if not isinstance(data, dict):
+                continue
 
-                # Map month values
-                forecast_data = {month_keys[mon]: val for mon, val in data.items() if mon in month_keys}
-                
-                # Create or update the entry
+            # Map month values
+            forecast_data = {}
+            for mon, val in data.items():
+                mon_key = month_keys.get(mon.upper())
+                if mon_key and val not in (None, '', '-', '--'):
+                    try:
+                        forecast_data[mon_key] = float(val)
+                    except (ValueError, TypeError):
+                        forecast_data[mon_key] = None
+
+            if forecast_data:
                 MonthlyForecast.objects.update_or_create(
-                    product=product,
-                    variable_name=var_name,
+                    sheet=sheet,
+                    productdetail=product,
+                    variable_name=variable_name,
                     year=year,
                     defaults=forecast_data
                 )
 
-            
+                print("Rolling Forecast Data Saved Successfully")

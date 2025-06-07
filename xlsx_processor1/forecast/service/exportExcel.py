@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from django.conf import settings
 from django.db import transaction
-
+import re
 
 # Third-party imports
 import numpy as np
@@ -37,7 +37,7 @@ from forecast.models import MonthlyForecast, ProductDetail, StoreForecast, ComFo
 from forecast.service.staticVariable import omni_rename_map, com_rename_map, store_rename_map
 import calendar
 
-def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple):
+def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple, sheet, current_date):
 
     print("Input path:", input_path)
     readInputExcel(input_path)
@@ -136,32 +136,32 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
     with transaction.atomic():
         RetailInfo.objects.create(
-        year_of_previous_month=year_of_previous_month,
-        last_year_of_previous_month=last_year_of_previous_month,
-        season=season,
-        current_month=current_month,
-        current_month_number=current_month_number,
-        previous_week_number=previous_week_number,
-        last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
-        rolling_method=rolling_method,
+            sheet=sheet,  # Add this if you have a SheetUpload instance to link
+            year_of_previous_month=year_of_previous_month,
+            last_year_of_previous_month=last_year_of_previous_month,
+            season=season,
+            # current_date=current_date,  # Add this if you have the value
+            current_month=current_month,
+            current_month_number=current_month_number,
+            previous_week_number=previous_week_number,
+            last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
 
-        feb_weeks=feb_weeks,
-        mar_weeks=mar_weeks,
-        apr_weeks=apr_weeks,
-        may_weeks=may_weeks,
-        jun_weeks=jun_weeks,
-        jul_weeks=jul_weeks,
-        aug_weeks=aug_weeks,
-        sep_weeks=sep_weeks,
-        oct_weeks=oct_weeks,
-        nov_weeks=nov_weeks,
-        dec_weeks=dec_weeks,
-        jan_weeks=jan_weeks
-
+            feb_weeks=feb_weeks,
+            mar_weeks=mar_weeks,
+            apr_weeks=apr_weeks,
+            may_weeks=may_weeks,
+            jun_weeks=jun_weeks,
+            jul_weeks=jul_weeks,
+            aug_weeks=aug_weeks,
+            sep_weeks=sep_weeks,
+            oct_weeks=oct_weeks,
+            nov_weeks=nov_weeks,
+            dec_weeks=dec_weeks,
+            jan_weeks=jan_weeks
         )
 
     args_list = [
-        (index_df, config.sheets, config.return_QA_df,category, code, num_products, static_data, file_path,std_period,percentage)
+        (index_df, config.sheets, config.return_QA_df,category, code, num_products, static_data, file_path,std_period,percentage,sheet)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -689,9 +689,9 @@ def process_category(args):
     print("Importing algorithm...")
     from forecast.service.staticVariable import month_data, month_col_map, H_VALUES, ALL_VALUES, MONTHLY_VALUES
     print("Importing static variables...")
-    
-    
-    index_df,sheets,return_QA_df, category, code, num_products, static_data, file_path,std_period,percentage = args
+
+
+    index_df,sheets,return_QA_df, category, code, num_products, static_data, file_path,std_period,percentage,sheet_object = args
     import forecast.service.staticVariable as st
 
     st.CURRENT_MONTH_SALES_PERCENTAGES = float(percentage)
@@ -1050,123 +1050,96 @@ def process_category(args):
         months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         current_year = datetime.now().year 
         website_link = f"http://www.macys.com/shop/product/{loader.Prod_Desc}?ID={loader.Mktg_ID}"
+
+        def extract_product_type(pid_type):
+            match = re.match(r"(store|com|omni)", str(pid_type).lower())
+            if match:
+                return match.group(1)
+            return None
         with transaction.atomic():
 
             ProductDetail.objects.update_or_create(
+                sheet=sheet_object,
                 product_id=loader.pid_value,
                 defaults={
                     "product_description": safe_str(loader.PID_Desc),
-
-                    # Main identifiers
-                    "blu": safe_str(loader.RLJ),
-                    "mkst": safe_str(loader.MKST),
-                    "currect_fc_index": safe_str(loader.Current_FC_Index),
-
-                    # Classification fields
+                    "product_type": extract_product_type(pid_type),
                     "safe_non_safe": safe_str(loader.Safe_Non_Safe),
                     "item_code": safe_str(loader.Item_Code),
-
-                    # Store information
+                    "blu": safe_str(loader.RLJ),
+                    "mkst": safe_str(loader.MKST),
                     "current_door_count": safe_int(loader.Door_Count),
                     "last_store_count": safe_int(loader.Last_Str_Cnt),
                     "door_count_updated": parse_date(loader.Door_count_Updated),
                     "store_model": safe_int(loader.Store_Model),
                     "com_model": safe_int(loader.Com_Model),
-
-                    # Inventory and forecast fields
                     "holiday_build_fc": safe_int(loader.Holiday_Bld_FC),
                     "macys_onhand": safe_int(loader.MCYOH),
-                    "oo": safe_int(loader.OO),
+                    "oo_units": safe_int(loader.OO),
                     "in_transit": safe_int(loader.nav_OO),
                     "month_to_date_shipment": safe_int(loader.MTD_SHIPMENTS),
-                    "lastweek_shipment": safe_int(loader.LW_Shipments),
+                    "last_week_shipment": safe_int(loader.LW_Shipments),
                     "planned_weeks_of_stock": safe_int(loader.Wks_of_Stock_OH),
                     "weeks_of_projection": safe_int(loader.Wks_of_on_Proj),
-                    "last_4weeks_shipment": safe_int(loader.Last_3Wks_Ships),
-
-                    # Vendor information
+                    "last_4_weeks_shipment": safe_int(loader.Last_3Wks_Ships),
                     "vendor_name": safe_str(loader.Vendor_Name),
                     "min_order": safe_int(loader.Min_order),
-
-                    # Projection fields
                     "rl_total": safe_int(loader.Proj),
                     "net_projection": safe_int(loader.Net_Proj),
                     "unalloc_order": safe_int(loader.Unalloc_Orders),
-
-                    # Distribution center fields
                     "ma_bin": safe_int(loader.RLJ_OH),
                     "fldc": safe_int(loader.FLDC),
                     "wip_quantity": safe_int(loader.WIP),
-
-                    # Status fields
                     "md_status": safe_str(loader.MD_Status_MZ1),
-                    "replanishment_flag": safe_str(loader.Repl_Flag),
-                    "mcom_replanishment": safe_str(loader.MCOM_RPL),
+                    "replenishment_flag": safe_str(loader.Repl_Flag),
+                    "mcom_replenishment": safe_str(loader.MCOM_RPL),
                     "pool_stock": safe_int(loader.Pool_stock),
-
-                    # Date fields
-                    "first_reciept_date": parse_date(loader.st_Rec_Date),
-                    "last_reciept_date": parse_date(loader.Last_Rec_Date),
+                    "first_receipt_date": parse_date(loader.st_Rec_Date),
+                    "last_receipt_date": parse_date(loader.Last_Rec_Date),
                     "item_age": safe_int(loader.Item_Age),
                     "first_live_date": parse_date(loader.st_Live),
-
-                    # Cost and retail fields
                     "this_year_last_cost": safe_float(loader.TY_Last_Cost),
                     "macys_owned_retail": safe_float(loader.Own_Retail),
                     "awr_first_ticket_retail": safe_float(loader.AWR_1st_Tkt_Ret),
-
-                    # Policy and configuration fields
                     "metal_lock": safe_float(loader.Metal_Lock),
                     "mfg_policy": safe_str(loader.MFG_Policy),
-
-                    # KPI fields
                     "kpi_data_updated": safe_str(loader.KPI_Data_Updated),
                     "kpi_door_count": safe_int(loader.KPI_Door_count),
-
-                    # Location fields
                     "out_of_stock_location": safe_int(loader.OOS_Locs),
                     "suspended_location_count": safe_int(loader.Suspended_Loc_Count),
                     "live_site": safe_str(loader.Live_Site),
-
-                    # Product categorization fields
-                    "masterstyle_description": safe_str(loader.Masterstyle_Desc),
+                    "masterstyle_description": safe_float(loader.Masterstyle_Desc),
                     "masterstyle_id": safe_str(loader.MstrSt_ID),
-
                     "department_id": safe_int(loader.Dpt_ID),
                     "department_description": safe_str(loader.Dpt_Desc),
-
                     "subclass_id": safe_int(loader.SC_ID),
-                    "subclass_decription": safe_str(loader.SC_Desc),
+                    "subclass_description": safe_str(loader.SC_Desc),
                     "webid_description": safe_str(loader.Prod_Desc),
-
-                    # Marketing fields
                     "v2c": safe_str(loader.V2C),
                     "marketing_id": safe_str(loader.Mktg_ID),
-                    
-
                     "std_store_return": safe_float(loader.STD_Store_Rtn),
-
-                    # Planning fields
                     "last_project_review_date": parse_date(loader.Last_Proj_Review_Date),
                     "macy_spring_projection_note": safe_str(loader.Macys_Spring_Proj_Notes),
                     "planner_response": safe_str(loader.Planner_Response),
                     "website": website_link,
 
                     "rolling_method" : rolling_method,
-                    "std_trend" : std_trend,
-                    "STD_index_value" : STD_index_value,
-                    "month_12_fc_index" : month_12_fc_index,
-                    "forecasting_method" : forecasting_method,
+                    "std_trend_original" : std_trend,
+                    "std_index_value_original" : STD_index_value,
+                    "current_fc_index": safe_str(loader.Current_FC_Index),                    
+                    "month_12_fc_index_original" : month_12_fc_index,
+                    "forecasting_method_original" : forecasting_method,
 
-                    "total_added_qty" : total_added_quantity if total_added_quantity > 0 else 0,
+                    "algorithm_generated_final_quantity" : total_added_quantity if total_added_quantity > 0 else 0,
                     "category": f"{category}{code}",
-                    "user_added_quantity": total_added_quantity if total_added_quantity > 0 else 0,
+                    "user_updated_final_quantity": total_added_quantity if total_added_quantity > 0 else 0,
                 }
             )
 
-
-        productmain = ProductDetail.objects.get(product_id=loader.pid_value)
-    
+        print("ProductDetail saved/updated successfully for PID:", loader.pid_value)
+        # Save the product detail
+        productmain = ProductDetail.objects.get(product_id=str(loader.pid_value),sheet=sheet_object)
+        print(f"Product : {productmain}")
 
         # MonthlyForecast.objects.update_or_create(
         #     product=productmain,
@@ -1176,9 +1149,11 @@ def process_category(args):
         #     )
 
         
-        save_macys_projection_receipts(productmain, loader.matched_row, current_year)
-        save_monthly_forecasts(productmain, current_year, months, loader.TY_Unit_Sales, loader.LY_Unit_Sales, loader.LY_OH_Units, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_Receipts, loader.TY_MCOM_Unit_Sales, loader.LY_MCOM_Unit_Sales, loader.TY_MCOM_OH_Units, loader.LY_MCOM_OH_Units, loader.PTD_TY_Sales, loader.LY_PTD_Sales, loader.MCOM_PTD_TY_Sales, loader.MCOM_PTD_LY_Sales, loader.OO_Total_Units, loader.OO_MCOM_Total_Units, loader.LY_store_unit_sales, loader.LY_store_EOM_OH, loader.LY_COM_to_TTL, loader.LY_COM_to_TTL_OH, loader.LY_omni_sell_through, loader.LY_store_sell_through, loader.LY_omni_turn, loader.LY_store_turn, loader.LY_Omni_AUR_Diff_Own, loader.TY_store_unit_sales, loader.TY_store_EOM_OH, loader.TY_COM_to_TTL, loader.TY_COM_to_TTL_OH, loader.TY_Omni_AUR_Diff_Own, loader.TY_Omni_sell_through, loader.TY_store_sell_through, loader.TY_omni_turn, loader.TY_store_turn, loader.TY_store_unit_sales_diff, loader.TY_com_unit_sales_diff, loader.TY_store_eom_oh_diff)
+        save_macys_projection_receipts(productmain, loader.matched_row, current_year, sheet_object)
+        print(f"Macys projection receipts saved for product {loader.pid_value}")
         
+        save_monthly_forecasts(productmain, sheet_object, current_year, months, loader.TY_Unit_Sales, loader.LY_Unit_Sales, loader.LY_OH_Units, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_Receipts, loader.TY_MCOM_Unit_Sales, loader.LY_MCOM_Unit_Sales, loader.TY_MCOM_OH_Units, loader.LY_MCOM_OH_Units, loader.PTD_TY_Sales, loader.LY_PTD_Sales, loader.MCOM_PTD_TY_Sales, loader.MCOM_PTD_LY_Sales, loader.OO_Total_Units, loader.OO_MCOM_Total_Units, loader.LY_store_unit_sales, loader.LY_store_EOM_OH, loader.LY_COM_to_TTL, loader.LY_COM_to_TTL_OH, loader.LY_omni_sell_through, loader.LY_store_sell_through, loader.LY_omni_turn, loader.LY_store_turn, loader.LY_Omni_AUR_Diff_Own, loader.TY_store_unit_sales, loader.TY_store_EOM_OH, loader.TY_COM_to_TTL, loader.TY_COM_to_TTL_OH, loader.TY_Omni_AUR_Diff_Own, loader.TY_Omni_sell_through, loader.TY_store_sell_through, loader.TY_omni_turn, loader.TY_store_turn, loader.TY_store_unit_sales_diff, loader.TY_com_unit_sales_diff, loader.TY_store_eom_oh_diff)
+        print(f"Monthly forecasts saved for product {loader.pid_value}")
         forecast_data = { 
             'IndexPercentage':loader.index_value,
             'ForecastByIndex':fc_by_index,
@@ -1193,7 +1168,7 @@ def process_category(args):
             
             
         }
-        save_rolling_forecasts(productmain, current_year, forecast_data)
+        save_rolling_forecasts(productmain, sheet_object, current_year, forecast_data)
         print(f"Product {loader.pid_value} saved successfully")
 
 

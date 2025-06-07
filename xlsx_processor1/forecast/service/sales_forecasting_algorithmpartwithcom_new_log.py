@@ -575,6 +575,8 @@ def algorithm(loader,category,store,coms,omni,code):
         is_over_macys_SOQ = True if macys_proj_receipt_upto_next_month_after_forecast_month < sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month else False
         is_need_to_review_first = True if total_added_quantity > macy_additional_units else False 
         is_added_by_only_SOQ = True if total_added_quantity == macy_additional_units else False
+        logging.info(f'is_added_by_macys_SOQ: {is_added_by_macys_SOQ}')
+        logging.info(f'is_below_min_order: {is_below_min_order}')
         if pid_type=='store_pid':
             data_store = {
             "category":f"{category.strip()}{code}",
@@ -776,6 +778,9 @@ def algorithm(loader,category,store,coms,omni,code):
             omni.append(data_omni)
         else:
             None
+        logging.info(f'store: {store}')
+        logging.info(f'coms: {coms}')
+        logging.info(f'omni: {omni}')
     if pid_type=='Not forecast':
         std_trend=0
         STD_index_value=0
@@ -785,5 +790,5 @@ def algorithm(loader,category,store,coms,omni,code):
         planned_fc={'FEB':0, 'MAR': 0, 'APR':0, 'MAY':0, 'JUN':0, 'JUL': 0, 'AUG': 0, 'SEP':0, 'OCT':0, 'NOV': 0, 'DEC':0, 'JAN':0}
         total_added_quantity=0
         logging.info(f'total_added_quantity: {total_added_quantity}')
-        return current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity
+    return current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity
 

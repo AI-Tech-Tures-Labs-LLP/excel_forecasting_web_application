@@ -19,6 +19,11 @@ class RegisterView(APIView):
         if not data.get("role"):
             return Response({"error": "Role is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        if User.objects.filter(username=data["username"]).exists():
+            return Response({"error": "Username already exists"}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(email=data["email"]).exists():
+            return Response({"error": "Email already exists"}, status=status.HTTP_400_BAD_REQUEST)
+
         role, created = Role.objects.get_or_create(name=data["role"])
         user = User.objects.create_user(
             username=data["username"],
