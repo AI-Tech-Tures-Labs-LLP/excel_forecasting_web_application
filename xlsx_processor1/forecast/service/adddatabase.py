@@ -190,7 +190,6 @@ def save_monthly_forecasts(
                 year=year,
                 defaults=monthly_values
             )
-            print("Monthly Forecast Data Saved Successfully")
 
 # MonthlyForecast model Operations 3
 def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
@@ -236,7 +235,6 @@ def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
                     year=year,
                     defaults=defaults
                 )
-                print("Monthly Forecast Data Saved Successfully")
 
 # MonthlyForecast & ProductDetail model Operations
 def save_forecast_data(pid, sheet, updated_context):

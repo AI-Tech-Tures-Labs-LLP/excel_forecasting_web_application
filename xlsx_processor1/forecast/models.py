@@ -14,6 +14,7 @@ class SheetUpload(models.Model):
 
 class ProductDetail(models.Model):
 
+    id = models.AutoField(primary_key=True)
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE,null=True, blank=True, related_name="product_details")
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True, related_name="assigned_to")
     product_id = models.CharField(max_length=50, verbose_name="Cross Ref") #pid
@@ -150,20 +151,17 @@ class ProductDetail(models.Model):
     qty_added_to_balance_soq_forecast_month = models.FloatField(null=True, blank=True)
 
 
-    class Meta:
-        unique_together = ('sheet', 'product_id')
-        indexes = [
-            models.Index(fields=['sheet', 'product_id']),
-            models.Index(fields=['product_type']),
-        ]
-
     def __str__(self):
-        return f"{self.pk} - {self.product_id} - {self.product_description} ({self.product_type})"
+        return f"{self.product_id} - {self.product_description} ({self.product_type})"
+
+
+    
 
 
 class StoreForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE,null=True, blank=True, related_name="store_forecasts")
+    pid=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     loss = models.FloatField(null=True, blank=True)
     new_month_12_fc_index = models.FloatField(null=True, blank=True)
     new_trend = models.FloatField(null=True, blank=True)
@@ -180,6 +178,7 @@ class StoreForecast(models.Model):
 class ComForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE, null=True, blank=True, related_name="com_forecasts")
+    pid=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     new_month_12_fc_index = models.FloatField(null=True, blank=True)
     trend_of_total_sales = models.FloatField(null=True, blank=True)
     trend_of_com_sales_for_selected_month = models.FloatField(null=True, blank=True)
@@ -197,6 +196,7 @@ class ComForecast(models.Model):
 class OmniForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE, null=True, blank=True, related_name="omni_forecasts")
+    pid=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     com_month_12_fc_index = models.FloatField(null=True, blank=True)
     com_trend = models.FloatField(null=True, blank=True)
     is_com_inventory_maintained = models.BooleanField(default=False)
@@ -293,12 +293,7 @@ class MonthlyForecast(models.Model):
     nov = models.FloatField(null=True, blank=True, verbose_name="November")
     dec = models.FloatField(null=True, blank=True, verbose_name="December")
 
-    class Meta:
-        unique_together = ['productdetail', 'variable_name', 'year']
-        indexes = [
-            models.Index(fields=['productdetail', 'variable_name']),
-            models.Index(fields=['year']),
-        ]
+
 
     def __str__(self):
         return f"{self.productdetail} - {self.variable_name} - {self.year}: Jan({self.jan}), Feb({self.feb}), ... Dec({self.dec})"
@@ -312,10 +307,7 @@ class ForecastNote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True,null=True, blank=True)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=['sheet', 'productdetail']),
-        ]
+  
 
     def __str__(self):
         return f"{self.product} - {self.note[:50]}..."  # Display first 50 characters of the note
@@ -355,5 +347,4 @@ class RetailInfo(models.Model):
         ]
 
     def __str__(self):
-        return f"RetailInfo ({self.current_month} - {self.year_of_previous_month})"    
-    
+        return f"RetailInfo ({self.current_month} - {self.year_of_previous_month})"
