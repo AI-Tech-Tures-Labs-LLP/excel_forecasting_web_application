@@ -628,10 +628,10 @@ def process_category(args):
         cross_ref = f"{g_value}{category.upper()}{code}"  # Ensure no spaces in category
         matching_row = df_outputs['planning_df'].loc[df_outputs['planning_df']['Cross ref'].str.upper() == cross_ref]
         pid_value = matching_row['PID'].iloc[0]
-        Macys_Recpts_matching_row=df_outputs['Macys_Recpts'].loc[df_outputs['Macys_Recpts']['PID'].str.upper() == pid_value]
+        Macys_Recpts_matching_row=df_outputs['macys_receipts'].loc[df_outputs['macys_receipts']['PID'].str.upper() == pid_value]
         # Find the matching rows
         logging.info(f"pid_value: {pid_value}")
-        loader = VariableLoader(cross_ref,matching_row,Macys_Recpts_matching_row,df_outputs['index_df'],df_outputs['All_DATA'],df_outputs['MCOM_Data'],std_period,year_of_previous_month,last_year_of_previous_month)
+        loader = VariableLoader(cross_ref,matching_row,Macys_Recpts_matching_row,df_outputs['index_df'],df_outputs['all_data'],df_outputs['mcom_data'],std_period,year_of_previous_month,last_year_of_previous_month)
         logging.info(f"Processing PID: {pid_value}")
         logging.info(f"Loader object created successfully.")
         logging.info(f"df_outputs['master_sheet']: {df_outputs['master_sheet']}")

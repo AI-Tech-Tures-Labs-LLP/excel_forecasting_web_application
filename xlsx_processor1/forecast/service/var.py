@@ -1,10 +1,17 @@
 
 import pandas as pd
 from forecast.service.utils import calculate_store_unit_sales_and_OH,calculate_com_to_ttl_sales_and_OH,format_sales_data,calculate_omni_sell_through,calculate_store_sell_through,calculate_turn,calculate_diff
+import logging
 class VariableLoader:
 
     def __init__(self,cross_ref,matching_row,Macys_Recpts_matching_row,index_df,All_DATA,MCOM_Data,STD_PERIOD,year_of_previous_month,last_year_of_previous_month):
         # Find the matching row based on cross_ref
+        logging.info(f"matching row for cross_ref: {cross_ref}")
+        logging.info(f"matching row for Macys_Recpts_matching_row: {Macys_Recpts_matching_row}")
+        logging.info(f"matching row for index_df: {index_df}")
+        logging.info(f"matching row for All_DATA: {All_DATA}")
+        logging.info(f"matching row for MCOM_Data: {MCOM_Data}")
+
         if matching_row.empty:
             raise ValueError(f"Cross ref '{cross_ref}' not found in 'planning_df'.")       
         self.matched_row = matching_row # Store the matched row for later use in Database    
@@ -213,4 +220,6 @@ class VariableLoader:
         self.TY_store_unit_sales_diff = calculate_diff(self.TY_store_unit_sales, self.LY_store_unit_sales)#correct
         self.TY_com_unit_sales_diff = calculate_diff(self.TY_MCOM_Unit_Sales, self.LY_MCOM_Unit_Sales)#correct
         self.TY_store_eom_oh_diff = calculate_diff(self.TY_store_EOM_OH, self.LY_store_EOM_OH)#correct
+
+        logging.info(f"succeed")
 
