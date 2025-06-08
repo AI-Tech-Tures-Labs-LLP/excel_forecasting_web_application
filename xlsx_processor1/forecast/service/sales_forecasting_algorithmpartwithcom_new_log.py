@@ -7,12 +7,7 @@ logging.basicConfig(filename=r'log_file_all1.log', level=logging.INFO,
 
 def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data):
 
-    (year_of_previous_month, last_year_of_previous_month, season,
-    current_month, current_month_number, previous_week_number,
-    last_month_of_previous_month_numeric, rolling_method,
-    feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks,
-    jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks,
-    dec_weeks, jan_weeks ) = static_data
+    (current_month,current_month_number,rolling_method, previous_week_number, year_of_previous_month,last_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks) = static_data
     print("****************************************************************************************************************", current_month_sales_percentage)
     print(f'category: {category}')
     country, lead_time = get_vendor_details(vendor, vendor_sheet)
@@ -172,7 +167,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
         planned_fc=calculate_planned_fc(row4_values, recommended_fc, loader.TY_Unit_Sales, loader.LY_OH_Units,rolling_method, current_month_number)
         logging.info(f'rolling_method: {rolling_method}')
         logging.info(f'planned_fc: {planned_fc}')
-        current_month_fc=calculate_current_month_fc(current_month, loader.TY_Unit_Sales,)
+        current_month_fc=calculate_current_month_fc(current_month, loader.TY_Unit_Sales,current_month_sales_percentage)
         logging.info(f'current_month_fc: {current_month_fc}')
         actual_sale_unit= loader.TY_Unit_Sales[current_month]
         planned_fc=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc,fc_by_trend,planned_fc,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status,std_trend,check_no_red_box,actual_sale_unit)
@@ -267,7 +262,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             logging.info(f'fc_by_average: {fc_by_average}')
             recommended_fc=get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by_average)
             planned_fc=calculate_planned_fc(row4_values, recommended_fc, loader.TY_Unit_Sales, loader.LY_OH_Units,rolling_method, current_month_number)
-            current_month_fc=calculate_current_month_fc(current_month, loader.TY_MCOM_Unit_Sales)
+            current_month_fc=calculate_current_month_fc(current_month, loader.TY_MCOM_Unit_Sales,current_month_sales_percentage)
             logging.info(f'current_month_fc: {current_month_fc}')
             actual_com_sale_unit= loader.TY_MCOM_Unit_Sales[current_month]
             planned_fc=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc,fc_by_trend,planned_fc,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status_com,std_trend,check_no_red_box,actual_com_sale_unit)
@@ -380,7 +375,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             logging.info(f'fc_by_average: {fc_by_average}')
             recommended_fc_com=get_recommended_forecast(forecasting_method_com, fc_by_index, fc_by_trend, fc_by_average)
             planned_fc_com=calculate_planned_fc(row4_values, recommended_fc_com, loader.TY_Unit_Sales, loader.LY_OH_Units,rolling_method, current_month_number)
-            current_month_fc=calculate_current_month_fc(current_month, loader.TY_MCOM_Unit_Sales)
+            current_month_fc=calculate_current_month_fc(current_month, loader.TY_MCOM_Unit_Sales,current_month_sales_percentage)
             logging.info(f'current_month_fc: {current_month_fc}')
             actual_com_sale_unit= loader.TY_MCOM_Unit_Sales[current_month]
             planned_fc_com=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc_com,fc_by_trend,planned_fc_com,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status_com,std_trend,check_no_red_box,actual_com_sale_unit)
@@ -461,7 +456,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             logging.info(f'fc_by_average: {fc_by_average}')
             recommended_fc_store=get_recommended_forecast(forecasting_method, fc_by_index, fc_by_trend, fc_by_average)
             planned_fc_store=calculate_planned_fc(row4_values, recommended_fc_store, loader.TY_Unit_Sales, loader.LY_OH_Units,rolling_method, current_month_number)
-            current_month_fc=calculate_current_month_fc(current_month, loader.TY_MCOM_Unit_Sales)
+            current_month_fc=calculate_current_month_fc(current_month, loader.TY_MCOM_Unit_Sales,current_month_sales_percentage)
             logging.info(f'current_month_fc: {current_month_fc}')
             actual_store_sale_unit= TY_store_sales_unit[current_month]
             planned_fc_store=update_planned_fc_for_current_month(loader.LY_Unit_Sales,recommended_fc_store,fc_by_trend,planned_fc_store,current_month,current_month_fc,current_month_weeks,previous_week_number,is_maintained_status_store,std_trend,check_no_red_box,actual_store_sale_unit)

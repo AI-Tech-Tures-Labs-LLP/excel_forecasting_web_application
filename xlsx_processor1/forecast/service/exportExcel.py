@@ -94,14 +94,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             dynamic_categories.append((category_name, code, None))
 
 
-    (
-        year_of_previous_month, last_year_of_previous_month, season,
-        current_month, current_month_number, previous_week_number,
-        last_month_of_previous_month_numeric, rolling_method,
-        feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks,
-        jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks,
-        dec_weeks, jan_weeks
-    ) = static_data = get_previous_retail_week(current_date)
+    (current_month,current_month_number,rolling_method, previous_week_number, year_of_previous_month,last_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks) = static_data = get_previous_retail_week(current_date)
 
     logging.info(f"Retail info: {year_of_previous_month}, {last_year_of_previous_month}, {season}, {current_month}, {current_month_number}, {previous_week_number}, {last_month_of_previous_month_numeric}, {rolling_method}, {feb_weeks}, {mar_weeks}, {apr_weeks}, {may_weeks}, {jun_weeks}, {jul_weeks}, {aug_weeks}, {sep_weeks}, {oct_weeks}, {nov_weeks}, {dec_weeks}, {jan_weeks}")
 
@@ -611,12 +604,7 @@ def process_category(args):
     
     logging.info(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
 
-    (year_of_previous_month, last_year_of_previous_month, season,
-    current_month, current_month_number, previous_week_number,
-    last_month_of_previous_month_numeric, rolling_method,
-    feb_weeks, mar_weeks, apr_weeks, may_weeks, jun_weeks,
-    jul_weeks, aug_weeks, sep_weeks, oct_weeks, nov_weeks,
-    dec_weeks, jan_weeks ) = static_data
+    (current_month,current_month_number,rolling_method, previous_week_number, year_of_previous_month,last_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks) = static_data
     store = []
     coms = []
     omni = []
