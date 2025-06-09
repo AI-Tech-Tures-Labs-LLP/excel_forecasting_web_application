@@ -319,6 +319,29 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return () => clearTimeout(timer);
   }, [editableData, lastChangedEditableField]);
 
+  useEffect(() => {
+  const handleEscape = (e) => {
+    if (e.key === 'Escape') {
+      setShowVariablesModal(false);
+    }
+  };
+
+  if (showVariablesModal) {
+    document.addEventListener('keydown', handleEscape);
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+  } else {
+    // Restore body scroll when modal is closed
+    document.body.style.overflow = 'unset';
+  }
+
+  return () => {
+    document.removeEventListener('keydown', handleEscape);
+    document.body.style.overflow = 'unset';
+  };
+}, [showVariablesModal]);
+
+
   //   if (
   //     editableTrend &&
   //     forecastingMethod &&
@@ -4461,34 +4484,48 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         </div>
 
         {/* Variables Modal - Add this right here */}
-        {showVariablesModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl max-w-7xl w-full max-h-[90vh] overflow-hidden">
-              {/* Modal Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    <BarChart3 className="text-white" size={24} />
-                  </div>
-                  <h2 className="text-xl font-bold text-white">
-                    Forecast Algorithm Variables
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setShowVariablesModal(false)}
-                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                >
-                  <X className="text-white" size={24} />
-                </button>
-              </div>
-
-              {/* Modal Content - Using the new component */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-80px)]">
-                <ForecastVariableCards productData={productData} />
-              </div>
-            </div>
+       {showVariablesModal && (
+  <div 
+    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    onClick={(e) => {
+      // Close modal when clicking on the backdrop
+      if (e.target === e.currentTarget) {
+        setShowVariablesModal(false);
+      }
+    }}
+  >
+    <div 
+      className="bg-white rounded-xl shadow-2xl w-full max-w-7xl flex flex-col overflow-hidden"
+      style={{ height: '90vh' }}
+      onClick={(e) => e.stopPropagation()} // Prevent event bubbling when clicking inside modal
+    >
+      {/* Modal Header - Fixed */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between flex-shrink-0 rounded-t-xl">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/10 rounded-lg">
+            <BarChart3 className="text-white" size={24} />
           </div>
-        )}
+          <h2 className="text-xl font-bold text-white">
+            Forecast Algorithm Variables - {cardData?.productId}
+          </h2>
+        </div>
+        <button
+          onClick={() => setShowVariablesModal(false)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+        >
+          <X className="text-white" size={24} />
+        </button>
+      </div>
+
+      {/* Modal Content - Scrollable */}
+      <div className="flex-1 overflow-hidden rounded-b-xl">
+        <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+          <ForecastVariableCards productData={productData} />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
