@@ -36,7 +36,7 @@ import logging
 from forecast.service.utils import generate_std_period
 
 
-def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple):
+def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple,  sheet_object, current_date):
     current_date = datetime(2025,5,8)
     logging.info(f"Input path: {input_path}, File path: {file_path}, Month from: {month_from}, Month to: {month_to}, Percentage: {percentage}, Input tuple: {input_tuple}, Current date: {current_date}")
 
@@ -101,34 +101,38 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
     logging.info(f"Retail info: {year_of_previous_month}, {last_year_of_previous_month}, {season}, {current_month}, {current_month_number}, {previous_week_number}, {last_month_of_previous_month_numeric}, {rolling_method}, {feb_weeks}, {mar_weeks}, {apr_weeks}, {may_weeks}, {jun_weeks}, {jul_weeks}, {aug_weeks}, {sep_weeks}, {oct_weeks}, {nov_weeks}, {dec_weeks}, {jan_weeks}")
 
-    RetailInfo.objects.create(
-    year_of_previous_month=year_of_previous_month,
-    last_year_of_previous_month=last_year_of_previous_month,
-    season=season,
-    current_month=current_month,
-    current_month_number=current_month_number,
-    previous_week_number=previous_week_number,
-    last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
-    rolling_method=rolling_method,
+    # Create or update RetailInfo instance
+    with transaction.atomic():
+        RetailInfo.objects.create(
+            sheet=sheet_object,  # Add this if you have a SheetUpload instance to link
+            year_of_previous_month=year_of_previous_month,
+            last_year_of_previous_month=last_year_of_previous_month,
+            season=season,
+            # current_date=current_date,  # Add this if you have the value
+            current_month=current_month,
+            current_month_number=current_month_number,
+            previous_week_number=previous_week_number,
+            last_month_of_previous_month_numeric=last_month_of_previous_month_numeric,
 
-    feb_weeks=feb_weeks,
-    mar_weeks=mar_weeks,
-    apr_weeks=apr_weeks,
-    may_weeks=may_weeks,
-    jun_weeks=jun_weeks,
-    jul_weeks=jul_weeks,
-    aug_weeks=aug_weeks,
-    sep_weeks=sep_weeks,
-    oct_weeks=oct_weeks,
-    nov_weeks=nov_weeks,
-    dec_weeks=dec_weeks,
-    jan_weeks=jan_weeks
+            feb_weeks=feb_weeks,
+            mar_weeks=mar_weeks,
+            apr_weeks=apr_weeks,
+            may_weeks=may_weeks,
+            jun_weeks=jun_weeks,
+            jul_weeks=jul_weeks,
+            aug_weeks=aug_weeks,
+            sep_weeks=sep_weeks,
+            oct_weeks=oct_weeks,
+            nov_weeks=nov_weeks,
+            dec_weeks=dec_weeks,
+            jan_weeks=jan_weeks
+        )
 
-    )
+
     logging.info("RetailInfo saved successfully.")
 
     args_list = [
-        (sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date)
+        (sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -271,7 +275,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     with transaction.atomic():
         for instance in store_instances:
             StoreForecast.objects.update_or_create(
-                sheet = sheet,
+                sheet=sheet_object,
                 pid=instance['pid'],
                 defaults={
                     'loss': instance['loss'],
@@ -292,7 +296,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     with transaction.atomic():
         for instance in com_instances:
             ComForecast.objects.update_or_create(
-                sheet = sheet,
+                sheet = sheet_object,
                 pid=instance['pid'],
                 defaults={
                     'new_month_12_fc_index': instance['new_month_12_fc_index'],
@@ -312,7 +316,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     with transaction.atomic():
         for instance in omni_instances:
             OmniForecast.objects.update_or_create(
-                sheet = sheet,
+                sheet=sheet_object,
                 pid=instance['pid'],
                 defaults={
                     'com_month_12_fc_index': instance['com_month_12_fc_index'],
@@ -400,8 +404,8 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
 def process_category(args):    
 
-    sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date= args
-    
+    sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object = args
+
     logging.info(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
 
     (current_month,current_month_number,rolling_method, previous_week_number, year_of_previous_month,last_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks) = static_data
@@ -597,7 +601,7 @@ def process_category(args):
             )
 
 
-        productmain = ProductDetail.objects.get(product_id=loader.pid_value)
+        productmain = ProductDetail.objects.get(product_id=str(loader.pid_value),sheet=sheet_object)
 
         
         save_macys_projection_receipts(productmain, loader.matched_row, current_year, sheet_object)
