@@ -5,10 +5,39 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from forecast.service.staticVariable import *
-from forecast.service.config import sheets
 from statistics import mean
 from decimal import Decimal, ROUND_HALF_UP
- 
+import os 
+from openpyxl import load_workbook
+import logging
+import calendar
+
+
+def get_month_abbr(month_name: str) -> str:
+    """Convert full month name to its 3-letter uppercase abbreviation."""
+    try:
+        month_index = list(calendar.month_name).index(month_name.capitalize())
+        return calendar.month_abbr[month_index].upper()
+    except ValueError:
+        raise ValueError(f"Invalid month name: {month_name}")
+
+def generate_std_period(month_from: str, month_to: str) -> list[str]:
+    """Generate a list of 3-letter month abbreviations from month_from to month_to."""
+    all_months = list(calendar.month_abbr)[1:]  # ['Jan', ..., 'Dec']
+    month_map = {m.upper(): i + 1 for i, m in enumerate(all_months)}
+
+    start_abbr = get_month_abbr(month_from)
+    end_abbr = get_month_abbr(month_to)
+    start_idx = month_map[start_abbr]
+    end_idx = month_map[end_abbr]
+
+    if start_idx <= end_idx:
+        selected = all_months[start_idx - 1:end_idx]
+    else:
+        selected = all_months[start_idx - 1:] + all_months[:end_idx]
+
+    return [m.upper() for m in selected]
+
 def round_half_up(value, digits):
     return float(Decimal(str(value)).quantize(Decimal('1.' + '0' * digits), rounding=ROUND_HALF_UP))
 
@@ -28,9 +57,9 @@ def count_ttl_com_sale(LY_Unit_Sales, LY_MCOM_Unit_Sales):
 
 def find_pid_type(Safe_Non_Safe,pid_value,LY_Unit_Sales,LY_MCOM_Unit_Sales,Door_count):
     pid_type=None
-    if Safe_Non_Safe  in not_forecast_status and Door_count in [0,1,2]:
+    if Safe_Non_Safe  in NOT_FORECAST_STATUS and Door_count in [0,1,2]:
         pid_type='Not forecast'
-    elif ((Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or pid_value in VDF_item) and  Door_count <3) or (Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
+    elif ((Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or pid_value in VDF_ITEMS) and  Door_count <3) or (Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
         pid_type='com_pid'
         if Safe_Non_Safe=='OMNI' and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)<=65:
             print('com sale',count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales))
@@ -70,6 +99,7 @@ def calculate_forecast_date_basic(current_date: datetime, lead_time: int, countr
     If country is Italy and August is between current_date and forecast_date, skip August.
     """
     raw_forecast_date = current_date + timedelta(weeks=lead_time)
+    print(f"Raw forecast date calculated: {raw_forecast_date}")
     return raw_forecast_date
 
 def calculate_forecast_date(current_date: datetime, lead_time: int, country) -> datetime:
@@ -108,7 +138,7 @@ def adjust_lead_time(country, current_date, forecast_date, lead_time):
             return adjusted_lead_time,leadtime_holiday
    
     return lead_time,leadtime_holiday
-from datetime import datetime
+
 
 def extend_forecast_if_italy(forecast_date: datetime, country: str) -> datetime:
     """
@@ -262,7 +292,7 @@ def is_maintained(eom_oh_list, threshold, door_count):
 def is_maintained_for_com(units, threshold=2, ratio=0.2):
     near_zero_count = sum(1 for x in units if x <= threshold)
     return near_zero_count / len(units) < ratio 
-import logging
+
  
 def decide_forecasting_method(inventory_maintained):
     """
@@ -447,14 +477,14 @@ def calculate_planned_fc(row_4, row_9, row_17, row_43,V1, K1):
  
     return planned_fc
  
-def calculate_current_month_fc(current_month, ty_unit_sales):
+def calculate_current_month_fc(current_month, ty_unit_sales,current_month_sales_percentages):
     """
     Calculate current month forecast using TY sales and sales percentage.
     """
     # Get TY sales and percentage for current month
     ty_sales = ty_unit_sales[current_month]
-    percentage = CURRENT_MONTH_SALES_PERCENTAGES
- 
+    percentage = current_month_sales_percentages
+
     # Compute forecast
     current_month_fc = round(ty_sales / (percentage / 100))
     return current_month_fc
@@ -520,14 +550,14 @@ def extract_month(value):
     except:
         # If already like 'Feb-25' or 'Apr-25'
         return str(value)[:3]
-def get_return_quantity_dict(pid, df):
+def get_return_quantity_dict(pid, return_QA_df_row):
     # Filter rows for the given PID
-    filtered = df[df['PID'] == pid]
+
    
     # Ensure Month is uppercase
-    filtered['Month'] = filtered['Month'].str.upper()
+    return_QA_df_row['Month'] = return_QA_df_row['Month'].str.upper()
     # Group and sum quantities per month
-    monthly_qty = filtered.groupby('Month')['Quantity'].sum().to_dict()
+    monthly_qty = return_QA_df_row.groupby('Month')['Quantity'].sum().to_dict()
  
     # Create ordered dict with all months, filling 0 for missing
     return_quantity_dict = {month: monthly_qty.get(month, 0) for month in MONTHS}
@@ -627,7 +657,7 @@ def get_required_quantity_for_bsp(forecast_month, previous_month, category, KPI_
     else:
         return KPI_Door_count
 
-import logging
+
 
 def get_required_quantity_for_nonbsp(forecast_month, previous_month, KPI_Door_count):
     if forecast_month == previous_month or forecast_month == 'Nov':
@@ -694,11 +724,10 @@ def process_bsp_or_nonbsp_product(bsp_row, birthstone_sheet, forecast_month, KPI
 
     return required_quantity,birthstone_status,birthstone,birthstone_month
 
-def calculate_required_quantity(master_sheet, pid_value, birthstone_sheet, forecast_month, KPI_Door_count):
+def calculate_required_quantity(bsp_row, pid_value, birthstone_sheet, forecast_month, KPI_Door_count):
     required_quantity_month_dict = {}
 
     logging.info(f'Calculating required_quantity for PID: {pid_value}, Forecast Month: {forecast_month}')
-    bsp_row = master_sheet[master_sheet['PID'] == pid_value]
 
     if not bsp_row.empty:
         required_quantity,birthstone_status,birthstone,birthstone_month = process_bsp_or_nonbsp_product(
@@ -808,7 +837,8 @@ def calculate_week_and_month(start_month_abbr, start_week, year, weeks_to_add):
    
     return target_month_abbr,target_week
  
-def check_holiday(target_month_abbr, target_week ,df_holidays):  
+def check_holiday(target_month_abbr, target_week ,holidays_data):  
+    df_holidays = pd.DataFrame(holidays_data)
     # Filter the dataframe based on the target month and week
     result = df_holidays[(df_holidays['Month'] == target_month_abbr) & (df_holidays['Week'] == target_week)]
    
@@ -1057,7 +1087,7 @@ def required_quantity_for_com(forecast_month, planned_fc, average_com_oh):
     required_quantity_month_dict[next_month_after_forecast_month] = average_com_oh
     return required_quantity_month_dict,Calculate_FLDC
 
-    from datetime import datetime, timedelta
+
 
 def is_day_after_23(dt: datetime) -> bool:
     """
@@ -1286,12 +1316,9 @@ def calculate_index_value(Current_FC_Index):
 
     return index_value
 
-import os 
-from openpyxl import load_workbook
 
 
 def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
-    import forecast.service.staticVariable as st
     base_dir = os.path.join("media\processed_files", path) 
     
     filename = f"{category}.xlsx"

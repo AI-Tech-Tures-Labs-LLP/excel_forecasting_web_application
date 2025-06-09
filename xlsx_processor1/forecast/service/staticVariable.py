@@ -1,8 +1,4 @@
-from datetime import datetime
-import pandas 
-from forecast.service.getretailinfo import *
-CURRENT_DATE = datetime(2025,5,8)
-store_rename_map = {
+STORE_RENAME_MAP = {
     "category":"Category",
     "pid": "Pid",
     "RLJ": "RLJ",
@@ -47,9 +43,8 @@ store_rename_map = {
     'Need_to_review_first': 'Needs Review (Below Planned OH)'
 }
  
- 
-# df_coms rename map
-com_rename_map = {
+
+COM_RENAME_MAP = {
     "category":"Category",
     "pid": "Pid",
     "RLJ": "RLJ",
@@ -90,7 +85,8 @@ com_rename_map = {
     'Added_only_to_balance_macys_SOQ': 'Macys SOQ - Only Maintained Qty Added',
     'Need_to_review_first': 'Needs Review (Below Planned OH)'
 }
-omni_rename_map = {
+
+OMNI_RENAME_MAP = {
     "category":"Category",
     "pid": "Pid",
     "RLJ": "RLJ",
@@ -144,21 +140,22 @@ omni_rename_map = {
     'Added_only_to_balance_macys_SOQ': 'Macys SOQ - Only Maintained Qty Added',
     'Need_to_review_first': 'Needs Review (Below Planned OH)'
 }
- 
-month_week_dict = {
-"FEB": feb_weeks,
-"MAR": mar_weeks,
-"APR": apr_weeks,
-"MAY": may_weeks,
-"JUN": jun_weeks,
-"JUL": jul_weeks,
-"AUG": aug_weeks,
-"SEP": sep_weeks,
-"OCT": oct_weeks,
-"NOV": nov_weeks,
-"DEC": dec_weeks,
-"JAN": jan_weeks
-}
+
+# MONTH_WEEK_DICT = {
+# "FEB": feb_weeks,
+# "MAR": mar_weeks,
+# "APR": apr_weeks,
+# "MAY": may_weeks,
+# "JUN": jun_weeks,
+# "JUL": jul_weeks,
+# "AUG": aug_weeks,
+# "SEP": sep_weeks,
+# "OCT": oct_weeks,
+# "NOV": nov_weeks,
+# "DEC": dec_weeks,
+# "JAN": jan_weeks
+# }
+
 ALL_VALUES = [
     "PID/BLU/MKST", "Current FC Index", "(TY/LY) STD Sales Index/12M FC", "STD Trend / 12M FC",
     "Item Status/Forecasting Method/Safe", "Current Str Cnt/Last Str Cnt/Last Updated",
@@ -175,36 +172,10 @@ ALL_VALUES = [
     "Last Reviewed Date/Code/Qty to Enter", "Current Review Comments"
 ]
 
-H_VALUES = [
-    'ROLLING 12M FC', 'Index', 'FC by Index', 'FC by Trend', 'Recommended FC', 'Planned FC',
-    'Planned Shipments', 'Planned EOH (Cal)', 'Gross Projection (Nav)', 'Macys Proj Receipts',
-    'Planned Sell thru %', f"TOTAL {year_of_previous_month}",'Total Sales Units', 'Store Sales Units', 'Com Sales Units',
-    'COM % to TTL (Sales)', 'TOTAL EOM OH', 'Store EOM OH', 'COM EOM OH',
-    'COM % to TTL (EOH)', 'Omni Sales $', 'COM Sales $', 'Omni AUR/% Diff Own',
-    'Omni Sell Thru %', 'Store SellThru %', 'Omni Turn', 'Store turn',
-    'TY Store Sales U vs LY', 'TY COM sales U vs LY', 'TY Store EOH vs LY',
-    'Omni OO Units', 'COM OO Units', 'Omni Receipts',    f"TOTAL {last_year_of_previous_month}",
-    "Total Sales Units",
-    "Store Sales Units",
-    "Com Sales Units",
-    "COM % to TTL (Sales)",
-    "TOTAL EOM OH",
-    "Store EOM OH",
-    "COM EOM OH",
-    "COM % to TTL (EOH)",
-    "Omni Receipts",
-    "Omni Sell Thru %",
-    "Store SellThru %",
-    "Omni Turn",
-    "Store Turn",
-    "Omni Sales $",
-    "COM Sales $",
-    "Omni AUR/% Diff Own"
-]
 MONTHLY_VALUES = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT',
                 'NOV', 'DEC', 'JAN', 'ANNUAL', 'SPRING', 'FALL']
 
-month_data = [
+MONTH_DATA = [
     ["All", ""],
     ["Feb", 1],
     ["Mar", 2],
@@ -220,7 +191,7 @@ month_data = [
     ["Jan", 12],
 ]
 
-VDF_item = [
+VDF_ITEMS = [
     "M5616A7PL1WCH",
     "M5616A7PL1PNCH",
     "PA1065P5MDBC0",
@@ -306,27 +277,84 @@ VDF_item = [
     "FRN017149Y6",
     "FRN017149Y7"
 ]
-holidays = [
+HOLIDAYS_DATA = [
     {'Holiday': 'valentine_day', 'Month': 'Feb', 'Day': 14, 'Week': 2},
     {'Holiday': 'women_day', 'Month': 'Mar', 'Day': 8, 'Week': 2},
     {'Holiday': 'father_day', 'Month': 'Jun', 'Day': 16, 'Week': 3},
     {'Holiday': 'men_day', 'Month': 'Nov', 'Day': 19, 'Week': 3}
 ]
 
-df_holidays = pandas.DataFrame(holidays)
-not_forecast_status=['VDF/MTO','VDF/TBD','NGF','DNP','MD','MTC','TEST','WATCH','MAINTAIN','DISC','nan']
+NOT_FORECAST_STATUS = ['VDF/MTO', 'VDF/TBD', 'NGF', 'DNP', 'MD', 'MTC', 'TEST', 'WATCH', 'MAINTAIN', 'DISC', 'nan']
 
-STD_PERIOD = ['FEB', 'MAR', 'APR']
-CURRENT_MONTH_SALES_PERCENTAGES=100
 WEEK_TO_ADD_FOR_HOLIDAY = 6
-MONTHS = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT','NOV', 'DEC', 'JAN']
- 
+MONTHS = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']
+
 SPRING_MONTHS = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL']
  
 FALL_MONTHS = ['AUG', 'SEP', 'OCT','NOV', 'DEC', 'JAN']
-month_col_map = {
+MONTH_COLUMN_MAP = {
     'FEB': 'I', 'MAR': 'J', 'APR': 'K', 'MAY': 'L', 'JUN': 'M',
     'JUL': 'N', 'AUG': 'O', 'SEP': 'P', 'OCT': 'Q', 'NOV': 'R',
     'DEC': 'S', 'JAN': 'T'
 }
-OUTPUT_FILE_PATH = None
+
+VENDOR_DATA = [
+            {"Vendor Name": "ALMOND (THAILAND) LIMITED", "Country of Origin": "Thailand", "Lead Time(weeks)": 8},
+            {"Vendor Name": "AMMANTE JEWELLS LLP", "Country of Origin": "India", "Lead Time(weeks)": 8},
+            {"Vendor Name": "ARIN", "Country of Origin": "Peru", "Lead Time(weeks)": 9},
+            {"Vendor Name": "ARPAS INTERNATIONAL LTD", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "ASIAN STAR COMPANY LTD", "Country of Origin": "India", "Lead Time(weeks)": 8},
+            {"Vendor Name": "BEAUTY GEMS FACTORY CO LTD", "Country of Origin": "Thailand", "Lead Time(weeks)": 8},
+            {"Vendor Name": "CHARM AMERICA", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "CREATIONS JEWELLERY MFG. PVT. LTD.", "Country of Origin": "India", "Lead Time(weeks)": 8},
+            {"Vendor Name": "DAISY'S COLLECTION, INC", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "DEORO - WIRE", "Country of Origin": "Peru", "Lead Time(weeks)": 9},
+            {"Vendor Name": "DIA GOLD CREATION PVT. LTD.", "Country of Origin": "India", "Lead Time(weeks)": 8},
+            {"Vendor Name": "DRL Manufacturing - LG", "Country of Origin": "DRL", "Lead Time(weeks)": 10},
+            {"Vendor Name": "DRL MANUFACTURING S.A.", "Country of Origin": "DRL", "Lead Time(weeks)": 10},
+            {"Vendor Name": "DRL/SARDELLI", "Country of Origin": "DRL", "Lead Time(weeks)": 10},
+            {"Vendor Name": "GDL JEWELLERY LTD", "Country of Origin": "Thailand", "Lead Time(weeks)": 8},
+            {"Vendor Name": "GOLDENLINE C/O BOGAZICI HEDIYELIK A.S.", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "IJM-INTERCONTINENTAL JEWELLERY MFG", "Country of Origin": "Thailand", "Lead Time(weeks)": 8},
+            {"Vendor Name": "JOHN C NORDT COMPANY", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "LARA CORPORATION LIMITED", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "Leach & Garner (HK) Limited", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "LINEA NUOVA S.A.", "Country of Origin": "Peru", "Lead Time(weeks)": 9},
+            {"Vendor Name": "Milor S.P.A", "Country of Origin": "Italy", "Lead Time(weeks)": 9},
+            {"Vendor Name": "MIORO GOLD, LLC", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "NEW GOLD", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "PD&P LTD.", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "RICHLINE ITALY SRL", "Country of Origin": "Italy", "Lead Time(weeks)": 12},
+            {"Vendor Name": "RICHLINE SA PTY", "Country of Origin": "Zales", "Lead Time(weeks)": None},
+            {"Vendor Name": "RLG STANDARD MANUFACTURING VENDOR", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "S&S JEWELRY", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "SABELLI, S.A. DE C.V.", "Country of Origin": "Mexico", "Lead Time(weeks)": 9},
+            {"Vendor Name": "SERENITY JEWELS PVT LTD", "Country of Origin": "India", "Lead Time(weeks)": 8},
+            {"Vendor Name": "SHANGOLD INDIA LTD", "Country of Origin": "India", "Lead Time(weeks)": 8},
+            {"Vendor Name": "SILO SPA-WIRES", "Country of Origin": "Italy", "Lead Time(weeks)": 12},
+            {"Vendor Name": "STRONG JEWELRY(HK) CO LTD CHONG", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "T.C.I. LTD", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "National Chain", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "Leach & Garner (HK) Limited", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "LEACH & GARNER(HK) LTD", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "MANJUSAKA JEWELERS CO.,LTD", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "MEICHONG JEWELRY (HK) COMPANY LIMITED", "Country of Origin": "China", "Lead Time(weeks)": 8},
+            {"Vendor Name": "NATIONAL CHAIN", "Country of Origin": "US", "Lead Time(weeks)": 9},
+            {"Vendor Name": "PRIME DIRECT LIMITED", "Country of Origin": "China", "Lead Time(weeks)": 8},
+        ]
+
+
+BIRTHSTONE_DATA = [
+            (1, 'January', 'Garnet'),
+            (2, 'February', 'Amethyst'),
+            (3, 'March', 'Aquamarine'),
+            (4, 'April', 'Diamond'),
+            (5, 'May', 'Emerald'),
+            (6, 'June', 'Pearl'),
+            (7, 'July', 'Ruby'),
+            (8, 'August', 'Peridot'),
+            (9, 'September', 'Sapphire'),
+            (10, 'October', 'Opal'),
+            (11, 'November', 'Citrine'),
+            (12, 'December', 'Tanzanite')
+        ]
