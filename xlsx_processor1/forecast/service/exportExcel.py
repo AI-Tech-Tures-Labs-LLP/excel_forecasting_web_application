@@ -342,38 +342,18 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
 
     # Write to different sheets in one Excel file
-    file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+    summary_filename = f"forecast_summary_{sheet_object.id}.xlsx"
+    output_file = os.path.join(settings.MEDIA_ROOT, "summary", summary_filename)
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
     df_store_renamed = df_store.rename(columns=STORE_RENAME_MAP)
     df_coms_renamed = df_coms.rename(columns=COM_RENAME_MAP)
     df_omni_renamed = df_omni.rename(columns=OMNI_RENAME_MAP)
 
-
     df_store_filtered = df_store_renamed[[col for col in STORE_RENAME_MAP.values()]]
     df_coms_filtered = df_coms_renamed[[col for col in COM_RENAME_MAP.values()]]
     df_omni_filtered = df_omni_renamed[[col for col in OMNI_RENAME_MAP.values()]]
-   
-    output_file = file_path
 
-
-    wb = load_workbook(output_file)
-    for sheet_name in wb.sheetnames:
-        ws = wb[sheet_name]
- 
-        # --- Fix header row ---
-        for cell in ws[1]:
-            cell.alignment = Alignment(wrap_text=True, vertical='center', horizontal='center')
- 
-        ws.row_dimensions[1].height = 30  # Set this to 25–35 for good look
- 
-        # --- Adjust column width ---
-        for col in ws.columns:
-            max_length = 0
-            col_letter = get_column_letter(col[0].column)
-            for cell in col:
-                if cell.value:
-                    max_length = max(max_length, len(str(cell.value)))
-            ws.column_dimensions[col_letter].width = max_length + 2
-        # Save changes
     with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
         for sheet_name, df in [
             ("store", df_store_filtered),
@@ -397,7 +377,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                     "columns": [{"header": col} for col in df.columns],
                     "style": "Table Style Medium 9"
                 }
-            ) 
+            )
+
+    # Save the summary file path to the SheetUpload model
+    relative_summary_path = f"summary/{summary_filename}"
+    sheet_object.summary.name = relative_summary_path
+    sheet_object.save()
     
     print("Data written to Excel file successfully.")    
 

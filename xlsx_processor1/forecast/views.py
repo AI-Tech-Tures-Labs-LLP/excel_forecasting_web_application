@@ -109,8 +109,15 @@ class UploadXlsxAPIView(APIView):
             user=request.user,
             name=uploaded_file.name,
             file=uploaded_file,
-            is_processed=False
+            is_processed=False,
+            output_folder=output_folder,
+            month_from=month_from,
+            month_to=month_to,
+            percentage=percentage,
+            categories=categories,
         )
+        sheet.save()
+
         print(f"Sheet uploaded:",sheet)
         print(f"File uploaded: {uploaded_file.name} by user: {request.user.username}")
         if not uploaded_file or not output_folder:
@@ -152,24 +159,28 @@ class ProductDetailViewSet(viewsets.ViewSet):
     lookup_value_regex = r"[^/]+"
     def retrieve(self, request, pk=None):
         # Fetch product details
-        product = get_object_or_404(ProductDetail, product_id=pk)
+        sheet_id = request.data.get("sheet_id")
+        if not sheet_id:
+            return Response({"error": "sheet_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        product = get_object_or_404(ProductDetail, product_id=pk, sheet=sheet_id)
         product_serializer = ProductDetailSerializer(product)
         
-        # Fetch forecasts
-        forecasts = MonthlyForecast.objects.filter(product=product)
+        
+        forecasts = MonthlyForecast.objects.filter(productdetail=product, sheet=sheet_id)
         forecast_serializer = MonthlyForecastSerializer(forecasts, many=True)
         
-       # Fetch additional forecasts by pid
-        store_forecasts = StoreForecast.objects.filter(pid=pk)
+       
+        store_forecasts = StoreForecast.objects.filter(pid=pk, sheet=sheet_id)
         store_serializer = StoreForecastSerializer(store_forecasts, many=True)
 
-        com_forecasts = ComForecast.objects.filter(pid=pk)
+        com_forecasts = ComForecast.objects.filter(pid=pk, sheet=sheet_id)
         com_serializer = ComForecastSerializer(com_forecasts, many=True)
 
-        omni_forecasts = OmniForecast.objects.filter(pid=pk)
+        omni_forecasts = OmniForecast.objects.filter(pid=pk, sheet=sheet_id)
         omni_serializer = OmniForecastSerializer(omni_forecasts, many=True)
 
-        notes     = ForecastNote.objects.filter(pid=pk)
+        notes     = ForecastNote.objects.filter(productdetail=product, sheet=sheet_id)
         notes_serializer = ForecastNoteSerializer(notes, many=True)
 
         return Response({
@@ -293,118 +304,75 @@ class ProductDetailViewSet(viewsets.ViewSet):
 
 
 class ForecastViewSet(ViewSet):
+    permission_classes = [AllowAny]
+    
 
     @action(detail=False, methods=["get"])
     def filter_products(self, request):
-        categories = request.query_params.getlist("category")
-        birthstones = request.query_params.getlist("birthstone")
-        red_box_items = request.query_params.getlist("red_box_item")
-        vdf_statuses = request.query_params.getlist("vdf_status")
+        sheet_id = request.query_params.get("sheet_id")
         product_type = request.query_params.get("product_type")
 
-        # New filters
-        considered_birthstone = request.query_params.get("considered_birthstone")
-        added_qty_macys_soq = request.query_params.get("added_qty_macys_soq")
-        below_min_order = request.query_params.get("below_min_order")
-        over_macys_soq = request.query_params.get("over_macys_soq")
-        added_only_to_balance_soq = request.query_params.get("added_only_to_balance_soq")
-        need_to_review_first = request.query_params.get("need_to_review_first")
-        holiday_filters = {
-            "Valentine_day": request.query_params.get("valentine_day"),
-            "Mothers_day": request.query_params.get("mothers_day"),
-            "Fathers_day": request.query_params.get("fathers_day"),
-            "Mens_day": request.query_params.get("mens_day"),
-            "Womens_day": request.query_params.get("womens_day"),
-        }
+        if not sheet_id:
+            return Response({"error": "sheet_id is required"}, status=400)
 
-        response = {}
+        queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
 
-        def apply_common_filters(qs, model_name):
-            if categories:
-                qs = qs.filter(category__in=categories)
-            if birthstones:
-                qs = qs.filter(birthstone__in=birthstones)
-            if red_box_items:
-                red_box_flags = [item.lower() == "true" for item in red_box_items]
-                qs = qs.filter(red_box_item__in=red_box_flags)
-            if considered_birthstone is not None and model_name in ["store", "omni"]:
-                qs = qs.filter(considered_birthstone_required_quantity=(considered_birthstone.lower() == "true"))
-            if added_qty_macys_soq is not None:
-                qs = qs.filter(Added_qty_using_macys_SOQ=(added_qty_macys_soq.lower() == "true"))
-            if below_min_order is not None:
-                qs = qs.filter(Below_min_order=(below_min_order.lower() == "true"))
-            if over_macys_soq is not None:
-                qs = qs.filter(Over_macys_SOQ=(over_macys_soq.lower() == "true"))
-            if added_only_to_balance_soq is not None:
-                qs = qs.filter(Added_only_to_balance_macys_SOQ=(added_only_to_balance_soq.lower() == "true"))
-            if need_to_review_first is not None:
-                qs = qs.filter(Need_to_review_first=(need_to_review_first.lower() == "true"))
-            for field, value in holiday_filters.items():
-                if value is not None:
-                    qs = qs.filter(**{field: value.lower() == "true"})
-            return qs
+        if product_type:
+            queryset = queryset.filter(product_type=product_type)
 
-        all_pids = set()
+        multi_value_fields = ["category", "birthstone"]
+        boolean_fields = [
+            "is_red_box_item", "is_considered_birthstone",
+            "is_added_quantity_using_macys_soq", "is_added_only_to_balance_macys_soq",
+            "is_below_min_order", "is_over_macys_soq", "is_need_to_review_first",
+            "valentine_day", "mothers_day", "fathers_day", "mens_day", "womens_day"
+        ]
 
-        if not product_type or product_type == "store":
-            store_qs = apply_common_filters(StoreForecast.objects.all(), "store")
-            store_data = StoreForecastSerializer(store_qs, many=True).data
-            response["store_products"] = store_data
-            all_pids.update([item["pid"] for item in store_data])
+        for field in multi_value_fields:
+            values = request.query_params.getlist(field)
+            if values:
+                queryset = queryset.filter(**{f"{field}__in": values})
 
-        if not product_type or product_type == "com":
-            com_qs = ComForecast.objects.all()
-            if vdf_statuses:
-                vdf_flags = [status.lower() == "true" for status in vdf_statuses]
-                com_qs = com_qs.filter(vdf_status__in=vdf_flags)
-            com_qs = apply_common_filters(com_qs, "com")
-            com_data = ComForecastSerializer(com_qs, many=True).data
-            response["com_products"] = com_data
-            all_pids.update([item["pid"] for item in com_data])
+        for field in boolean_fields:
+            value = request.query_params.get(field)
+            if value is not None and value.lower() in ["true", "false"]:
+                queryset = queryset.filter(**{field: value.lower() == "true"})
 
-        if not product_type or product_type == "omni":
-            omni_qs = apply_common_filters(OmniForecast.objects.all(), "omni")
-            omni_data = OmniForecastSerializer(omni_qs, many=True).data
-            response["omni_products"] = omni_data
-            all_pids.update([item["pid"] for item in omni_data])
-
-        # Fetch and group forecast notes by pid
-        notes = ForecastNote.objects.filter(pid__in=all_pids)
+        product_ids = [product.product_id for product in queryset]
+        notes = ForecastNote.objects.filter(productdetail__product_id__in=product_ids)
         notes_map = {}
-        for note in ForecastNoteSerializer(notes, many=True).data:
-            notes_map.setdefault(note["pid"], []).append(note)
+        serialized_notes = ForecastNoteSerializer(notes, many=True).data
+        for note in serialized_notes:
+            pid = note.get("productdetail")
+            if pid not in notes_map:
+                notes_map[pid] = []
+            notes_map[pid].append(note)
 
-        # Inject forecast_notes into each product
-        for group in ["store_products", "com_products", "omni_products"]:
-            for item in response.get(group, []):
-                item["forecast_notes"] = notes_map.get(item["pid"], [])
+        result = []
+        for product in queryset:
+            serialized_product = ProductDetailSerializer(product).data
+            serialized_product["forecast_notes"] = notes_map.get(product.id, [])
+            result.append(serialized_product)
 
-        # Fetch total_added_qty for all pids
-        product_detail_map = {
-            pd.product_id: {
-                "user_added_quantity": pd.user_added_quantity,
-                "external_factor_percentage": pd.external_factor_percentage,
-            }
-            for pd in ProductDetail.objects.filter(product_id__in=all_pids)
-        }
+        return Response(result)
 
-        # Inject total_added_qty into each product
-        for group in ["store_products", "com_products", "omni_products"]:
-            for item in response.get(group, []):
-                pd_info = product_detail_map.get(item["pid"], {})
-                item["user_added_quantity"] = pd_info.get("user_added_quantity")
-                item["external_factor_percentage"] = pd_info.get("external_factor_percentage")
-                
-        return Response(response)
 
 
 class DownloadForecastSummaryExcel(APIView):
-    permission_classes = [AllowAny]  # Adjust if needed
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        file_path = os.path.join(settings.MEDIA_ROOT, "forecast_summaryfor_april_4.xlsx")
+        sheet_id = request.query_params.get("sheet_id")
+        if not sheet_id:
+            return Response({"detail": "sheet_id is required."}, status=400)
+
+        sheet = get_object_or_404(SheetUpload, id=sheet_id)
+        if not sheet.summary:
+            return Response({"detail": "Summary file not found for this sheet."}, status=404)
+
+        file_path = os.path.join(settings.MEDIA_ROOT, sheet.summary.name)
         if os.path.exists(file_path):
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename="forecast_summaryfor_april_4.xlsx")
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
         return Response({"detail": "File not found."}, status=404)
 
 class DownloadFinalQuantityReport(APIView):
@@ -450,7 +418,6 @@ class ForecastNoteViewSet(viewsets.ModelViewSet):
         if pid:
             queryset = queryset.filter(pid=pid)
         return queryset
-
 
 class FileCategoryDownloadAPIView(APIView):
     def get(self, request):
