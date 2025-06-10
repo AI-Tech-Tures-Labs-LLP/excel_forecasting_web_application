@@ -83,7 +83,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
     month_12_fc_index_original=calculate_12th_month_forecast(loader.STD_TY_Unit_Sales_list, STD_index_value_original)
     logging.info(f'month_12_fc_index_original: {month_12_fc_index_original}')
     std_trend_original=calculate_std_trend(loader.STD_TY_Unit_Sales_list, loader.STD_LY_Unit_Sales_list)
- 
+    
 
     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
     selected_months=None 

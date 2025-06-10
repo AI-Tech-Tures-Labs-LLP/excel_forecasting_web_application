@@ -34,7 +34,7 @@ class ProductDetail(models.Model):
 
     safe_non_safe = models.CharField(max_length=100,null=True, blank=True, verbose_name="Safe/Non-Safe") #Safe/Non-Safe
     item_code = models.CharField(max_length=100,null=True, blank=True, verbose_name="Item Code") #Item Code
-    blu = models.CharField(max_length=100,null=True, blank=True, verbose_name="Adjusted RLJ Item") #RLJ
+    rlj = models.CharField(max_length=100,null=True, blank=True, verbose_name="Adjusted RLJ Item") #RLJ
     mkst = models.CharField(max_length=50,null=True, blank=True, verbose_name="Mkst")    #MKST
     current_door_count = models.FloatField(null=True, blank=True, verbose_name="Door Count") #Door Count
     last_store_count = models.FloatField(null=True, blank=True, verbose_name="Old Door Count") #Last Str Cnt
