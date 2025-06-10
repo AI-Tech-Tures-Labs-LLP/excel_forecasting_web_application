@@ -1194,22 +1194,22 @@ const variableGroups = {
     );
 
     return allKeys.map((key) => {
-      const value = data[key];
-      const config = {
-        key,
-        label: formatFieldName(key),
-        icon: getIconForField(key, value),
-        type: getFieldType(value),
-        groupKey: determineGroupForField(key),
-      };
+  const value = data[key];
+  const config = {
+    key,
+    label: formatFieldName(key),
+    icon: getIconForField(key, value),
+    type: getFieldType(value, key), // Pass key parameter
+    groupKey: determineGroupForField(key),
+  };
 
-      if (key === "forecast_month_required_quantity") {
-  config.clickable = true;
-  config.modalType = "required_quantity";
-}
+  if (key === "forecast_month_required_quantity") {
+    config.clickable = true;
+    config.modalType = "required_quantity";
+  }
 
-      return config;
-    });
+  return config;
+});
   };
 
   const formatFieldName = (key) => {
@@ -1230,14 +1230,19 @@ const variableGroups = {
     .join(" ");
 };
 
-  const getFieldType = (value) => {
-    if (typeof value === "boolean") return "boolean";
-    if (Array.isArray(value)) return "array";
-    if (typeof value === "number" && value >= 0 && value <= 1)
-      return "percentage";
-    return "default";
-  };
-
+ const getFieldType = (value, key) => {
+  if (typeof value === "boolean") return "boolean";
+  if (Array.isArray(value)) return "array";
+  
+  // Handle trend fields specifically
+  if (key && (key === "trend" || key === "std_trend" || key === "com_trend" || key === "store_trend")) {
+    return "trend";
+  }
+  
+  if (typeof value === "number" && value >= 0 && value <= 1)
+    return "percentage";
+  return "default";
+};
   const getIconForField = (key, value) => {
     const keyLower = key.toLowerCase();
 
@@ -1381,33 +1386,71 @@ const variableGroups = {
     return "other"; // Default group for unmatched fields
   };
 
-  const formatVariableValue = (value, config) => {
-    if (value === null || value === undefined) return "-";
+const formatVariableValue = (value, config) => {
+  if (value === null || value === undefined) return "-";
 
-    switch (config.type) {
-      case "boolean":
-        return value ? "Yes" : "No";
-      case "array":
-        return Array.isArray(value) ? value.join(", ") : value;
-      case "percentage":
+  switch (config.type) {
+    case "boolean":
+      return value ? "Yes" : "No";
+    case "array":
+      return Array.isArray(value) ? value.join(", ") : value;
+    case "percentage":
+      // Show percentage format for specific fields only
+      if (config.key === "loss" || 
+          config.key === "std_index_value" ||
+          config.key === "STD_index_value_original" ||
+          config.key === "trend_index_difference" ||
+          config.key === "average_store_sale_thru" ||
+          config.key === "macy_soq_percentag" ||
+          config.key === "macy_SOQ_percentage" ||
+          config.key === "macy_soq_percentage") {
+        
+        // Special handling for loss field when value is 0
+        if (config.key === "loss" && value === 0) {
+          return "0%";
+        }
+        
         return typeof value === "number"
           ? `${(value * 100).toFixed(2)}%`
           : `${value}%`;
-      default:
-        const formattedValue =
-          typeof value === "number" ? value.toLocaleString() : value;
+      }
+      // For other percentage fields, show raw values
+      return typeof value === "number" ? value.toLocaleString() : value;
+    case "trend":
+      // Handle trend values - convert decimal to percentage
+      return typeof value === "number"
+        ? `${(value * 100).toFixed(1)}%`
+        : `${value}%`;
+    default:
+      const formattedValue =
+        typeof value === "number" ? value.toLocaleString() : value;
 
-        // Handle special cases that should show as percentages
-        if (config.key === "trend_index_difference" || config.key === "loss") {
-          return `${formattedValue}%`;
+      // Show percentage format for these specific fields
+      if (config.key === "loss" || 
+          config.key === "std_trend_original" ||
+          config.key === "std_index_value" ||
+          config.key === "std_index_value_original" ||
+          config.key === "trend_index_difference" ||
+          config.key === "average_store_sale_thru" ||
+          config.key === "macy_soq_percentag" ||
+          config.key === "macy_SOQ_percentage" ||
+          config.key === "macy_soq_percentage") {
+        
+        // Special handling for loss field when value is 0
+        if (config.key === "loss" && value === 0) {
+          return "0%";
         }
+        
+        return typeof value === "number"
+          ? `${(value * 100).toFixed(2)}%`
+          : `${value}%`;
+      }
 
-        return config.suffix
-          ? `${formattedValue}${config.suffix}`
-          : formattedValue;
-    }
-  };
-
+      return config.suffix
+        ? `${formattedValue}${config.suffix}`
+        : formattedValue;
+  }
+};
   // Get all variables from data (dynamic approach)
   const getAllVariablesFromData = (data) => {
     return getDynamicVariableConfig(data);
