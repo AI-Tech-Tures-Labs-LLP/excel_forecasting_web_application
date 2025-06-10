@@ -787,204 +787,145 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return Math.round((percentage / 100) * 1000000000) / 1000000000;
   };
 
-  const handleSaveChanges = async () => {
-    if (!rollingForecastData || !productId) return;
+ const handleSaveChanges = async () => {
+  if (!rollingForecastData || !productId) return;
 
-    setIsSaving(true);
-    const file_path = localStorage.getItem("file_path");
-    try {
-      const monthLabels = [
-        "FEB",
-        "MAR",
-        "APR",
-        "MAY",
-        "JUN",
-        "JUL",
-        "AUG",
-        "SEP",
-        "OCT",
-        "NOV",
-        "DEC",
-        "JAN",
-      ];
+  setIsSaving(true);
+  setShowSaveChangesPopup(true); // Show popup immediately when saving starts
+  
+  const file_path = localStorage.getItem("file_path");
+  try {
+    const monthLabels = [
+      "FEB", "MAR", "APR", "MAY", "JUN", "JUL",
+      "AUG", "SEP", "OCT", "NOV", "DEC", "JAN",
+    ];
 
-      // Build context_data with updated control values
-      const contextData = {
-        Rolling_method: rollingMethod,
+    // Build context_data with updated control values
+    const contextData = {
+      Rolling_method: rollingMethod,
+      Trend: parseFloat(editableTrend) || 0,
+      Forecasting_Method: forecastingMethod,
+      month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+      Current_FC_Index: selectedIndex,
+    };
+
+    // Add all the forecast data arrays to context
+    monthLabels.forEach((month, index) => {
+      if (!contextData.Index_value) contextData.Index_value = {};
+      if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
+      if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
+      if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
+      if (!contextData.Planned_FC) contextData.Planned_FC = {};
+      if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
+      if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
+      if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
+
+      contextData.Index_value[month] = rollingForecastData.index?.[index] || 0;
+      contextData.FC_by_Index[month] = rollingForecastData.fcByIndex?.[index] || 0;
+      contextData.FC_by_Trend[month] = rollingForecastData.fcByTrend?.[index] || 0;
+      contextData.Recommended_FC[month] = rollingForecastData.recommendedFC?.[index] || 0;
+      contextData.Planned_FC[month] = editableData.plannedFC?.[month] || rollingForecastData.plannedFC?.[index] || 0;
+      contextData.Planned_Shipments[month] = editableData.plannedShipments?.[month] || rollingForecastData.plannedShipments?.[index] || 0;
+      contextData.Planned_EOH[month] = rollingForecastData.plannedEOH?.[index] || 0;
+      contextData.Planned_sell_thru[month] = rollingForecastData.plannedSellThru?.[index] || 0;
+    });
+
+    const updated_context = {
+      Rolling_method: rollingMethod,
+      Trend: parseFloat(editableTrend) || 0,
+      Forecasting_Method: forecastingMethod,
+      month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+      Current_FC_Index: selectedIndex,
+      Index: contextData.Index_value,
+      FC_by_Index: contextData.FC_by_Index,
+      FC_by_Trend: contextData.FC_by_Trend,
+      Recommended_FC: contextData.Recommended_FC,
+      Planned_FC: contextData.Planned_FC,
+      Planned_Shipments: contextData.Planned_Shipments,
+      Planned_EOH: contextData.Planned_EOH,
+      Gross_Projection_Nav: contextData.Gross_Projection_Nav || {},
+      Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {},
+      Planned_sell_Thru: contextData.Planned_sell_thru,
+    };
+
+    const payload = {
+      updated_context: updated_context,
+      file_path: file_path,
+      pid: productId,
+    };
+
+    console.log("Applying control changes:", payload);
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/save_recalculate/`,
+      payload
+    );
+
+    if (response.data && response.data.updated_context) {
+      // Update the rolling forecast data with the recalculated values
+      const updatedContext = response.data.updated_context;
+
+      const updatedRollingData = {
+        index: monthLabels.map((month) => updatedContext.Index_value?.[month] || 0),
+        fcByIndex: monthLabels.map((month) => updatedContext.FC_by_Index?.[month] || 0),
+        fcByTrend: monthLabels.map((month) => updatedContext.FC_by_Trend?.[month] || 0),
+        recommendedFC: monthLabels.map((month) => updatedContext.Recommended_FC?.[month] || 0),
+        plannedFC: monthLabels.map((month) => updatedContext.Planned_FC?.[month] || 0),
+        plannedShipments: monthLabels.map((month) => updatedContext.Planned_Shipments?.[month] || 0),
+        plannedEOH: monthLabels.map((month) => updatedContext.Planned_EOH?.[month] || 0),
+        grossProjection: rollingForecastData.grossProjection,
+        macysProjReceipts: rollingForecastData.macysProjReceipts,
+        plannedSellThru: monthLabels.map((month) => updatedContext.Planned_sell_thru?.[month] || 0),
+      };
+
+      setRollingForecastData(updatedRollingData);
+
+      // Update editable data with new values
+      const newEditableData = {
+        plannedFC: {},
+        plannedShipments: {},
+      };
+      monthLabels.forEach((month, index) => {
+        newEditableData.plannedFC[month] = updatedRollingData.plannedFC[index];
+        newEditableData.plannedShipments[month] = updatedRollingData.plannedShipments[index];
+      });
+      setEditableData(newEditableData);
+
+      setHasControlChanges(false);
+      setLastSubmittedData(payload);
+      setLastChangedField(null);
+      
+      originalValuesRef.current = {
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+        Rolling_method: rollingMethod,
+        month_12_fc_index: editable12MonthFC,
         Current_FC_Index: selectedIndex,
       };
-
-      // Add all the forecast data arrays to context
-      monthLabels.forEach((month, index) => {
-        if (!contextData.Index_value) contextData.Index_value = {};
-        if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
-        if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
-        if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
-        if (!contextData.Planned_FC) contextData.Planned_FC = {};
-        if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
-        if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
-        if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
-
-        contextData.Index_value[month] =
-          rollingForecastData.index?.[index] || 0;
-        contextData.FC_by_Index[month] =
-          rollingForecastData.fcByIndex?.[index] || 0;
-        contextData.FC_by_Trend[month] =
-          rollingForecastData.fcByTrend?.[index] || 0;
-        contextData.Recommended_FC[month] =
-          rollingForecastData.recommendedFC?.[index] || 0;
-        contextData.Planned_FC[month] =
-          editableData.plannedFC?.[month] ||
-          rollingForecastData.plannedFC?.[index] ||
-          0;
-        contextData.Planned_Shipments[month] =
-          editableData.plannedShipments?.[month] ||
-          rollingForecastData.plannedShipments?.[index] ||
-          0;
-        contextData.Planned_EOH[month] =
-          rollingForecastData.plannedEOH?.[index] || 0;
-        contextData.Planned_sell_thru[month] =
-          rollingForecastData.plannedSellThru?.[index] || 0;
-      });
-      console.log("TREND", lastChangedField);
-      const getChangedFieldValue = () => {
-        switch (lastChangedField) {
-          case "Trend":
-            return parseFloat(editableTrend) || 0;
-          case "month_12_fc_index":
-            return parseFloat(editable12MonthFC) || 0;
-          case "Forecasting_Method":
-            return forecastingMethod;
-          case "Rolling_method":
-            return rollingMethod;
-          case "Current_FC_Index":
-            return selectedIndex;
-          default:
-            return null;
-        }
-      };
-
-      const updated_context = {
-        Rolling_method: rollingMethod,
+      
+      setInitialControlValues({
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
+        Rolling_method: rollingMethod,
         month_12_fc_index: parseFloat(editable12MonthFC) || 0,
         Current_FC_Index: selectedIndex,
-        Index: contextData.Index_value, // ✅ rename from Index_value
-        FC_by_Index: contextData.FC_by_Index,
-        FC_by_Trend: contextData.FC_by_Trend,
-        Recommended_FC: contextData.Recommended_FC,
-        Planned_FC: contextData.Planned_FC,
-        Planned_Shipments: contextData.Planned_Shipments,
-        Planned_EOH: contextData.Planned_EOH,
-        Gross_Projection_Nav: contextData.Gross_Projection_Nav || {}, // if needed
-        Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {}, // if needed
-        Planned_sell_Thru: contextData.Planned_sell_thru,
-      };
-
-      // Use a control variable change to trigger recalculation
-      const payload = {
-        updated_context: updated_context,
-        file_path: file_path,
-        pid: productId,
-      };
-
-      console.log("Applying control changes:", payload);
-
-      // const response = await axios.post(
-      //   `${
-      //     import.meta.env.VITE_API_BASE_URL
-      //   }/forecast/api/product/${productId}/`,
-      //   payload
-      // );
-
-      const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/save_recalculate/`,
-        payload
-      );
-
-      if (response.data && response.data.updated_context) {
-        // Update the rolling forecast data with the recalculated values
-        const updatedContext = response.data.updated_context;
-
-        const updatedRollingData = {
-          index: monthLabels.map(
-            (month) => updatedContext.Index_value?.[month] || 0
-          ),
-          fcByIndex: monthLabels.map(
-            (month) => updatedContext.FC_by_Index?.[month] || 0
-          ),
-          fcByTrend: monthLabels.map(
-            (month) => updatedContext.FC_by_Trend?.[month] || 0
-          ),
-          recommendedFC: monthLabels.map(
-            (month) => updatedContext.Recommended_FC?.[month] || 0
-          ),
-          plannedFC: monthLabels.map(
-            (month) => updatedContext.Planned_FC?.[month] || 0
-          ),
-          plannedShipments: monthLabels.map(
-            (month) => updatedContext.Planned_Shipments?.[month] || 0
-          ),
-          plannedEOH: monthLabels.map(
-            (month) => updatedContext.Planned_EOH?.[month] || 0
-          ),
-          grossProjection: rollingForecastData.grossProjection, // Keep existing
-          macysProjReceipts: rollingForecastData.macysProjReceipts, // Keep existing
-          plannedSellThru: monthLabels.map(
-            (month) => updatedContext.Planned_sell_thru?.[month] || 0
-          ),
-        };
-
-        setRollingForecastData(updatedRollingData);
-
-        // Update editable data with new values
-        const newEditableData = {
-          plannedFC: {},
-          plannedShipments: {},
-        };
-        monthLabels.forEach((month, index) => {
-          newEditableData.plannedFC[month] =
-            updatedRollingData.plannedFC[index];
-          newEditableData.plannedShipments[month] =
-            updatedRollingData.plannedShipments[index];
-        });
-        setEditableData(newEditableData);
-
-        setHasControlChanges(false);
-        setLastSubmittedData(payload);
-        setLastChangedField(null);
-        originalValuesRef.current = {
-          Trend: parseFloat(editableTrend) || 0,
-          Forecasting_Method: forecastingMethod,
-          Rolling_method: rollingMethod,
-          month_12_fc_index: editable12MonthFC,
-          Current_FC_Index: selectedIndex,
-        };
-        setInitialControlValues({
-          Trend: parseFloat(editableTrend) || 0,
-          Forecasting_Method: forecastingMethod,
-          Rolling_method: rollingMethod,
-          month_12_fc_index: parseFloat(editable12MonthFC) || 0,
-          Current_FC_Index: selectedIndex,
-        });
-        setHasEditableChanges(false);
-        // alert("Forecast controls applied successfully!");
-      }
-      setShowSaveChangesPopup(true);
-      setTimeout(() => setShowSaveChangesPopup(false), 3000);
-    } catch (error) {
-      console.error("Error applying control changes:", error);
-      alert("Failed to apply changes. Please try again.");
-    } finally {
-      setIsSaving(false);
+      });
+      
+      setHasEditableChanges(false);
+      
+      // Keep popup visible for 2 more seconds after success to show success state
+      setTimeout(() => {
+        setShowSaveChangesPopup(false);
+      }, 2000);
     }
-  };
+  } catch (error) {
+    console.error("Error applying control changes:", error);
+    setShowSaveChangesPopup(false); // Hide popup on error
+    alert("Failed to apply changes. Please try again.");
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   // Add this function to submit the forecast data
   const submitForecastChanges = async (changedVariable) => {
@@ -3381,29 +3322,65 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 h-100"
     >
       {showSaveChangesPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-fadeIn">
-            <div className="flex justify-center mb-4">
-              <div className="bg-indigo-100 p-3 rounded-full">
-                <Save size={32} className="text-indigo-600" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Forecast Saved
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Your forecast changes have been saved successfully. You may
-              continue editing or navigate to another product.
-            </p>
-            <button
-              onClick={() => setShowSaveChangesPopup(false)}
-              className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Close
-            </button>
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Blurred backdrop */}
+    <div 
+      className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm"
+      style={{ backdropFilter: 'blur(8px)' }}
+    ></div>
+    
+    {/* Popup content */}
+    <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center animate-fadeIn transform transition-all duration-300 scale-100">
+      <div className="flex justify-center mb-4">
+        <div className={`p-3 rounded-full transition-all duration-300 ${
+          isSaving 
+            ? "bg-blue-100 animate-pulse" 
+            : "bg-green-100"
+        }`}>
+          {isSaving ? (
+            <RefreshCw size={32} className="text-blue-600 animate-spin" />
+          ) : (
+            <CheckCircle size={32} className="text-green-600" />
+          )}
+        </div>
+      </div>
+      
+      <h2 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${
+        isSaving ? "text-blue-800" : "text-green-800"
+      }`}>
+        {isSaving ? "Applying Changes..." : "Changes Applied Successfully!"}
+      </h2>
+      
+      <p className="text-gray-600 mb-6">
+        {isSaving 
+          ? "Please wait while we save your forecast changes. This may take a moment."
+          : "Your forecast changes have been saved successfully. You may continue editing or navigate to another product."
+        }
+      </p>
+      
+      {/* Progress indicator when saving */}
+      {isSaving && (
+        <div className="mb-6">
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
           </div>
+          <p className="text-sm text-gray-500 mt-2">Processing your request...</p>
         </div>
       )}
+      
+      {/* Close button - only show when not saving */}
+      {!isSaving && (
+        <button
+          onClick={() => setShowSaveChangesPopup(false)}
+          className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors transform hover:scale-105"
+        >
+          Close
+        </button>
+      )}
+    </div>
+  </div>
+)}
+
 
       {showCriticalSavePopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -4456,7 +4433,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                   {/* Editable Trend */}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-gray-700">
-                      Trend
+                      Trend %
                     </label>
                     <input
                       type="number"

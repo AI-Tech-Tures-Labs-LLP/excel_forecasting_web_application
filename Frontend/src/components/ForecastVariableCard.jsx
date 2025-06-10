@@ -1386,6 +1386,72 @@ const variableGroups = {
     return "other"; // Default group for unmatched fields
   };
 
+// const formatVariableValue = (value, config) => {
+//   if (value === null || value === undefined) return "-";
+
+//   switch (config.type) {
+//     case "boolean":
+//       return value ? "Yes" : "No";
+//     case "array":
+//       return Array.isArray(value) ? value.join(", ") : value;
+//     case "percentage":
+//       // Show percentage format for specific fields only
+//       if (config.key === "loss" || 
+//           config.key === "std_index_value" ||
+//           config.key === "STD_index_value_original" ||
+//           config.key === "trend_index_difference" ||
+//           config.key === "average_store_sale_thru" ||
+//           config.key === "macy_soq_percentag" ||
+//           config.key === "macy_SOQ_percentage" ||
+//           config.key === "macy_soq_percentage") {
+        
+//         // Special handling for loss field when value is 0
+//         if (config.key === "loss" && value === 0) {
+//           return "0%";
+//         }
+        
+//         return typeof value === "number"
+//           ? `${(value * 100).toFixed(2)}%`
+//           : `${value}%`;
+//       }
+//       // For other percentage fields, show raw values
+//       return typeof value === "number" ? value.toLocaleString() : value;
+//     case "trend":
+//       // Handle trend values - convert decimal to percentage
+//       return typeof value === "number"
+//         ? `${(value * 100).toFixed(1)}%`
+//         : `${value}%`;
+//     default:
+//       const formattedValue =
+//         typeof value === "number" ? value.toLocaleString() : value;
+
+//       // Show percentage format for these specific fields
+//       if (config.key === "loss" || 
+//           config.key === "std_trend_original" ||
+//           config.key === "std_index_value" ||
+//           config.key === "std_index_value_original" ||
+//           config.key === "trend_index_difference" ||
+//           config.key === "average_store_sale_thru" ||
+//           config.key === "macy_soq_percentag" ||
+//           config.key === "macy_SOQ_percentage" ||
+//           config.key === "macy_soq_percentage") {
+        
+//         // Special handling for loss field when value is 0
+//         if (config.key === "loss" && value === 0) {
+//           return "0%";
+//         }
+        
+//         return typeof value === "number"
+//           ? `${(value * 100).toFixed(2)}%`
+//           : `${value}%`;
+//       }
+
+//       return config.suffix
+//         ? `${formattedValue}${config.suffix}`
+//         : formattedValue;
+//   }
+// };
+  
 const formatVariableValue = (value, config) => {
   if (value === null || value === undefined) return "-";
 
@@ -1399,8 +1465,8 @@ const formatVariableValue = (value, config) => {
       if (config.key === "loss" || 
           config.key === "std_index_value" ||
           config.key === "STD_index_value_original" ||
-          config.key === "trend_index_difference" ||
           config.key === "average_store_sale_thru" ||
+           config.key === "trend_index_difference" ||
           config.key === "macy_soq_percentag" ||
           config.key === "macy_SOQ_percentage" ||
           config.key === "macy_soq_percentage") {
@@ -1425,14 +1491,14 @@ const formatVariableValue = (value, config) => {
       const formattedValue =
         typeof value === "number" ? value.toLocaleString() : value;
 
-      // Show percentage format for these specific fields
+      // Show percentage format for these specific fields (REMOVED trend_index_difference)
       if (config.key === "loss" || 
           config.key === "std_trend_original" ||
           config.key === "std_index_value" ||
           config.key === "std_index_value_original" ||
-          config.key === "trend_index_difference" ||
           config.key === "average_store_sale_thru" ||
           config.key === "macy_soq_percentag" ||
+          config.key === "trend_index_difference" ||
           config.key === "macy_SOQ_percentage" ||
           config.key === "macy_soq_percentage") {
         
@@ -1440,6 +1506,12 @@ const formatVariableValue = (value, config) => {
         if (config.key === "loss" && value === 0) {
           return "0%";
         }
+
+        if (config.key === "trend_index_difference") {
+    return typeof value === "number"
+      ? `${value.toFixed(2)}%`
+      : `${value}%`;
+  }
         
         return typeof value === "number"
           ? `${(value * 100).toFixed(2)}%`
@@ -1451,7 +1523,8 @@ const formatVariableValue = (value, config) => {
         : formattedValue;
   }
 };
-  // Get all variables from data (dynamic approach)
+
+// Get all variables from data (dynamic approach)
   const getAllVariablesFromData = (data) => {
     return getDynamicVariableConfig(data);
   };
