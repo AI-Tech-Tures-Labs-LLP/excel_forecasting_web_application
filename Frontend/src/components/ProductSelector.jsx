@@ -1249,13 +1249,13 @@ function ProductSelector() {
       link.click();
       document.body.removeChild(link);
 
-      dispatch(
-        addToast({
-          type: "success",
-          message: `Downloaded ${processedCategories.length} category file(s)`,
-          duration: 3000,
-        })
-      );
+      // dispatch(
+      //   addToast({
+      //     type: "success",
+      //     message: `Downloaded ${processedCategories.length} category file(s)`,
+      //     duration: 3000,
+      //   })
+      // );
 
       handleCloseCategoryDownload();
     } catch (error) {

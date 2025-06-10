@@ -3420,43 +3420,46 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 <span className="font-medium">Back to Products</span>
               </button>
 
-              {/* Product Link Button - Top Right */}
-              <div className="ml-auto">
-                <button
-                  onClick={handleProductLinkClick}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
-                  title="Copy product link"
-                >
-                  <ExternalLink size={18} />
-                  <span className="hidden sm:inline">Link</span>
-                </button>
-              </div>
+              
             </div>
 
             {/* Main Content Layout */}
             <div className="flex items-center gap-8">
-              {/* Large Product Image - Left */}
-              <div className="flex-shrink-0">
-                <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg bg-white/10">
-                  <img
-                    src={`${
-                      import.meta.env.VITE_API_BASE_URL
-                    }/media/images/${productId}.png`}
-                    alt={`Product ${productId}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      e.target.style.display = "none";
-                      e.target.parentElement.innerHTML = `
-                <div class="w-full h-full bg-white/20 flex items-center justify-center">
-                  <span class="text-white/60 text-sm font-medium">No Image</span>
-                </div>
-              `;
-                    }}
-                  />
-                </div>
-              </div>
-
+             {/* Large Product Image with Link - Left */}
+<div className="flex-shrink-0">
+  <div className="relative">
+    <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg bg-white/10">
+      <img
+        src={`${
+          import.meta.env.VITE_API_BASE_URL
+        }/media/images/${productId}.png`}
+        alt={`Product ${productId}`}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          // Fallback if image fails to load
+          e.target.style.display = "none";
+          e.target.parentElement.innerHTML = `
+    <div class="w-full h-full bg-white/20 flex items-center justify-center">
+      <span class="text-white/60 text-sm font-medium">No Image</span>
+    </div>
+  `;
+        }}
+      />
+    </div>
+    
+    {/* Product Link Button - Near Image */}
+    <div className="mt-3">
+      <button
+        onClick={handleProductLinkClick}
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 border-2 border-amber-300 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        title="View on Macy's website"
+      >
+        <ExternalLink size={16} className="text-white" />
+        <span className="text-sm">Macy's Web ID</span>
+      </button>
+    </div>
+  </div>
+</div>
               {/* Center Content - Product Details and Search */}
               <div className="flex-1 flex flex-col items-center">
                 {/* Product Title - Center */}
