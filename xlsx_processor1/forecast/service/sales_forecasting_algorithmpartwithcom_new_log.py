@@ -567,7 +567,9 @@ def algorithm(loader,category,store,coms,omni,code):
             else:
                 extra_oh_qty=macy_additional_units
             logging.info(f'extra_oh_qty {extra_oh_qty}')
+            macy_additional_units=macy_additional_units-extra_oh_qty
             planned_shp[forecast_month]=planned_shp[forecast_month] - extra_oh_qty
+            
         planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_OH_Units, loader.TY_Unit_Sales, current_month,override_value=None)
         logging.info(f'planned_shp after macys adjustment: {planned_shp}')
         
@@ -591,7 +593,7 @@ def algorithm(loader,category,store,coms,omni,code):
         is_below_min_order = True if total_added_quantity < loader.Min_order else False
         is_over_macys_SOQ = True if macys_proj_receipt_upto_next_month_after_forecast_month < sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month else False
         is_need_to_review_first = True if total_added_quantity > macy_additional_units else False 
-        is_added_by_only_SOQ = True if total_added_quantity == macy_additional_units else False
+        is_added_by_only_SOQ = True if total_added_quantity == macy_additional_units and macy_additional_units >0 else False 
 
         if pid_type=='store_pid':
             data_store = {

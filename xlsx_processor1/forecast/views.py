@@ -55,7 +55,7 @@ def make_zip_and_delete(folder_path):
  
 def get_product_forecast_data(pid):
         product = get_object_or_404(ProductDetail, product_id=pid)
-        return product.category, product.rolling_method, product.std_trend, product.STD_index_value, product.month_12_fc_index, product.forecasting_method,  product.total_added_qty
+        return product.category, product.rolling_method, product.std_trend, product.STD_index_value, product.month_12_fc_index, product.forecasting_method,  product.total_added_qty,product.currect_fc_index
     
 
 def get_planned_data(pid, year):
@@ -289,11 +289,11 @@ class ProductDetailViewSet(viewsets.ViewSet):
         pid = request.data.get("pid")
         path = request.data.get("file_path")
         save_forecast_data(pid, updated_context)
-        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid)
+        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty, currect_fc_index= get_product_forecast_data(pid)
         result = get_planned_data(pid,2025)
         planned_shp = result["PlannedShipment"]
         planned_fc = result["PlannedForecast"]
-        get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
+        get_c2_value(category,pid,std_trend,STD_index_value,currect_fc_index,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
 
         print("Data saved to DB Successfully")
         return Response({"success": True},status=status.HTTP_200_OK)
