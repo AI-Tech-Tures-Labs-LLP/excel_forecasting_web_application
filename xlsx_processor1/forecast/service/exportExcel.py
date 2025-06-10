@@ -595,18 +595,16 @@ def process_category(args):
         save_monthly_forecasts(productmain, sheet_object, current_year, months, loader.TY_Unit_Sales, loader.LY_Unit_Sales, loader.LY_OH_Units, loader.TY_OH_Units, loader.TY_Receipts, loader.LY_Receipts, loader.TY_MCOM_Unit_Sales, loader.LY_MCOM_Unit_Sales, loader.TY_MCOM_OH_Units, loader.LY_MCOM_OH_Units, loader.PTD_TY_Sales, loader.LY_PTD_Sales, loader.MCOM_PTD_TY_Sales, loader.MCOM_PTD_LY_Sales, loader.OO_Total_Units, loader.OO_MCOM_Total_Units, loader.LY_store_unit_sales, loader.LY_store_EOM_OH, loader.LY_COM_to_TTL, loader.LY_COM_to_TTL_OH, loader.LY_omni_sell_through, loader.LY_store_sell_through, loader.LY_omni_turn, loader.LY_store_turn, loader.LY_Omni_AUR_Diff_Own, loader.TY_store_unit_sales, loader.TY_store_EOM_OH, loader.TY_COM_to_TTL, loader.TY_COM_to_TTL_OH, loader.TY_Omni_AUR_Diff_Own, loader.TY_Omni_sell_through, loader.TY_store_sell_through, loader.TY_omni_turn, loader.TY_store_turn, loader.TY_store_unit_sales_diff, loader.TY_com_unit_sales_diff, loader.TY_store_eom_oh_diff)
         print(f"Monthly forecasts saved for product {loader.pid_value}")
         forecast_data = { 
-            'IndexPercentage':loader.index_value,
-            'ForecastByIndex':fc_by_index,
-            'ForecastByTrend': fc_by_trend,
-            'RecommendedForecast': recommended_fc,
-            'PlannedForecast': planned_fc,
-            'PlannedShipment': planned_shp,
-            "PlannedEOH": planned_oh,
-            'GrossProjection' : loader.gross_proj,
-            "MacysProjectionReciepts":loader.macys_proj_receipt,
-            'PlannedSellThru': planned_sell_thru
-            
-            
+            'index':loader.index_value,
+            'fc_by_index':fc_by_index,
+            'fc_by_trend': fc_by_trend,
+            'recommended_fc': recommended_fc,
+            'planned_fc': planned_fc,
+            'planned_shipments': planned_shp,
+            'planned_eoh_cal': planned_oh,
+            'gross_projection_nav' : loader.gross_proj,
+            'macys_proj_receipts':loader.macys_proj_receipt,
+            'planned_sell_thru_pct': planned_sell_thru     
         }
         save_rolling_forecasts(productmain, sheet_object, current_year, forecast_data)
         print(f"Product {loader.pid_value} saved successfully")
