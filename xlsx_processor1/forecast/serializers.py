@@ -1,4 +1,4 @@
-from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote
+from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote, SheetUpload
 from rest_framework import serializers
 import math
 # Serializer for ProductDetail
@@ -57,4 +57,9 @@ class ComForecastSerializer(FloatHandlingSerializerMixin, serializers.ModelSeria
 class OmniForecastSerializer(FloatHandlingSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = OmniForecast
+        fields = '__all__'
+
+class SheetUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SheetUpload
         fields = '__all__'

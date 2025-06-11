@@ -22,7 +22,7 @@ from rest_framework.permissions import AllowAny
 
 
 from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote, SheetUpload
-from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer
+from .serializers import ProductDetailSerializer, MonthlyForecastSerializer, StoreForecastSerializer, ComForecastSerializer, OmniForecastSerializer, ForecastNoteSerializer, SheetUploadSerializer
 from .service.exportExcel import process_data
 from forecast.service.rollingfc import recalculate_all
 from forecast.service.adddatabase import save_forecast_data
@@ -558,3 +558,6 @@ class FileCategoryDownloadAPIView(APIView):
             return response
     
 
+class SheetUploadViewSet(viewsets.ModelViewSet):
+    queryset = SheetUpload.objects.all()
+    serializer_class = SheetUploadSerializer
