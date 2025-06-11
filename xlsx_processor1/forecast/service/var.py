@@ -67,7 +67,7 @@ class VariableLoader:
         self.masterstyle_id=matching_row['MstrSt ID'].iloc[0]
         self.masterstyle_description=matching_row['Masterstyle Desc'].iloc[0]
         self.product_description=matching_row['PID Desc'].iloc[0]
-        self.first_live_site=matching_row['1st Live'].iloc[0]
+        self.first_live_date=matching_row['1st Live'].iloc[0]
         self.live_site=matching_row['Live Site'].iloc[0]
         self.v2c=matching_row['V2C'].iloc[0]
         self.marketing_id=matching_row['Mktg ID'].iloc[0]
@@ -122,6 +122,10 @@ class VariableLoader:
         self.this_year_mcom_data=mcom_data.loc[(mcom_data['PID'] == self.product_id) & (mcom_data['Year'] == this_year_value)]
         self.last_year_mcom_data=mcom_data.loc[(mcom_data['PID'] == self.product_id) & (mcom_data['Year'] == last_year_value)]
         # Define months in order
+        print(f"self.this_year_data: {self.this_year_data}")
+        print(f"self.last_year_data: {self.last_year_data}")
+        print(f"self.this_year_mcom_data: {self.this_year_mcom_data}")
+        print(f"self.last_year_mcom_data: {self.last_year_mcom_data}")
         # Initialize dictionaries to store results
         planned_shipments=[self.nav_feb,self.nav_mar,self.nav_apr,self.nav_may,self.nav_jun,self.nav_jul,self.nav_aug,self.nav_sep,self.nav_oct,self.nav_nov,self.nav_dec,self.nav_jan]
         self.planned_shipment={key:abs(planned_shipments[i]) for i,key in enumerate(months)}
@@ -147,7 +151,7 @@ class VariableLoader:
 
             self.ty_total_sales_units[month] = self.this_year_data.loc[self.this_year_data['Month'].str.upper() == month, 'PTD TY Unit Sales'].sum()
             self.ly_total_sales_units[month] = self.last_year_data.loc[self.last_year_data['Month'].str.upper() == month, 'PTD TY Unit Sales'].sum()
-            self.ly_total_eom_oh[month] = self.last_year_data.loc[self.last_year_data['Month'].str.upper() == month, 'OH LY Units'].sum()
+            self.ly_total_eom_oh[month] = self.last_year_data.loc[self.last_year_data['Month'].str.upper() == month, 'OH TY Units'].sum()
             self.ty_total_eom_oh[month] = self.this_year_data.loc[self.this_year_data['Month'].str.upper() == month, 'OH TY Units'].sum()
             self.ty_omni_receipts[month] = self.this_year_data.loc[self.this_year_data['Month'].str.upper() == month, 'PTD TY RCVD Unit'].sum()
             self.ty_com_sales_units[month] = self.this_year_mcom_data.loc[self.this_year_mcom_data['Month'].str.upper() == month, 'PTD TY Unit Sales'].sum()
@@ -157,7 +161,7 @@ class VariableLoader:
             self.ly_omni_sales_usd[month] = self.last_year_data.loc[self.last_year_data['Month'].str.upper() == month, 'PTD TY $ Sales'].sum()
             self.ty_com_sales_usd[month] = self.this_year_mcom_data.loc[self.this_year_mcom_data['Month'].str.upper() == month, 'PTD TY $ Sales'].sum()
             self.ly_com_sales_usd[month] = self.last_year_mcom_data.loc[self.last_year_mcom_data['Month'].str.upper() == month, 'PTD TY $ Sales'].sum()
-            self.ly_com_eom_oh[month] = self.last_year_mcom_data.loc[self.last_year_mcom_data['Month'].str.upper() == month, 'OH LY Units'].sum()
+            self.ly_com_eom_oh[month] = self.last_year_mcom_data.loc[self.last_year_mcom_data['Month'].str.upper() == month, 'OH TY Units'].sum()
             self.ty_omni_oo_units[month] = self.this_year_data.loc[self.this_year_data['Month'].str.upper() == month, 'OO Total Units'].sum()
             self.ty_com_oo_units[month] = self.this_year_mcom_data.loc[self.this_year_mcom_data['Month'].str.upper() == month, 'OO Total Units'].sum()
             self.ly_omni_receipts[month] = self.last_year_data.loc[self.last_year_data['Month'].str.upper() == month, 'PTD TY RCVD Unit'].sum()
@@ -213,7 +217,7 @@ class VariableLoader:
         self.ty_store_eom_oh = calculate_store_unit_sales_and_OH(self.ty_total_eom_oh, self.ty_com_eom_oh)  # correct
         self.ty_com_to_ttl_sales_pct = calculate_com_to_ttl_sales_and_OH(self.ty_com_sales_units, self.ty_total_sales_units)  # correct
         self.ty_com_to_ttl_eoh_pct = calculate_com_to_ttl_sales_and_OH(self.ty_com_eom_oh, self.ty_total_eom_oh)  # correct
-        self.ty_omni_aur_diff_own = format_sales_data(self.ptd_ty_sales, self.ty_total_sales_units, self.macys_owned_retail)  # correct
+        self.ty_omni_aur_diff_own = format_sales_data(self.ty_omni_sales_usd, self.ty_total_sales_units, self.macys_owned_retail)  # correct
         self.ty_omni_sell_thru_pct = calculate_omni_sell_through(self.ty_total_sales_units, self.ty_total_eom_oh)
         self.ty_store_sell_thru_pct = calculate_store_sell_through(self.ty_total_sales_units, self.ty_com_sales_units, self.ty_total_eom_oh, self.ty_com_eom_oh)
         self.ty_omni_turn = calculate_turn(self.ty_total_sales_units, self.ty_total_eom_oh)

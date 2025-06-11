@@ -754,7 +754,7 @@ def process_category(args):
                     "product_type": extract_product_type(pid_type),
                     "safe_non_safe": safe_str(loader.safe_non_safe),
                     "item_code": safe_str(loader.item_code),
-                    "blu": safe_str(loader.blu),
+                    "rlj": safe_str(loader.rlj),
                     "mkst": safe_str(loader.mkst),
                     "current_door_count": safe_int(loader.current_door_count),
                     "last_store_count": safe_int(loader.last_store_count),
@@ -834,18 +834,16 @@ def process_category(args):
         save_monthly_forecasts(productmain, sheet_object, current_year, months, loader.ty_total_sales_units, loader.ly_total_sales_units, loader.ly_total_eom_oh, loader.ty_total_eom_oh, loader.ty_omni_receipts, loader.ly_omni_receipts, loader.ty_com_sales_units, loader.ly_com_sales_units, loader.ty_com_eom_oh, loader.ly_com_eom_oh, loader.ty_omni_sales_usd, loader.ly_omni_sales_usd, loader.ty_com_sales_usd, loader.ly_com_sales_usd, loader.ty_omni_oo_units, loader.ty_com_oo_units, loader.ly_store_sales_units, loader.ly_store_eom_oh, loader.ly_com_to_ttl_sales_pct, loader.ly_com_to_ttl_eoh_pct, loader.ly_omni_sell_thru_pct, loader.ly_store_sell_thru_pct, loader.ly_omni_turn, loader.ly_store_turn, loader.ly_omni_aur_diff_own, loader.ty_store_sales_units, loader.ty_store_eom_oh, loader.ty_com_to_ttl_sales_pct, loader.ty_com_to_ttl_eoh_pct, loader.ty_omni_aur_diff_own, loader.ty_omni_sell_thru_pct, loader.ty_store_sell_thru_pct, loader.ty_omni_turn, loader.ty_store_turn, loader.ty_store_sales_vs_ly, loader.ty_com_sales_vs_ly, loader.ty_store_eoh_vs_ly)
         print(f"Monthly forecasts saved for product {loader.product_id}")
         forecast_data = { 
-            'IndexPercentage':loader.index_value,
-            'ForecastByIndex':fc_by_index,
-            'ForecastByTrend': fc_by_trend,
-            'RecommendedForecast': recommended_fc,
-            'PlannedForecast': planned_fc,
-            'PlannedShipment': planned_shp,
-            "PlannedEOH": planned_oh,
-            'GrossProjection' : loader.gross_proj,
-            "MacysProjectionReciepts":loader.macys_proj_receipt,
-            'PlannedSellThru': planned_sell_thru
-            
-            
+            'index':loader.index_value,
+            'fc_by_index':fc_by_index,
+            'fc_by_trend': fc_by_trend,
+            'recommended_fc': recommended_fc,
+            'planned_fc': planned_fc,
+            'planned_shipments': planned_shp,
+            'planned_eoh_cal': planned_oh,
+            'gross_projection_nav' : loader.gross_projection_nav,
+            'macys_proj_receipts':loader.macys_proj_receipts,
+            'planned_sell_thru_pct': planned_sell_thru
         }
         save_rolling_forecasts(productmain, sheet_object, current_year, forecast_data)
         print(f"Product {loader.product_id} saved successfully")
@@ -951,7 +949,7 @@ def process_category(args):
             f"C{start_row + 29}": loader.masterstyle_id,
             f"D{start_row + 29}":loader.masterstyle_description,
             f"C{start_row + 30}":loader.product_description,
-            f"C{start_row + 31}": loader.first_live_site,
+            f"C{start_row + 31}": loader.first_live_date,
             f"D{start_row + 31}": f"{loader.live_site}/{loader.v2c}",
             f"E{start_row + 31}": loader.marketing_id,
             f"F{start_row + 31}": loader.std_store_return,

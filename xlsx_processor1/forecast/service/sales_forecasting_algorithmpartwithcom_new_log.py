@@ -436,7 +436,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
                 logging.info(f'average_value: {average_value}')
                 loss=calculate_loss(loader.kpi_door_count, average_value)
                 logging.info(f'loss: {loss}')
-                loss_percent =determine_loss_percent(loss,rank, loader.Own_Retail)
+                loss_percent =determine_loss_percent(loss,rank, loader.macys_owned_retail)
                 logging.info(f'loss_percent: {loss_percent}')
                 new_store_month_12_fc_index=update_12_month_forecast_by_loss(new_store_month_12_fc_index, loss_percent)
             fc_by_index=calculate_fc_by_index(loader.index_value, new_store_month_12_fc_index)
@@ -516,11 +516,11 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
         planned_season_sum = season_sum(planned_shp, forecast_season_month)
         logging.info(f'planned_season_sum: {planned_season_sum}')
 
-        macys_season_sum = season_sum(loader.macys_proj_receipt, forecast_season_month)
+        macys_season_sum = season_sum(loader.macys_proj_receipts, forecast_season_month)
         logging.info(f'macys_season_sum: {macys_season_sum}')
 
         sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month, macys_proj_receipt_upto_next_month_after_forecast_month = calculate_seasonwise_projection(
-            forecast_month, planned_shp, loader.macys_proj_receipt, loader.ty_omni_receipts, forecast_season_month
+            forecast_month, planned_shp, loader.macys_proj_receipts, loader.ty_omni_receipts, forecast_season_month
         )
         logging.info(f'sum_of_omni_and_planned_upto_next_month: {sum_of_omni_receipt_and_planned_shipment_upto_next_month_after_forecast_month}')
         logging.info(f'macys_proj_receipt_upto_next_month: {macys_proj_receipt_upto_next_month_after_forecast_month}')
@@ -528,7 +528,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
         average_store_sale_thru = calculate_store_sale_thru(loader.ly_total_sales_units, loader.ly_com_sales_units, loader.ly_total_eom_oh, loader.ly_com_eom_oh)
         logging.info(f'average_store_sale_thru: {average_store_sale_thru}')
         if pid_type=='store_pid':
-            MAcy_SOQ_percentage = determine_percentage_to_add_quantity(average_store_sale_thru, loader.Own_Retail)
+            MAcy_SOQ_percentage = determine_percentage_to_add_quantity(average_store_sale_thru, loader.macys_owned_retail)
         else:
             MAcy_SOQ_percentage = 0.75
         logging.info(f'MAcy_SOQ_percentage: {MAcy_SOQ_percentage}')
@@ -561,9 +561,9 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
         planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.ty_total_eom_oh, loader.ty_omni_receipts, loader.ly_total_eom_oh, loader.ty_total_sales_units, current_month,override_value=None)
         logging.info(f'planned_shp after return qty adjustment: {planned_shp}')
         total_gross_projection = sum([
-            loader.Nav_Feb, loader.Nav_Mar, loader.Nav_Apr, loader.Nav_May, loader.Nav_Jun,
-            loader.Nav_Jul, loader.Nav_Aug, loader.Nav_Sep, loader.Nav_Oct, loader.Nav_Nov,
-            loader.Nav_Dec, loader.Nav_Jan
+            loader.nav_feb, loader.nav_mar, loader.nav_apr, loader.nav_may, loader.nav_jun,
+            loader.nav_jul, loader.nav_aug, loader.nav_sep, loader.nav_oct, loader.nav_nov,
+            loader.nav_dec, loader.nav_jan
         ])
         logging.info(f'total_gross_projection: {total_gross_projection}')
         logging.info(f'original shp: {planned_shp_original}')
