@@ -841,10 +841,11 @@ def process_category(args):
             'PlannedForecast': planned_fc,
             'PlannedShipment': planned_shp,
             "PlannedEOH": planned_oh,
-            'GrossProjection' : loader.gross_projection_nav,
-            "MacysProjectionReciepts":loader.macys_proj_receipts,
+            'GrossProjection' : loader.gross_proj,
+            "MacysProjectionReciepts":loader.macys_proj_receipt,
             'PlannedSellThru': planned_sell_thru
-
+            
+            
         }
         save_rolling_forecasts(productmain, sheet_object, current_year, forecast_data)
         print(f"Product {loader.product_id} saved successfully")

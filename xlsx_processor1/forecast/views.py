@@ -54,23 +54,23 @@ def make_zip_and_delete(folder_path):
     except Exception as e:
         print(f"An error occurred: {e}")
  
-def get_product_forecast_data(pid):
-        product = get_object_or_404(ProductDetail, product_id=pid)
-        return product.category, product.rolling_method, product.std_trend, product.STD_index_value, product.month_12_fc_index, product.forecasting_method,  product.total_added_qty
-    
-def get_planned_data(pid, year):
-    product = ProductDetail.objects.filter(product_id=pid).first()
+def get_product_forecast_data(pid,sheet_object):
+        product = get_object_or_404(ProductDetail, product_id=pid,sheet=sheet_object)
+        return product.category, product.rolling_method, product.std_trend_original, product.std_index_value_original, product.month_12_fc_index_original, product.forecasting_method_original,  product.algorithm_generated_final_quantity
+
+def get_planned_data(pid, year,sheet_object):
+    product = ProductDetail.objects.filter(product_id=pid,sheet=sheet_object).first()
     if not product:
         return {"error": "Product not found"}
 
     result = {
-        "PlannedShipment": {},
-        "PlannedForecast": {}
+        "planned_shipments": {},
+        "planned_fc": {}
     }
 
-    for variable in ["PlannedShipment", "PlannedForecast"]:
+    for variable in ["planned_shipments", "planned_fc"]:
         forecast = MonthlyForecast.objects.filter(
-            product=product,
+            productdetail=product,
             variable_name=variable,
             year=year
         ).first()
@@ -93,6 +93,7 @@ def get_planned_data(pid, year):
 
     return result
 
+# Done
 class UploadXlsxAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -153,7 +154,7 @@ class UploadXlsxAPIView(APIView):
         zip_url = request.build_absolute_uri(settings.MEDIA_URL + zip_rel)
         return Response({'file_url': zip_url}, status=status.HTTP_200_OK)
 
-
+# Done
 class ProductDetailViewSet(viewsets.ViewSet):
     lookup_field = "pk"         
     lookup_value_regex = r"[^/]+"
@@ -193,67 +194,79 @@ class ProductDetailViewSet(viewsets.ViewSet):
         })
     
 
-    def update(self, request, pk=None):
-    # 1. Update ProductDetail
-        product = get_object_or_404(ProductDetail, product_id=pk)
+    def partial_update(self, request, pk=None):
+        sheet_id = request.data.get("sheet_id")
+        if not sheet_id:
+            return Response({"error": "sheet_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 1. Update ProductDetail (sheet-wise)
+        product = get_object_or_404(ProductDetail, product_id=pk, sheet_id=sheet_id)
         product_serializer = ProductDetailSerializer(product, data=request.data.get("product_details", {}), partial=True)
         
         if product_serializer.is_valid():
             product_serializer.save()
         else:
             return Response(product_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # 2. Update/Create MonthlyForecast
         forecast_data = request.data.get("monthly_forecast", [])
         for forecast in forecast_data:
             forecast_instance = MonthlyForecast.objects.filter(
-                product=product,
+                productdetail=product,
                 variable_name=forecast.get("variable_name"),
-                year=forecast.get("year")
+                year=forecast.get("year"),
+                sheet_id=sheet_id
             ).first()
 
             if forecast_instance:
                 forecast_serializer = MonthlyForecastSerializer(forecast_instance, data=forecast, partial=True)
             else:
-                forecast["product"] = product.product_id
+                forecast["productdetail"] = product.id
+                forecast["sheet"] = sheet_id
                 forecast_serializer = MonthlyForecastSerializer(data=forecast)
             
             if forecast_serializer.is_valid():
                 forecast_serializer.save()
             else:
                 return Response(forecast_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # 3. Update/Create ForecastNote
         note_data = request.data.get("forecast_notes", [])
         for note in note_data:
             note_id = note.get("id")
             if note_id:
-                note_instance = ForecastNote.objects.filter(id=note_id, pid=pk).first()
+                note_instance = ForecastNote.objects.filter(id=note_id, sheet_id=sheet_id, productdetail=product).first()
                 if note_instance:
                     note_serializer = ForecastNoteSerializer(note_instance, data=note, partial=True)
                 else:
                     continue  # Skip invalid IDs
             else:
-                note["pid"] = pk
+                note["productdetail"] = product.id
+                note["sheet"] = sheet_id
                 note_serializer = ForecastNoteSerializer(data=note)
             
             if note_serializer.is_valid():
                 note_serializer.save()
             else:
                 return Response(note_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+
         # 4. Return updated data
         return Response({
             "product_details": product_serializer.data,
-            "monthly_forecast": MonthlyForecastSerializer(MonthlyForecast.objects.filter(product=product), many=True).data,
-            "forecast_notes": ForecastNoteSerializer(ForecastNote.objects.filter(pid=pk), many=True).data,
+            "monthly_forecast": MonthlyForecastSerializer(
+                MonthlyForecast.objects.filter(productdetail=product, sheet_id=sheet_id), many=True
+            ).data,
+            "forecast_notes": ForecastNoteSerializer(
+                ForecastNote.objects.filter(productdetail=product, sheet_id=sheet_id), many=True
+            ).data,
         })
+    
     
 
     @action(detail=False, methods=["post"])
     def recalculate_forecast(self, request):
         """
-        POST /products/recalculate_forecast/
+        POST /product/recalculate_forecast/
 
         {
           "changed_variable": "Planned_FC",
@@ -271,6 +284,9 @@ class ProductDetailViewSet(viewsets.ViewSet):
         new_value = request.data.get("new_value")
         context_data = request.data.get("context_data")
         pid = request.data.get("pid")
+        sheet_id = request.data.get("sheet_id")
+        sheet_object = get_object_or_404(SheetUpload, id=sheet_id)
+        product_object = get_object_or_404(ProductDetail, product_id=pid, sheet=sheet_object)
         print("Changed Variable:", changed_variable)
         print("New Value:", new_value)
         print("Context Keys:", context_data.keys())
@@ -279,7 +295,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
             return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), pid)
+            updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), product_object, sheet_object)
             print("Rolling 12 FC updated to Database ")
             return Response({"pid": pid,"updated_context": updated_context})
         except Exception as e:
@@ -291,22 +307,25 @@ class ProductDetailViewSet(viewsets.ViewSet):
         updated_context = request.data.get("updated_context")
         pid = request.data.get("pid")
         path = request.data.get("file_path")
-        save_forecast_data(pid, updated_context)
-        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid)
-        result = get_planned_data(pid,2025)
-        planned_shp = result["PlannedShipment"]
-        planned_fc = result["PlannedForecast"]
+        sheet_id = request.data.get("sheet_id")
+        if not sheet_id:
+            return Response({"error": "Missing sheet_id"}, status=status.HTTP_400_BAD_REQUEST)
+        sheet_object = get_object_or_404(SheetUpload, id=sheet_id)
+        save_forecast_data(pid, updated_context, sheet_object)
+        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid,sheet_object)
+        result = get_planned_data(pid,2025,sheet_object)
+        planned_shp = result["planned_shipments"]
+        planned_fc = result["planned_fc"]
         get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
 
         print("Data saved to DB Successfully")
         return Response({"pid": pid, "updated_context": updated_context})
 
 
-
+# Done 
 class ForecastViewSet(ViewSet):
     permission_classes = [AllowAny]
     
-
     @action(detail=False, methods=["get"])
     def filter_products(self, request):
         sheet_id = request.query_params.get("sheet_id")
@@ -357,7 +376,7 @@ class ForecastViewSet(ViewSet):
         return Response(result)
 
 
-
+# Done 
 class DownloadForecastSummaryExcel(APIView):
     permission_classes = [AllowAny]
 
@@ -375,49 +394,75 @@ class DownloadForecastSummaryExcel(APIView):
             return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
         return Response({"detail": "File not found."}, status=404)
 
+
+# Done
 class DownloadFinalQuantityReport(APIView):
-    permission_classes = [AllowAny]  # Adjust as needed
+    permission_classes = [AllowAny]
 
     def get(self, request):
-        file_name = "FinalQuantityReport.xlsx"
-        file_path = os.path.join(settings.MEDIA_ROOT, file_name)
+        sheet_id = request.query_params.get("sheet_id")
+        if not sheet_id:
+            return Response({"detail": "sheet_id is required."}, status=400)
 
         try:
-            data = []
-            products = ProductDetail.objects.all()
+            sheet = SheetUpload.objects.get(id=sheet_id)
+        except SheetUpload.DoesNotExist:
+            return Response({"detail": "Sheet not found."}, status=404)
 
-            for product in products:
-                final_qty = (
-                    product.user_added_quantity
-                    if product.user_added_quantity is not None
-                    else product.total_added_qty
-                )
-                if final_qty > 0:
-                    data.append({
-                        "PID": product.product_id,
-                        "Category": product.category,
-                        "Final_qty": final_qty,
-                        
-                    })
+        products = ProductDetail.objects.filter(sheet_id=sheet_id)
+        data = []
 
-            df = pd.DataFrame(data)
-            df.to_excel(file_path, index=False)
+        for product in products:
+            final_qty = (
+                product.user_updated_final_quantity
+                if product.user_updated_final_quantity is not None
+                else product.algorithm_generated_final_quantity
+            )
+            if final_qty and final_qty > 0:
+                data.append({
+                    "PID": product.product_id,
+                    "Category": product.category,
+                    "Final_qty": final_qty,
+                })
 
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file_name)
+        if not data:
+            return Response({"detail": "No data with final quantity > 0."}, status=204)
 
-        except Exception as e:
-            return Response({"detail": str(e)}, status=500)
+        df = pd.DataFrame(data)
 
+        # Define and ensure file path
+        file_name = f"FinalQuantityReport_Sheet_{sheet_id}.xlsx"
+        file_path = os.path.join(settings.MEDIA_ROOT, 'final_quantity_report', file_name)
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+        df.to_excel(file_path, index=False)
+
+        # Save path to SheetUpload model
+        sheet.final_quantity_report.name = os.path.join('final_quantity_report', file_name)
+        sheet.save()
+
+        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file_name)
+
+# Done
 class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')
     serializer_class = ForecastNoteSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        pid = self.request.query_params.get('pid')
+        pid = self.request.query_params.get("pid")
+        sheet_id = self.request.query_params.get("sheet_id")
+        if not sheet_id:
+            return Response({"detail": "sheet_id is required."}, status=400)
+        
         if pid:
-            queryset = queryset.filter(pid=pid)
+            queryset = queryset.filter(productdetail__product_id=pid)
+
+        if sheet_id:
+            queryset = queryset.filter(sheet_id=sheet_id)
+
         return queryset
+
 
 class FileCategoryDownloadAPIView(APIView):
     def get(self, request):

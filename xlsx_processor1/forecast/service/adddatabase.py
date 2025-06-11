@@ -237,22 +237,22 @@ def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
                 )
 
 # MonthlyForecast & ProductDetail model Operations
-def save_forecast_data(pid, sheet, updated_context):
+def save_forecast_data(pid, updated_context, sheet_object):
     """
     Updates ProductDetail fields and saves rolling forecast data to MonthlyForecast.
     Expects updated_context to have keys matching MonthlyForecast.variable_name and
     values as dicts of month abbreviations to values.
     """
 
-    product = ProductDetail.objects.get(product_id=pid)
+    product = ProductDetail.objects.get(product_id=pid, sheet=sheet_object)
     year = datetime.now().year  # You can change this if needed
 
     # Update ProductDetail fields
-    product.rolling_method = updated_context.get("Rolling_method", product.rolling_method)
-    product.std_trend_original = updated_context.get("Trend", product.std_trend_original)
-    product.forecasting_method_original = updated_context.get("Forecasting_Method", product.forecasting_method_original)
-    product.month_12_fc_index_original = updated_context.get("month_12_fc_index", product.month_12_fc_index_original)
-    product.current_fc_index = updated_context.get("Current_FC_Index", product.current_fc_index)
+    product.rolling_method = updated_context.get("rolling_method", product.rolling_method)
+    product.std_trend_original = updated_context.get("std_trend_original", product.std_trend_original)
+    product.forecasting_method_original = updated_context.get("forecasting_method_original", product.forecasting_method_original)
+    product.month_12_fc_index_original = updated_context.get("month_12_fc_index_original", product.month_12_fc_index_original)
+    product.current_fc_index = updated_context.get("current_fc_index", product.current_fc_index)
 
     with transaction.atomic():
         product.save()
@@ -289,7 +289,7 @@ def save_forecast_data(pid, sheet, updated_context):
 
             if forecast_data:
                 MonthlyForecast.objects.update_or_create(
-                    sheet=sheet,
+                    sheet=sheet_object,
                     productdetail=product,
                     variable_name=variable_name,
                     year=year,

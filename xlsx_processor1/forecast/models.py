@@ -7,7 +7,7 @@ class SheetUpload(models.Model):
     file = models.FileField(upload_to='uploads/')
     summary = models.FileField(upload_to='summary/', null=True, blank=True, verbose_name="Summary File")
     is_processed = models.BooleanField(default=False)
-
+    final_quantity_report = models.FileField(upload_to='final_quantity_report/', null=True, blank=True, verbose_name="Final Quantity Report")
     output_folder = models.CharField(max_length=255, null=True, blank=True)
     month_from = models.CharField(max_length=50, null=True, blank=True)
     month_to = models.CharField(max_length=50, null=True, blank=True)
