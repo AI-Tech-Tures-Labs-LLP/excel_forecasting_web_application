@@ -42,7 +42,7 @@ class ProductDetail(models.Model):
 
     safe_non_safe = models.CharField(max_length=100,null=True, blank=True, verbose_name="Safe/Non-Safe") #Safe/Non-Safe
     item_code = models.CharField(max_length=100,null=True, blank=True, verbose_name="Item Code") #Item Code
-    blu = models.CharField(max_length=100,null=True, blank=True, verbose_name="Adjusted RLJ Item") #RLJ
+    rlj = models.CharField(max_length=100,null=True, blank=True, verbose_name="Adjusted RLJ Item") #RLJ
     mkst = models.CharField(max_length=50,null=True, blank=True, verbose_name="Mkst")    #MKST
     current_door_count = models.FloatField(null=True, blank=True, verbose_name="Door Count") #Door Count
     last_store_count = models.FloatField(null=True, blank=True, verbose_name="Old Door Count") #Last Str Cnt
@@ -100,7 +100,7 @@ class ProductDetail(models.Model):
     marketing_id = models.CharField(max_length=50, null=True, blank=True, verbose_name="Mktg ID")
     std_store_return = models.FloatField(null=True, blank=True, verbose_name="STD Store Rtn %")
     
-    last_project_review_date = models.DateField(null=True, blank=True, verbose_name="Last Proj Review Date")
+    last_projection_review_date = models.DateField(null=True, blank=True, verbose_name="Last Proj Review Date")
     macy_spring_projection_note = models.TextField(null=True, blank=True, verbose_name="Macy's Spring Proj Notes")
     planner_response = models.TextField(null=True, blank=True, verbose_name="Planner Response")
     website = models.CharField(max_length=1000, null=True, blank=True, verbose_name="Website")
