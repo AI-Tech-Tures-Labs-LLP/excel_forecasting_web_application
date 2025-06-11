@@ -1319,7 +1319,8 @@ def calculate_index_value(Current_FC_Index):
 
 
 def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
-    base_dir = os.path.join("media\processed_files", path) 
+    
+    base_dir = os.path.join("media/processed_files", str(path)) 
     
     filename = f"{category}.xlsx"
     filepath = os.path.join(base_dir, filename)

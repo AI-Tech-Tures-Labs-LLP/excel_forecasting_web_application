@@ -54,23 +54,23 @@ def make_zip_and_delete(folder_path):
     except Exception as e:
         print(f"An error occurred: {e}")
  
-def get_product_forecast_data(pid):
-        product = get_object_or_404(ProductDetail, product_id=pid)
-        return product.category, product.rolling_method, product.std_trend, product.STD_index_value, product.month_12_fc_index, product.forecasting_method,  product.total_added_qty
-    
-def get_planned_data(pid, year):
-    product = ProductDetail.objects.filter(product_id=pid).first()
+def get_product_forecast_data(pid,sheet_object):
+        product = get_object_or_404(ProductDetail, product_id=pid,sheet=sheet_object)
+        return product.category, product.rolling_method, product.std_trend_original, product.std_index_value_original, product.month_12_fc_index_original, product.forecasting_method_original,  product.algorithm_generated_final_quantity
+
+def get_planned_data(pid, year,sheet_object):
+    product = ProductDetail.objects.filter(product_id=pid,sheet=sheet_object).first()
     if not product:
         return {"error": "Product not found"}
 
     result = {
-        "PlannedShipment": {},
-        "PlannedForecast": {}
+        "planned_shipments": {},
+        "planned_fc": {}
     }
 
-    for variable in ["PlannedShipment", "PlannedForecast"]:
+    for variable in ["planned_shipments", "planned_fc"]:
         forecast = MonthlyForecast.objects.filter(
-            product=product,
+            productdetail=product,
             variable_name=variable,
             year=year
         ).first()
@@ -154,7 +154,7 @@ class UploadXlsxAPIView(APIView):
         zip_url = request.build_absolute_uri(settings.MEDIA_URL + zip_rel)
         return Response({'file_url': zip_url}, status=status.HTTP_200_OK)
 
-
+# Done
 class ProductDetailViewSet(viewsets.ViewSet):
     lookup_field = "pk"         
     lookup_value_regex = r"[^/]+"
@@ -266,7 +266,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["post"])
     def recalculate_forecast(self, request):
         """
-        POST /products/recalculate_forecast/
+        POST /product/recalculate_forecast/
 
         {
           "changed_variable": "Planned_FC",
@@ -284,6 +284,9 @@ class ProductDetailViewSet(viewsets.ViewSet):
         new_value = request.data.get("new_value")
         context_data = request.data.get("context_data")
         pid = request.data.get("pid")
+        sheet_id = request.data.get("sheet_id")
+        sheet_object = get_object_or_404(SheetUpload, id=sheet_id)
+        product_object = get_object_or_404(ProductDetail, product_id=pid, sheet=sheet_object)
         print("Changed Variable:", changed_variable)
         print("New Value:", new_value)
         print("Context Keys:", context_data.keys())
@@ -292,7 +295,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
             return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), pid)
+            updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), product_object, sheet_object)
             print("Rolling 12 FC updated to Database ")
             return Response({"pid": pid,"updated_context": updated_context})
         except Exception as e:
@@ -304,11 +307,15 @@ class ProductDetailViewSet(viewsets.ViewSet):
         updated_context = request.data.get("updated_context")
         pid = request.data.get("pid")
         path = request.data.get("file_path")
-        save_forecast_data(pid, updated_context)
-        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid)
-        result = get_planned_data(pid,2025)
-        planned_shp = result["PlannedShipment"]
-        planned_fc = result["PlannedForecast"]
+        sheet_id = request.data.get("sheet_id")
+        if not sheet_id:
+            return Response({"error": "Missing sheet_id"}, status=status.HTTP_400_BAD_REQUEST)
+        sheet_object = get_object_or_404(SheetUpload, id=sheet_id)
+        save_forecast_data(pid, updated_context, sheet_object)
+        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid,sheet_object)
+        result = get_planned_data(pid,2025,sheet_object)
+        planned_shp = result["planned_shipments"]
+        planned_fc = result["planned_fc"]
         get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
 
         print("Data saved to DB Successfully")

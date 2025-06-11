@@ -26,26 +26,28 @@ from django.core.exceptions import ObjectDoesNotExist
 # except ObjectDoesNotExist:
 #     retail = None
 
-def get_forecast_variables(product, year=2025,last_year =2024):
+def get_forecast_variables(product_object,sheet_object, year=2025,last_year=2024):
     # List of required variable names
     variable_keys = [
-        "TY_Unit_Sales",
-        "TY_OH_Units",
-        "TY_Receipts"
+        "ty_total_sales_units",
+        "ty_total_eom_oh",
+        "ty_omni_receipts"
     ]
     variable_keys_last_year = [
-        "LY_Unit_Sales",
-        "LY_OH_Units"
+        "ly_total_sales_units",
+        "ly_total_eom_oh"
     ]
 
     # Fetch all relevant records in a single query
     forecasts = MonthlyForecast.objects.filter(
-        product=product,
+        sheet=sheet_object,
+        productdetail=product_object,
         year=year,
         variable_name__in=variable_keys
     )
     forecasts_last_year = MonthlyForecast.objects.filter(
-        product=product,
+        sheet=sheet_object,
+        productdetail=product_object,
         year=last_year,
         variable_name__in=variable_keys_last_year
     )
@@ -70,21 +72,20 @@ def get_forecast_variables(product, year=2025,last_year =2024):
     }
 
     # Assign to individual variables
-    TY_Unit_Sales = forecast_map.get("TY_Unit_Sales", {})
-    LY_Unit_Sales = forecast_map_last.get("LY_Unit_Sales", {})
-    TY_OH_Units   = forecast_map.get("TY_OH_Units", {})
-    TY_Receipts   = forecast_map.get("TY_Receipts", {})
-    LY_OH_Units   = forecast_map_last.get("LY_OH_Units", {})
+    ty_total_sales_units = forecast_map.get("ty_total_sales_units", {})
+    ly_total_sales_units = forecast_map_last.get("ly_total_sales_units", {})
+    ty_total_eom_oh = forecast_map.get("ty_total_eom_oh", {})
+    ty_omni_receipts = forecast_map.get("ty_omni_receipts", {})
+    ly_total_eom_oh = forecast_map_last.get("ly_total_eom_oh", {})
 
-    print("TY_Unit_Sales:", TY_Unit_Sales)
-    print("LY_Unit_Sales:", LY_Unit_Sales)
-    print("TY_OH_Units:", TY_OH_Units)
-    print("TY_Receipts:", TY_Receipts)
-    print("LY_OH_Units:", LY_OH_Units)
+    print("ty_total_sales_units:", ty_total_sales_units)
+    print("ly_total_sales_units:", ly_total_sales_units)
+    print("ty_total_eom_oh:", ty_total_eom_oh)
+    print("ty_omni_receipts:", ty_omni_receipts)
+    print("ly_total_eom_oh:", ly_total_eom_oh)
 
-    return TY_Unit_Sales, LY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units
+    return ty_total_sales_units, ly_total_sales_units, ty_total_eom_oh, ty_omni_receipts, ly_total_eom_oh
 
- 
 
 def dependencies():
     return {
@@ -192,13 +193,13 @@ def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Un
  
 # Main recalculation engine
  
-def recalculate_all(changed_var, new_value, context_data, pid):
+def recalculate_all(changed_var, new_value, context_data, product_object, sheet_object):
     deps = dependencies()
     order = build_dependency_order(deps, changed_var)
     context_data[changed_var] = new_value
     context_data
-    TY_Unit_Sales, LY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units = get_forecast_variables(pid)
-    retail = RetailInfo.objects.latest('id')
+    TY_Unit_Sales, LY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units = get_forecast_variables(product_object,sheet_object)
+    retail = RetailInfo.objects.filter(sheet=sheet_object).first()
     last_month_of_previous_month_numeric = retail.last_month_of_previous_month_numeric
     current_month_number = retail.current_month_number
     current_month = retail.current_month
