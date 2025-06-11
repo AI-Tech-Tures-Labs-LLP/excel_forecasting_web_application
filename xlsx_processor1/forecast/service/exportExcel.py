@@ -210,7 +210,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     # And for OmniForecast
     omni_instances = [
     {
-            'pid':row['pid'],  
+           'pid':row['pid'],  
            'com_month_12_fc_index': row['Com month_12_fc_index'],
            'com_trend': row['com trend'],
            'is_com_inventory_maintained': bool(row.get('Com Inventory maintained', False)),
