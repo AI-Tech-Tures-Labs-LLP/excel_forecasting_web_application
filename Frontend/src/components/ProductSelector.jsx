@@ -30,7 +30,7 @@ import {
   Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import ProductDetailsView from "./ProductDetailsView";
+import ProductDetailsView from "./product-details/ProductDetailsView";
 import NotesModal from "./NotesModal";
 // Import Redux actions and selectors
 import {
@@ -46,7 +46,6 @@ import {
   selectComProducts,
   selectOmniProducts,
 } from "../redux/productSlice";
-
 import { setCurrentView, addToast, selectCurrentView } from "../redux/uiSlice";
 import { selectCurrentSession } from "../redux/forecastSlice";
 import { formatDateTime } from "../utils/dateFormat";
@@ -320,7 +319,7 @@ function ProductSelector() {
             status = "not_reviewed";
           } else if (isPending) {
             status = "pending";
-          } 
+          }
           notesData[pid] = {
             notes: sortedNotes,
             latestNote: latestNote,
