@@ -130,7 +130,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             logging.info(f'updated_forecasting_method: {forecasting_method}')
         logging.info(f'forecasting_method: {forecasting_method}')
         loss=0
-        if forecasting_method =='FC By Index':
+        if forecasting_method =='FC By Index' and not is_maintained_status:
             average_value = sum(last_year_store_eom_oh_for_inventory_check) / len(last_year_store_eom_oh_for_inventory_check)
             logging.info(f'average_value: {average_value}')
             loss=calculate_loss(loader.kpi_door_count, average_value)
@@ -433,6 +433,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
 
                 STD_index_value=calculate_std_index_value(loader.index_value,selected_months)
                 new_store_month_12_fc_index=calculate_12th_month_forecast(TY_store_Unit_Sales_list_new, STD_index_value)
+                month_12_fc_index = new_store_month_12_fc_index
                 logging.info(f'new_com_month_12_fc_index: {new_com_month_12_fc_index}')
 
             last_year_store_eom_oh_for_inventory_check=last_year_eom_oh_season(loader.ly_total_eom_oh,loader.ly_com_eom_oh,season_month)
@@ -442,7 +443,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             forecasting_method=decide_forecasting_method(is_maintained_status_store)
             loss=0
 
-            if forecasting_method =='FC By Index':
+            if forecasting_method =='FC By Index' and not is_maintained_status_store:
                 average_value = sum(last_year_store_eom_oh_for_inventory_check) / len(last_year_store_eom_oh_for_inventory_check)
                 logging.info(f'average_value: {average_value}')
                 loss=calculate_loss(loader.kpi_door_count, average_value)
@@ -450,6 +451,9 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
                 loss_percent =determine_loss_percent(loss,rank, loader.macys_owned_retail)
                 logging.info(f'loss_percent: {loss_percent}')
                 new_store_month_12_fc_index=update_12_month_forecast_by_loss(new_store_month_12_fc_index, loss_percent)
+                month_12_fc_index = new_store_month_12_fc_index
+
+            
             fc_by_index=calculate_fc_by_index(loader.index_value, new_store_month_12_fc_index)
             logging.info(f'fc_by_index_updated: {fc_by_index}')   
             row40_values=[LY_store_sales_unit[month] for month in MONTHS]
@@ -565,6 +569,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             else:
                 extra_oh_qty=macy_additional_units
             logging.info(f'extra_oh_qty {extra_oh_qty}')
+            macy_additional_units=macy_additional_units-extra_oh_qty
             planned_shp[forecast_month]=planned_shp[forecast_month] - extra_oh_qty
         planned_oh = calculate_planned_oh_partial(rolling_method, current_month_number, planned_fc, planned_shp, loader.ty_total_eom_oh, loader.ty_omni_receipts, loader.ly_total_eom_oh, loader.ty_total_sales_units, current_month,override_value=None)
         logging.info(f'planned_shp after macys adjustment: {planned_shp}')
@@ -598,11 +603,11 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             "pid": loader.product_id,
             "rlj": loader.rlj,
             "vendor":vendor,
-            "Valentine_day":False,
-            "Mothers_day":False,
-            "Fathers_day":False,
+            "Valentine_day":Valentine_day,
+            "Mothers_day":Mothers_day,
+            "Fathers_day":Fathers_day,
             "Mens_day":False,
-            "Womens_day":False,
+            "Womens_day":Womens_day,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
             "STD_index_value_original":STD_index_value_original,
@@ -659,11 +664,11 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             "rlj": loader.rlj,
             
             "vendor":vendor,
-            "Valentine_day":False,
-            "Mothers_day":False,
-            "Fathers_day":False,
+            "Valentine_day":Valentine_day,
+            "Mothers_day":Mothers_day,
+            "Fathers_day":Fathers_day,
             "Mens_day":False,
-            "Womens_day":False,
+            "Womens_day":Womens_day,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
             "STD_index_value_original":STD_index_value_original,
@@ -718,11 +723,11 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             "pid": loader.product_id,
             "rlj": loader.rlj,
             "vendor":vendor,
-            "Valentine_day":False,
-            "Mothers_day":False,
-            "Fathers_day":False,
+            "Valentine_day":Valentine_day,
+            "Mothers_day":Mothers_day,
+            "Fathers_day":Fathers_day,
             "Mens_day":False,
-            "Womens_day":False,
+            "Womens_day":Womens_day,
             "lead time":lead_time,
             "leadtime holiday adjustment":leadtime_holiday,
             "STD_index_value_original":STD_index_value_original,

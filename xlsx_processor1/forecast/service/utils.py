@@ -1331,9 +1331,9 @@ def calculate_index_value(Current_FC_Index):
 
 
 
-def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
-    
-    base_dir = os.path.join("media/processed_files", str(path)) 
+def get_c2_value(category,pid,std_trend,STD_index_value,currect_fc_index,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
+    import forecast.service.staticVariable as st
+    base_dir = os.path.join("media/processed_files", path) 
     
     filename = f"{category}.xlsx"
     filepath = os.path.join(base_dir, filename)
@@ -1349,7 +1349,7 @@ def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,foreca
             start_row= row[2].row
  
     ws[f"F{start_row + 3}"]= std_trend
-    ws[f"E{start_row + 2}"]= STD_index_value
+    ws[f"F{start_row + 1}"]= currect_fc_index
     ws[f"F{start_row + 2}"]= month_12_fc_index  # Added IFERROR to prevent divide-by-zero issues
     ws[f"F{start_row + 4}"]= forecasting_method
     ws[f"I{start_row + 5}"]=planned_fc["FEB"]

@@ -3,6 +3,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import productImage from "../assets/undefined.png";
+import ForecastVariableCards from "./ForecastVariableCard"; // Adjust path as needed
 import {
   ArrowLeft,
   ChevronDown,
@@ -37,7 +38,15 @@ import {
   Settings,
   ExternalLink,
   History, // Add this for recent searches icon
-  X, /// Add this for notes
+  X,
+  Users,
+  MapPin,
+  Percent,
+  Box,
+  CheckCircle,
+  XCircle,
+  Filter,
+  Info, /// Add this for notes
 } from "lucide-react";
 
 // Import selectors
@@ -53,7 +62,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [hasInitialChanges, setHasInitialChanges] = useState(false);
   const [lastChangedEditableField, setLastChangedEditableField] =
     useState(null);
-
+  const [showSaveChangesPopup, setShowSaveChangesPopup] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [lastChangedField, setLastChangedField] = useState(null);
   const [productData, setProductData] = useState(null);
@@ -76,6 +85,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [editableData, setEditableData] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmittedData, setLastSubmittedData] = useState(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   // SEARCH AND NAVIGATION STATE
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,6 +102,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   const [forecastingMethod, setForecastingMethod] = useState("FC by Index");
   const [hasControlChanges, setHasControlChanges] = useState(false);
   const [pendingChangeField, setPendingChangeField] = useState(null);
+  const [showCriticalSavePopup, setShowCriticalSavePopup] = useState(false);
+  const [showVariablesModal, setShowVariablesModal] = useState(false);
   //tab navigation
 
   const [activeTab, setActiveTab] = useState("forecast-variables");
@@ -308,6 +320,28 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return () => clearTimeout(timer);
   }, [editableData, lastChangedEditableField]);
 
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        setShowVariablesModal(false);
+      }
+    };
+
+    if (showVariablesModal) {
+      document.addEventListener("keydown", handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore body scroll when modal is closed
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = "unset";
+    };
+  }, [showVariablesModal]);
+
   //   if (
   //     editableTrend &&
   //     forecastingMethod &&
@@ -507,8 +541,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     const qty = parseFloat(value);
     setUserAddedQuantity(value);
 
-    if (!isNaN(qty) && totalAddedQty) {
-      const percentage = (qty / totalAddedQty) * 100;
+    if (!isNaN(qty) && cardData.totalAddedQty) {
+      const percentage = (qty / cardData.totalAddedQty) * 100;
       setExternalFactorPercentage(percentage.toFixed(2));
     } else {
       setExternalFactorPercentage("");
@@ -594,7 +628,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         contextData.Planned_sell_thru[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
       });
+
       console.log("TREND", lastChangedField);
+
       const getChangedFieldValue = () => {
         switch (lastChangedField) {
           case "Trend":
@@ -611,30 +647,23 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             return editableTrend;
         }
       };
+
       if (lastChangedField) {
         lastAppliedChangeRef.current = {
           changed_variable: lastChangedField,
-          new_value: getChangedFieldValue(), // reuse same logic
+          new_value: getChangedFieldValue(),
         };
       }
 
       // Use a control variable change to trigger recalculation
       const payload = {
-        changed_variable: lastChangedField || "TREND", // or whichever control changed most recently
-        // new_value: parseFloat(editableTrend) || 0,
+        changed_variable: lastChangedField || "TREND",
         new_value: getChangedFieldValue(),
         context_data: contextData,
         pid: productId,
       };
 
       console.log("Applying control changes:", payload);
-
-      // const response = await axios.post(
-      //   `${
-      //     import.meta.env.VITE_API_BASE_URL
-      //   }/forecast/api/product/${productId}/`,
-      //   payload
-      // );
 
       const response = await axios.post(
         `${
@@ -669,8 +698,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           plannedEOH: monthLabels.map(
             (month) => updatedContext.Planned_EOH?.[month] || 0
           ),
-          grossProjection: rollingForecastData.grossProjection, // Keep existing
-          macysProjReceipts: rollingForecastData.macysProjReceipts, // Keep existing
+          grossProjection: rollingForecastData.grossProjection,
+          macysProjReceipts: rollingForecastData.macysProjReceipts,
           plannedSellThru: monthLabels.map(
             (month) => updatedContext.Planned_sell_thru?.[month] || 0
           ),
@@ -691,7 +720,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         });
         setEditableData(newEditableData);
 
-        // setHasControlChanges(false);
         setLastSubmittedData(payload);
         setLastChangedField(null);
         originalValuesRef.current = {
@@ -701,7 +729,14 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           month_12_fc_index: editable12MonthFC,
           Current_FC_Index: selectedIndex,
         };
-        // alert("Forecast controls applied successfully!");
+
+        // Show success popup instead of alert
+        setShowSuccessPopup(true);
+
+        // Auto-hide popup after 3 seconds
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+        }, 3000);
       }
     } catch (error) {
       console.error("Error applying control changes:", error);
@@ -747,202 +782,150 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }
   };
 
-  const handleSaveChanges = async () => {
-    if (!rollingForecastData || !productId) return;
+  const preciseDecimalConversion = (percentage) => {
+    // Convert to decimal with proper precision handling
+    return Math.round((percentage / 100) * 1000000000) / 1000000000;
+  };
 
-    setIsSaving(true);
-    const file_path = localStorage.getItem("file_path");
-    try {
-      const monthLabels = [
-        "FEB",
-        "MAR",
-        "APR",
-        "MAY",
-        "JUN",
-        "JUL",
-        "AUG",
-        "SEP",
-        "OCT",
-        "NOV",
-        "DEC",
-        "JAN",
-      ];
+ const handleSaveChanges = async () => {
+  if (!rollingForecastData || !productId) return;
 
-      // Build context_data with updated control values
-      const contextData = {
-        Rolling_method: rollingMethod,
+  setIsSaving(true);
+  setShowSaveChangesPopup(true); // Show popup immediately when saving starts
+  
+  const file_path = localStorage.getItem("file_path");
+  try {
+    const monthLabels = [
+      "FEB", "MAR", "APR", "MAY", "JUN", "JUL",
+      "AUG", "SEP", "OCT", "NOV", "DEC", "JAN",
+    ];
+
+    // Build context_data with updated control values
+    const contextData = {
+      Rolling_method: rollingMethod,
+      Trend: parseFloat(editableTrend) || 0,
+      Forecasting_Method: forecastingMethod,
+      month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+      Current_FC_Index: selectedIndex,
+    };
+
+    // Add all the forecast data arrays to context
+    monthLabels.forEach((month, index) => {
+      if (!contextData.Index_value) contextData.Index_value = {};
+      if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
+      if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
+      if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
+      if (!contextData.Planned_FC) contextData.Planned_FC = {};
+      if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
+      if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
+      if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
+
+      contextData.Index_value[month] = rollingForecastData.index?.[index] || 0;
+      contextData.FC_by_Index[month] = rollingForecastData.fcByIndex?.[index] || 0;
+      contextData.FC_by_Trend[month] = rollingForecastData.fcByTrend?.[index] || 0;
+      contextData.Recommended_FC[month] = rollingForecastData.recommendedFC?.[index] || 0;
+      contextData.Planned_FC[month] = editableData.plannedFC?.[month] || rollingForecastData.plannedFC?.[index] || 0;
+      contextData.Planned_Shipments[month] = editableData.plannedShipments?.[month] || rollingForecastData.plannedShipments?.[index] || 0;
+      contextData.Planned_EOH[month] = rollingForecastData.plannedEOH?.[index] || 0;
+      contextData.Planned_sell_thru[month] = rollingForecastData.plannedSellThru?.[index] || 0;
+    });
+
+    const updated_context = {
+      Rolling_method: rollingMethod,
+      Trend: parseFloat(editableTrend) || 0,
+      Forecasting_Method: forecastingMethod,
+      month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+      Current_FC_Index: selectedIndex,
+      Index: contextData.Index_value,
+      FC_by_Index: contextData.FC_by_Index,
+      FC_by_Trend: contextData.FC_by_Trend,
+      Recommended_FC: contextData.Recommended_FC,
+      Planned_FC: contextData.Planned_FC,
+      Planned_Shipments: contextData.Planned_Shipments,
+      Planned_EOH: contextData.Planned_EOH,
+      Gross_Projection_Nav: contextData.Gross_Projection_Nav || {},
+      Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {},
+      Planned_sell_Thru: contextData.Planned_sell_thru,
+    };
+
+    const payload = {
+      updated_context: updated_context,
+      file_path: file_path,
+      pid: productId,
+    };
+
+    console.log("Applying control changes:", payload);
+
+    const response = await axios.post(
+      `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/save_recalculate/`,
+      payload
+    );
+
+    if (response.data && response.data.updated_context) {
+      // Update the rolling forecast data with the recalculated values
+      const updatedContext = response.data.updated_context;
+
+      const updatedRollingData = {
+        index: monthLabels.map((month) => updatedContext.Index_value?.[month] || 0),
+        fcByIndex: monthLabels.map((month) => updatedContext.FC_by_Index?.[month] || 0),
+        fcByTrend: monthLabels.map((month) => updatedContext.FC_by_Trend?.[month] || 0),
+        recommendedFC: monthLabels.map((month) => updatedContext.Recommended_FC?.[month] || 0),
+        plannedFC: monthLabels.map((month) => updatedContext.Planned_FC?.[month] || 0),
+        plannedShipments: monthLabels.map((month) => updatedContext.Planned_Shipments?.[month] || 0),
+        plannedEOH: monthLabels.map((month) => updatedContext.Planned_EOH?.[month] || 0),
+        grossProjection: rollingForecastData.grossProjection,
+        macysProjReceipts: rollingForecastData.macysProjReceipts,
+        plannedSellThru: monthLabels.map((month) => updatedContext.Planned_sell_thru?.[month] || 0),
+      };
+
+      setRollingForecastData(updatedRollingData);
+
+      // Update editable data with new values
+      const newEditableData = {
+        plannedFC: {},
+        plannedShipments: {},
+      };
+      monthLabels.forEach((month, index) => {
+        newEditableData.plannedFC[month] = updatedRollingData.plannedFC[index];
+        newEditableData.plannedShipments[month] = updatedRollingData.plannedShipments[index];
+      });
+      setEditableData(newEditableData);
+
+      setHasControlChanges(false);
+      setLastSubmittedData(payload);
+      setLastChangedField(null);
+      
+      originalValuesRef.current = {
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+        Rolling_method: rollingMethod,
+        month_12_fc_index: editable12MonthFC,
         Current_FC_Index: selectedIndex,
       };
-
-      // Add all the forecast data arrays to context
-      monthLabels.forEach((month, index) => {
-        if (!contextData.Index_value) contextData.Index_value = {};
-        if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
-        if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
-        if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
-        if (!contextData.Planned_FC) contextData.Planned_FC = {};
-        if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
-        if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
-        if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
-
-        contextData.Index_value[month] =
-          rollingForecastData.index?.[index] || 0;
-        contextData.FC_by_Index[month] =
-          rollingForecastData.fcByIndex?.[index] || 0;
-        contextData.FC_by_Trend[month] =
-          rollingForecastData.fcByTrend?.[index] || 0;
-        contextData.Recommended_FC[month] =
-          rollingForecastData.recommendedFC?.[index] || 0;
-        contextData.Planned_FC[month] =
-          editableData.plannedFC?.[month] ||
-          rollingForecastData.plannedFC?.[index] ||
-          0;
-        contextData.Planned_Shipments[month] =
-          editableData.plannedShipments?.[month] ||
-          rollingForecastData.plannedShipments?.[index] ||
-          0;
-        contextData.Planned_EOH[month] =
-          rollingForecastData.plannedEOH?.[index] || 0;
-        contextData.Planned_sell_thru[month] =
-          rollingForecastData.plannedSellThru?.[index] || 0;
-      });
-      console.log("TREND", lastChangedField);
-      const getChangedFieldValue = () => {
-        switch (lastChangedField) {
-          case "Trend":
-            return parseFloat(editableTrend) || 0;
-          case "month_12_fc_index":
-            return parseFloat(editable12MonthFC) || 0;
-          case "Forecasting_Method":
-            return forecastingMethod;
-          case "Rolling_method":
-            return rollingMethod;
-          case "Current_FC_Index":
-            return selectedIndex;
-          default:
-            return null;
-        }
-      };
-
-      const updated_context = {
-        Rolling_method: rollingMethod,
+      
+      setInitialControlValues({
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
+        Rolling_method: rollingMethod,
         month_12_fc_index: parseFloat(editable12MonthFC) || 0,
         Current_FC_Index: selectedIndex,
-        Index: contextData.Index_value, // ✅ rename from Index_value
-        FC_by_Index: contextData.FC_by_Index,
-        FC_by_Trend: contextData.FC_by_Trend,
-        Recommended_FC: contextData.Recommended_FC,
-        Planned_FC: contextData.Planned_FC,
-        Planned_Shipments: contextData.Planned_Shipments,
-        Planned_EOH: contextData.Planned_EOH,
-        Gross_Projection_Nav: contextData.Gross_Projection_Nav || {}, // if needed
-        Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {}, // if needed
-        Planned_sell_Thru: contextData.Planned_sell_thru,
-      };
-
-      // Use a control variable change to trigger recalculation
-      const payload = {
-        updated_context: updated_context,
-        file_path: file_path,
-        pid: productId,
-      };
-
-      console.log("Applying control changes:", payload);
-
-      // const response = await axios.post(
-      //   `${
-      //     import.meta.env.VITE_API_BASE_URL
-      //   }/forecast/api/product/${productId}/`,
-      //   payload
-      // );
-
-      const response = await axios.post(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/save_recalculate/`,
-        payload
-      );
-
-      if (response.data && response.data.updated_context) {
-        // Update the rolling forecast data with the recalculated values
-        const updatedContext = response.data.updated_context;
-
-        const updatedRollingData = {
-          index: monthLabels.map(
-            (month) => updatedContext.Index_value?.[month] || 0
-          ),
-          fcByIndex: monthLabels.map(
-            (month) => updatedContext.FC_by_Index?.[month] || 0
-          ),
-          fcByTrend: monthLabels.map(
-            (month) => updatedContext.FC_by_Trend?.[month] || 0
-          ),
-          recommendedFC: monthLabels.map(
-            (month) => updatedContext.Recommended_FC?.[month] || 0
-          ),
-          plannedFC: monthLabels.map(
-            (month) => updatedContext.Planned_FC?.[month] || 0
-          ),
-          plannedShipments: monthLabels.map(
-            (month) => updatedContext.Planned_Shipments?.[month] || 0
-          ),
-          plannedEOH: monthLabels.map(
-            (month) => updatedContext.Planned_EOH?.[month] || 0
-          ),
-          grossProjection: rollingForecastData.grossProjection, // Keep existing
-          macysProjReceipts: rollingForecastData.macysProjReceipts, // Keep existing
-          plannedSellThru: monthLabels.map(
-            (month) => updatedContext.Planned_sell_thru?.[month] || 0
-          ),
-        };
-
-        setRollingForecastData(updatedRollingData);
-
-        // Update editable data with new values
-        const newEditableData = {
-          plannedFC: {},
-          plannedShipments: {},
-        };
-        monthLabels.forEach((month, index) => {
-          newEditableData.plannedFC[month] =
-            updatedRollingData.plannedFC[index];
-          newEditableData.plannedShipments[month] =
-            updatedRollingData.plannedShipments[index];
-        });
-        setEditableData(newEditableData);
-
-        setHasControlChanges(false);
-        setLastSubmittedData(payload);
-        setLastChangedField(null);
-        originalValuesRef.current = {
-          Trend: parseFloat(editableTrend) || 0,
-          Forecasting_Method: forecastingMethod,
-          Rolling_method: rollingMethod,
-          month_12_fc_index: editable12MonthFC,
-          Current_FC_Index: selectedIndex,
-        };
-        setInitialControlValues({
-          Trend: parseFloat(editableTrend) || 0,
-          Forecasting_Method: forecastingMethod,
-          Rolling_method: rollingMethod,
-          month_12_fc_index: parseFloat(editable12MonthFC) || 0,
-          Current_FC_Index: selectedIndex,
-        });
-        setHasEditableChanges(false);
-        alert("Forecast controls applied successfully!");
-      }
-    } catch (error) {
-      console.error("Error applying control changes:", error);
-      alert("Failed to apply changes. Please try again.");
-    } finally {
-      setIsSaving(false);
+      });
+      
+      setHasEditableChanges(false);
+      
+      // Keep popup visible for 2 more seconds after success to show success state
+      setTimeout(() => {
+        setShowSaveChangesPopup(false);
+      }, 2000);
     }
-  };
+  } catch (error) {
+    console.error("Error applying control changes:", error);
+    setShowSaveChangesPopup(false); // Hide popup on error
+    alert("Failed to apply changes. Please try again.");
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   // Add this function to submit the forecast data
   const submitForecastChanges = async (changedVariable) => {
@@ -1072,6 +1055,410 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     }
   };
 
+  const renderProductVariablesCards = () => {
+    if (!productData) return null;
+
+    const { store_forecast, com_forecast, omni_forecast } = productData;
+
+    // Helper function to render individual forecast cards
+    const renderForecastCards = (
+      forecastData,
+      type,
+      title,
+      bgColor,
+      iconColor,
+      Icon
+    ) => {
+      if (!forecastData || !forecastData[0]) return null;
+
+      const data = forecastData[0];
+
+      // Define variable configurations for each type
+      const getVariableConfig = (type) => {
+        const baseConfig = [
+          { key: "lead_time", label: "Lead Time", icon: Clock },
+          {
+            key: "leadtime_holiday_adjustment",
+            label: "Country Holiday",
+            type: "boolean",
+            icon: Calendar,
+          },
+          {
+            key: "month_12_fc_index",
+            label: "12-Month FC Index",
+            icon: BarChart3,
+          },
+          {
+            key: "month_12_fc_index",
+            label: "12-Month FC Index",
+            icon: BarChart3,
+          },
+          { key: "loss", label: "Loss (%)", icon: TrendingDown },
+          {
+            key: "month_12_fc_index_loss",
+            label: "12-Month FC Index (Loss %)",
+            icon: AlertTriangle,
+          },
+          {
+            key: "selected_months",
+            label: "STD Months",
+            type: "array",
+            icon: Calendar,
+          },
+          {
+            key: "trend",
+            label: "Trend",
+            type: "percentage",
+            icon: TrendingUp,
+          },
+          {
+            key: "inventory_maintained",
+            label: "Inventory Maintained",
+            type: "boolean",
+            icon: Package,
+          },
+          {
+            key: "trend_index_difference",
+            label: "Trend Index Difference",
+            icon: BarChart3,
+          },
+          {
+            key: "red_box_item",
+            label: "Red Box Item",
+            type: "boolean",
+            icon: Box,
+          },
+          {
+            key: "forecasting_method",
+            label: "Forecasting Method",
+            icon: Settings,
+          },
+          { key: "door_count", label: "Door Count", icon: Building2 },
+          { key: "average_com_oh", label: "Average Com OH", icon: Package },
+          { key: "fldc", label: "FLDC", icon: MapPin },
+          { key: "birthstone", label: "Birthstone", icon: Gem },
+          {
+            key: "birthstone_month",
+            label: "Birthstone Month",
+            icon: Calendar,
+          },
+          {
+            key: "considered_birthstone_required_quantity",
+            label: "Considered Birthstone",
+            type: "boolean",
+            icon: Gem,
+          },
+          { key: "forecast_month", label: "Forecast Month", icon: Calendar },
+          {
+            key: "forecast_month_required_quantity",
+            label: "Forecast Month - Required Qty",
+            icon: Package,
+          },
+          {
+            key: "forecast_month_planned_oh",
+            label: "Forecast Month - Planned OH",
+            icon: Package,
+          },
+          {
+            key: "next_forecast_month",
+            label: "Next Forecast Month",
+            icon: Calendar,
+          },
+          {
+            key: "next_forecast_month_required_quantity",
+            label: "Next Forecast Month - Required Qty",
+            icon: Package,
+          },
+          {
+            key: "next_forecast_month_planned_oh",
+            label: "Next Forecast Month - Planned OH",
+            icon: Package,
+          },
+          {
+            key: "forecast_month_planned_shipment",
+            label: "Forecast Month - Planned Shipment",
+            icon: Truck,
+          },
+          {
+            key: "next_forecast_month_planned_shipment",
+            label: "Next Forecast Month - Planned Shipment",
+            icon: Truck,
+          },
+          {
+            key: "qty_added_to_maintain_OH_forecast_month",
+            label: "Forecast Month - Qty Added",
+            icon: Package,
+          },
+          {
+            key: "qty_added_to_maintain_OH_next_forecast_month",
+            label: "Next Forecast Month - Qty Added",
+            icon: Package,
+          },
+          {
+            key: "qty_added_to_balance_SOQ_forecast_month",
+            label: "Macys SOQ - Qty Added",
+            icon: Star,
+          },
+          { key: "total_added_qty", label: "Total Added Qty", icon: Package },
+          { key: "Min_order", label: "Min Order", icon: ShoppingCart },
+          {
+            key: "average_store_sale_thru",
+            label: "Average Store SellThru",
+            type: "percentage",
+            icon: TrendingUp,
+          },
+          { key: "Macys_SOQ", label: "Macys SOQ - Total", icon: Star },
+          {
+            key: "macy_SOQ_percentage",
+            label: "Macys SOQ - Percentage Required",
+            type: "percentage",
+            icon: Percent,
+          },
+          {
+            key: "Qty_given_to_macys",
+            label: "Macys SOQ - Actual Given",
+            icon: Star,
+          },
+          {
+            key: "Below_min_order",
+            label: "Below Min Order",
+            type: "boolean",
+            icon: AlertTriangle,
+          },
+          {
+            key: "Over_macys_SOQ",
+            label: "Over Macys SOQ",
+            type: "boolean",
+            icon: AlertTriangle,
+          },
+          {
+            key: "Added_only_to_balance_macys_SOQ",
+            label: "Macys SOQ - Only Maintained",
+            type: "boolean",
+            icon: CheckCircle,
+          },
+          {
+            key: "Need_to_review_first",
+            label: "Needs Review",
+            type: "boolean",
+            icon: AlertCircle,
+          },
+        ];
+
+        const typeSpecific = {
+          store: [],
+          com: [
+            {
+              key: "com_month_12_fc_index",
+              label: "12-Month FC Index",
+              icon: BarChart3,
+            },
+            {
+              key: "com_trend",
+              label: "COM Trend",
+              type: "percentage",
+              icon: TrendingUp,
+            },
+            {
+              key: "minimum_required_oh_for_com",
+              label: "Min Required OH for COM",
+              icon: Package,
+            },
+            {
+              key: "vdf_status",
+              label: "VDF Status",
+              type: "boolean",
+              icon: CheckCircle,
+            },
+            { key: "vdf_added_qty", label: "VDF Added Qty", icon: Package },
+          ],
+          omni: [
+            {
+              key: "com_month_12_fc_index",
+              label: "COM 12-Month FC Index",
+              icon: BarChart3,
+            },
+            {
+              key: "com_trend",
+              label: "COM Trend",
+              type: "percentage",
+              icon: TrendingUp,
+            },
+            {
+              key: "com_inventory_maintained",
+              label: "COM Inventory Maintained",
+              type: "boolean",
+              icon: CheckCircle,
+            },
+            {
+              key: "minimum_required_oh_for_com",
+              label: "Min Required OH for COM",
+              icon: Package,
+            },
+            { key: "com_fldc", label: "COM FLDC", icon: MapPin },
+            {
+              key: "store_month_12_fc_index",
+              label: "Store 12-Month FC Index",
+              icon: BarChart3,
+            },
+            {
+              key: "store_month_12_fc_index_loss",
+              label: "Store 12-Month FC Index Loss",
+              icon: AlertTriangle,
+            },
+            {
+              key: "store_trend",
+              label: "Store Trend",
+              type: "percentage",
+              icon: TrendingUp,
+            },
+            {
+              key: "store_inventory_maintained",
+              label: "Store Inventory Maintained",
+              type: "boolean",
+              icon: CheckCircle,
+            },
+            { key: "store_fldc", label: "Store FLDC", icon: MapPin },
+            {
+              key: "trend_index_difference_com",
+              label: "Trend Index Diff (COM)",
+              icon: BarChart3,
+            },
+            {
+              key: "trend_index_difference_store",
+              label: "Trend Index Diff (Store)",
+              icon: BarChart3,
+            },
+            {
+              key: "forecasting_method_com",
+              label: "Forecasting Method (COM)",
+              icon: Settings,
+            },
+            {
+              key: "forecasting_method_store",
+              label: "Forecasting Method (Store)",
+              icon: Settings,
+            },
+            {
+              key: "forecast_month_required_quantity_total",
+              label: "Total Req Qty (Forecast Month)",
+              icon: Package,
+            },
+            {
+              key: "next_forecast_month_required_quantity_total",
+              label: "Total Req Qty (Next Month)",
+              icon: Package,
+            },
+          ],
+        };
+
+        return [...baseConfig, ...(typeSpecific[type] || [])];
+      };
+
+      const formatVariableValue = (value, config) => {
+        if (value === null || value === undefined) return "-";
+
+        switch (config.type) {
+          case "boolean":
+            return value ? "Yes" : "No";
+          case "array":
+            return Array.isArray(value) ? value.join(", ") : value;
+          case "percentage":
+            return typeof value === "number"
+              ? `${(value * 100).toFixed(2)}%`
+              : `${value}%`;
+          default:
+            const formattedValue =
+              typeof value === "number" ? value.toLocaleString() : value;
+            return config.suffix
+              ? `${formattedValue}${config.suffix}`
+              : formattedValue;
+        }
+      };
+
+      const variables = getVariableConfig(type);
+
+      return (
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className={`p-2 ${bgColor} rounded-lg`}>
+              <Icon className={iconColor} size={20} />
+            </div>
+            <h5 className="text-lg font-semibold text-gray-800">{title}</h5>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {variables.map((variable) => {
+              const value = data[variable.key];
+              const IconComponent = variable.icon || Info;
+
+              return (
+                <div
+                  key={variable.key}
+                  className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                >
+                  <div className="p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className={`p-1.5 ${bgColor} rounded-md`}>
+                        <IconComponent className={iconColor} size={14} />
+                      </div>
+                      <span className="text-xs font-medium text-gray-600 leading-tight">
+                        {variable.label}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-gray-900">
+                      {variable.key === "trend_index_difference" ||
+                      variable.key === "loss"
+                        ? `${formatVariableValue(value, variable)}%`
+                        : formatVariableValue(value, variable)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-6">
+        {store_forecast &&
+          store_forecast.length > 0 &&
+          renderForecastCards(
+            store_forecast,
+            "store",
+            "Store Forecast Variables",
+            "bg-blue-50",
+            "text-blue-600",
+            Building2
+          )}
+
+        {com_forecast &&
+          com_forecast.length > 0 &&
+          renderForecastCards(
+            com_forecast,
+            "com",
+            "COM Forecast Variables",
+            "bg-green-50",
+            "text-green-600",
+            ShoppingCart
+          )}
+
+        {omni_forecast &&
+          omni_forecast.length > 0 &&
+          renderForecastCards(
+            omni_forecast,
+            "omni",
+            "Omni Forecast Variables",
+            "bg-purple-50",
+            "text-purple-600",
+            Layers
+          )}
+      </div>
+    );
+  };
+
   const handleSaveProductNote = async () => {
     if (!externalFactor || !externalFactor.trim()) {
       console.log("No note content to save");
@@ -1149,8 +1536,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         if (externalFactor && externalFactor.trim()) {
           await handleSaveProductNote();
         }
-
-        alert("Critical forecast adjustments saved successfully!");
+        setShowCriticalSavePopup(true);
+        setTimeout(() => setShowCriticalSavePopup(false), 3000);
+        // alert("Critical forecast adjustments saved successfully!");
         await fetchProductDetails();
         await getProducts();
       }
@@ -1202,13 +1590,24 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       );
       console.log("Product details fetched:", response.data);
       setProductData(response.data);
+      // Pre-fetch and set the critical adjustment values
       if (response.data.product_details) {
+        // Convert user_added_quantity to string, handle null/undefined cases
+        const userQty = response.data.product_details.user_added_quantity;
         setUserAddedQuantity(
-          response.data.product_details.user_added_quantity || ""
+          userQty !== null && userQty !== undefined ? userQty.toString() : ""
         );
+
+        // Convert external_factor_percentage to string, handle null/undefined cases
+        const extFactorPerc =
+          response.data.product_details.external_factor_percentage;
         setExternalFactorPercentage(
-          response.data.product_details.external_factor_percentage || ""
+          extFactorPerc !== null && extFactorPerc !== undefined
+            ? extFactorPerc.toString()
+            : ""
         );
+
+        // Set external factor notes (already working correctly)
         setExternalFactor(response.data.product_details.external_factor || "");
       }
 
@@ -1549,6 +1948,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           },
           { key: "month_12_fc_index", label: "12-Month FC Index" },
           { key: "loss", label: "Loss (%)" },
+          { key: "month_12_fc_index", label: "12-Month FC Index" },
+          { key: "loss", label: "Loss (%)" },
           {
             key: "month_12_fc_index_loss",
             label: "12-Month FC Index (Loss %)",
@@ -1601,7 +2002,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             label: "Next Forecast Month - Planned Shipment",
           },
           {
-            key: "forecast_month_qty_added",
+            key: "qty_added_to_maintain_OH_forecast_month",
             label: "Forecast Month - Qty Added (Maintain OH)",
           },
           {
@@ -1832,6 +2233,302 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   // Enhanced Rolling Forecast Table with proper width and dynamic data
+  // function renderRollingForecastTable() {
+  //   if (!rollingForecastData) {
+  //     return (
+  //       <div className="text-center py-8 bg-gray-50 rounded-xl">
+  //         <TrendingUp className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+  //         <p className="text-gray-600">Loading rolling forecast data...</p>
+  //       </div>
+  //     );
+  //   }
+
+  //   const monthLabels = [
+  //     "FEB",
+  //     "MAR",
+  //     "APR",
+  //     "MAY",
+  //     "JUN",
+  //     "JUL",
+  //     "AUG",
+  //     "SEP",
+  //     "OCT",
+  //     "NOV",
+  //     "DEC",
+  //     "JAN",
+  //   ];
+
+  //   const displayConfig = {
+  //     index: { label: "Index", isPercentage: true },
+  //     fcByIndex: { label: "FC by Index" },
+  //     fcByTrend: { label: "FC by Trend" },
+  //     recommendedFC: { label: "Recommended FC", highlight: true },
+  //     plannedFC: { label: "Planned FC", editable: true },
+  //     plannedShipments: { label: "Planned Shipments", editable: true },
+  //     plannedEOH: { label: "Planned EOH (Cal)" },
+  //     plannedSellThru: { label: "Planned Sell thru %", isPercentage: true },
+  //   };
+
+  //   const rows = Object.keys(rollingForecastData)
+  //     .filter((key) => key !== "grossProjection" && key !== "macysProjReceipts") // Exclude these rows
+  //     .map((key) => ({
+  //       key,
+  //       label: displayConfig[key]?.label || key,
+  //       data:
+  //         Array.isArray(rollingForecastData[key]) &&
+  //         rollingForecastData[key].length === 12
+  //           ? rollingForecastData[key]
+  //           : Array(12).fill(0),
+  //       isPercentage: displayConfig[key]?.isPercentage || false,
+  //       highlight: displayConfig[key]?.highlight || false,
+  //       editable: displayConfig[key]?.editable || false,
+  //     }));
+
+  //   const renderCell = (row, value, monthIndex, month) => {
+  //     if (row.editable && editableData) {
+  //       const editableKey =
+  //         row.key === "plannedFC" ? "plannedFC" : "plannedShipments";
+  //       const editableValue = editableData[editableKey]?.[month] ?? value;
+
+  //       return (
+  //         <input
+  //           type="number"
+  //           value={editableValue}
+  //           onChange={(e) =>
+  //             handleCellChange(editableKey, month, e.target.value)
+  //           }
+  //           className="w-full px-2 py-1 text-center text-sm font-medium border border-blue-300 rounded bg-blue-50 focus:bg-white focus:border-blue-500 focus:outline-none"
+  //           style={{ minWidth: "70px" }}
+  //         />
+  //       );
+  //     }
+
+  //     return (
+  //       <span className="text-sm font-medium text-gray-800">
+  //         {formatValue(value, row.isPercentage)}
+  //       </span>
+  //     );
+  //   };
+
+  //   return (
+  //     <div className="w-full">
+  //       {/* Submit Buttons */}
+  //       {/* <div className="mb-4 flex gap-3">
+  //         <button
+  //           onClick={() => submitForecastChanges("Planned_FC")}
+  //           disabled={isSubmitting}
+  //           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+  //         >
+  //           {isSubmitting ? (
+  //             <RefreshCw className="animate-spin" size={16} />
+  //           ) : (
+  //             <Save size={16} />
+  //           )}
+  //           Submit Planned FC
+  //         </button>
+  //         <button
+  //           onClick={() => submitForecastChanges("Planned_Shipments")}
+  //           disabled={isSubmitting}
+  //           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+  //         >
+  //           {isSubmitting ? (
+  //             <RefreshCw className="animate-spin" size={16} />
+  //           ) : (
+  //             <Save size={16} />
+  //           )}
+  //           Submit Planned Shipments
+  //         </button>
+  //       </div> */}
+
+  //       <div className="overflow-x-auto border border-gray-200 rounded-lg">
+  //         <table className="w-full border-collapse bg-white">
+  //           <thead>
+  //             <tr className="bg-gradient-to-r from-gray-100 to-gray-50">
+  //               <th className="border-r border-gray-300 px-4 py-4 text-left text-sm font-bold text-gray-700 bg-white sticky left-0 z-10 min-w-[200px]">
+  //                 ROLLING 12M FC
+  //               </th>
+  //               {monthLabels.map((month) => (
+  //                 <th
+  //                   key={month}
+  //                   className="border-r border-gray-300 px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[90px]"
+  //                 >
+  //                   {month}
+  //                 </th>
+  //               ))}
+  //               <th className="border-r border-gray-300 px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[100px]">
+  //                 ANNUAL
+  //               </th>
+  //               <th className="border-r border-gray-300 px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[100px]">
+  //                 SPRING
+  //               </th>
+  //               <th className="px-3 py-4 text-center text-sm font-bold text-gray-700 min-w-[100px]">
+  //                 FALL
+  //               </th>
+  //             </tr>
+  //           </thead>
+  //           <tbody>
+  //             {rows.map((row, index) => {
+  //               const totals = {
+  //                 annual: row.data.reduce((sum, val) => sum + (val || 0), 0),
+  //                 spring: row.data
+  //                   .slice(0, 6)
+  //                   .reduce((sum, val) => sum + (val || 0), 0),
+  //                 fall: row.data
+  //                   .slice(6)
+  //                   .reduce((sum, val) => sum + (val || 0), 0),
+  //               };
+
+  //               // For editable rows, recalculate totals from editableData
+  //               if (row.editable && editableData) {
+  //                 const editableKey =
+  //                   row.key === "plannedFC" ? "plannedFC" : "plannedShipments";
+  //                 const editableValues = Object.values(
+  //                   editableData[editableKey] || {}
+  //                 );
+  //                 if (editableValues.length === 12) {
+  //                   totals.annual = editableValues.reduce(
+  //                     (sum, val) => sum + (val || 0),
+  //                     0
+  //                   );
+  //                   totals.spring = editableValues
+  //                     .slice(0, 6)
+  //                     .reduce((sum, val) => sum + (val || 0), 0);
+  //                   totals.fall = editableValues
+  //                     .slice(6)
+  //                     .reduce((sum, val) => sum + (val || 0), 0);
+  //                 }
+  //               }
+
+  //               return (
+  //                 <tr
+  //                   key={index}
+  //                   className={`border-b border-gray-200 ${
+  //                     row.highlight
+  //                       ? "bg-yellow-50"
+  //                       : row.editable
+  //                       ? "bg-blue-50"
+  //                       : index % 2 === 0
+  //                       ? "bg-white"
+  //                       : "bg-gray-50"
+  //                   } hover:bg-indigo-50 transition-colors`}
+  //                 >
+  //                   <td className="border-r border-gray-300 px-4 py-3 text-sm font-bold text-gray-800 bg-white sticky left-0 z-10">
+  //                     {row.label}
+  //                     {row.editable && (
+  //                       <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+  //                         Editable
+  //                       </span>
+  //                     )}
+  //                   </td>
+  //                   {row.data.map((value, i) => (
+  //                     <td
+  //                       key={i}
+  //                       className={`border-r border-gray-300 px-3 py-3 text-center ${
+  //                         row.editable ? "bg-blue-50" : ""
+  //                       }`}
+  //                     >
+  //                       {renderCell(row, value, i, monthLabels[i])}
+  //                     </td>
+  //                   ))}
+  //                   <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 bg-blue-50">
+  //                     {formatValue(totals.annual, row.isPercentage)}
+  //                   </td>
+  //                   <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 bg-green-50">
+  //                     {formatValue(totals.spring, row.isPercentage)}
+  //                   </td>
+  //                   <td className="px-3 py-3 text-center text-sm font-bold text-gray-900 bg-orange-50">
+  //                     {formatValue(totals.fall, row.isPercentage)}
+  //                   </td>
+  //                 </tr>
+  //               );
+  //             })}
+  //           </tbody>
+  //         </table>
+  //       </div>
+
+  //       {/* Debug info - can be removed in production */}
+  //       {/* {lastSubmittedData && (
+  //         <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+  //           <h5 className="font-semibold text-gray-700 mb-2">
+  //             Last Submitted Data:
+  //           </h5>
+  //           <pre className="text-xs text-gray-600 overflow-auto">
+  //             {JSON.stringify(lastSubmittedData, null, 2)}
+  //           </pre>
+  //         </div>
+  //       )} */}
+  //     </div>
+  //   );
+  // }
+
+  const [changedCells, setChangedCells] = useState(new Set());
+  const [autoChangedCells, setAutoChangedCells] = useState(new Set());
+  const [previousValues, setPreviousValues] = useState({});
+  const [justChangedCells, setJustChangedCells] = useState(new Set());
+
+  useEffect(() => {
+    if (!rollingForecastData || !previousValues.rollingForecastData) return;
+
+    const monthLabels = [
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+      "JAN",
+    ];
+    const newAutoChangedCells = new Set();
+
+    // Check each data type for changes
+    Object.keys(rollingForecastData).forEach((dataType) => {
+      if (
+        Array.isArray(rollingForecastData[dataType]) &&
+        Array.isArray(previousValues.rollingForecastData[dataType])
+      ) {
+        rollingForecastData[dataType].forEach((value, index) => {
+          const prevValue = previousValues.rollingForecastData[dataType][index];
+          if (value !== prevValue && monthLabels[index]) {
+            const cellKey = `${dataType}-${monthLabels[index]}`;
+            newAutoChangedCells.add(cellKey);
+          }
+        });
+      }
+    });
+
+    if (newAutoChangedCells.size > 0) {
+      setAutoChangedCells((prev) => new Set([...prev, ...newAutoChangedCells]));
+
+      // Add pop effect to all auto-changed cells
+      setJustChangedCells((prev) => new Set([...prev, ...newAutoChangedCells]));
+
+      // Remove pop effect after animation
+      setTimeout(() => {
+        setJustChangedCells((prev) => {
+          const newSet = new Set(prev);
+          newAutoChangedCells.forEach((cellKey) => newSet.delete(cellKey));
+          return newSet;
+        });
+      }, 600);
+    }
+  }, [rollingForecastData]);
+
+  // Store previous values for comparison
+  useEffect(() => {
+    if (rollingForecastData) {
+      setPreviousValues((prev) => ({
+        ...prev,
+        rollingForecastData: JSON.parse(JSON.stringify(rollingForecastData)),
+      }));
+    }
+  }, [JSON.stringify(rollingForecastData)]);
+
+  // Enhanced Rolling Forecast Table with simple highlights
   function renderRollingForecastTable() {
     if (!rollingForecastData) {
       return (
@@ -1869,7 +2566,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     };
 
     const rows = Object.keys(rollingForecastData)
-      .filter((key) => key !== "grossProjection" && key !== "macysProjReceipts") // Exclude these rows
+      .filter((key) => key !== "grossProjection" && key !== "macysProjReceipts")
       .map((key) => ({
         key,
         label: displayConfig[key]?.label || key,
@@ -1883,62 +2580,106 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         editable: displayConfig[key]?.editable || false,
       }));
 
+    // Simple cell change handler
+    const handleCellChangeWithHighlight = (rowType, month, value) => {
+      const cellKey = `${rowType}-${month}`;
+
+      // Add to changed cells for border highlighting
+      setChangedCells((prev) => new Set([...prev, cellKey]));
+
+      // Add temporary pop effect
+      setJustChangedCells((prev) => new Set([...prev, cellKey]));
+
+      // Remove pop effect after brief animation
+      setTimeout(() => {
+        setJustChangedCells((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(cellKey);
+          return newSet;
+        });
+      }, 600);
+
+      // Call original handler
+      handleCellChange(rowType, month, value);
+    };
+
+    {
+      showSuccessPopup && (
+        <div className="fixed top-4 right-4 z-50 animate-bounce">
+          <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3">
+            <CheckCircle size={24} />
+            <div>
+              <div className="font-semibold">Changes Applied Successfully!</div>
+              <div className="text-sm opacity-90">
+                Forecast data has been updated
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSuccessPopup(false)}
+              className="ml-4 hover:bg-green-600 rounded p-1 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     const renderCell = (row, value, monthIndex, month) => {
+      const cellKey = `${row.key}-${month}`;
+      const isUserChanged = changedCells.has(cellKey);
+      const isAutoChanged = autoChangedCells.has(cellKey);
+      const isJustChanged = justChangedCells.has(cellKey); // Define isJustChanged here
+
       if (row.editable && editableData) {
         const editableKey =
           row.key === "plannedFC" ? "plannedFC" : "plannedShipments";
         const editableValue = editableData[editableKey]?.[month] ?? value;
 
         return (
-          <input
-            type="number"
-            value={editableValue}
-            onChange={(e) =>
-              handleCellChange(editableKey, month, e.target.value)
-            }
-            className="w-full px-2 py-1 text-center text-sm font-medium border border-blue-300 rounded bg-blue-50 focus:bg-white focus:border-blue-500 focus:outline-none"
-            style={{ minWidth: "70px" }}
-          />
+          <div className="relative">
+            <input
+              type="number"
+              value={editableValue}
+              onChange={(e) =>
+                handleCellChangeWithHighlight(
+                  editableKey,
+                  month,
+                  e.target.value
+                )
+              }
+              className={`w-full px-2 py-1 text-center text-sm font-medium rounded transition-all duration-300 ${
+                isJustChanged
+                  ? "transform scale-110 shadow-lg border-2 border-indigo-400 bg-indigo-50"
+                  : isUserChanged || isAutoChanged
+                  ? "border-2 border-gray-500 bg-gray-50 font-semibold"
+                  : "border border-blue-300 bg-blue-50 focus:bg-white focus:border-blue-500"
+              } focus:outline-none focus:ring-2 focus:ring-blue-200`}
+              style={{ minWidth: "70px" }}
+            />
+          </div>
         );
       }
 
       return (
-        <span className="text-sm font-medium text-gray-800">
-          {formatValue(value, row.isPercentage)}
-        </span>
+        <div className="relative">
+          <span
+            className={`text-sm font-medium transition-all duration-300 ${
+              isJustChanged
+                ? "transform scale-110 font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded"
+                : isUserChanged || isAutoChanged
+                ? "font-semibold text-gray-900 bg-gray-100 px-2 py-1 rounded"
+                : "text-gray-800"
+            }`}
+          >
+            {formatValue(value, row.isPercentage)}
+          </span>
+        </div>
       );
     };
 
     return (
       <div className="w-full">
-        {/* Submit Buttons */}
-        {/* <div className="mb-4 flex gap-3">
-          <button
-            onClick={() => submitForecastChanges("Planned_FC")}
-            disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <RefreshCw className="animate-spin" size={16} />
-            ) : (
-              <Save size={16} />
-            )}
-            Submit Planned FC
-          </button>
-          <button
-            onClick={() => submitForecastChanges("Planned_Shipments")}
-            disabled={isSubmitting}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <RefreshCw className="animate-spin" size={16} />
-            ) : (
-              <Save size={16} />
-            )}
-            Submit Planned Shipments
-          </button>
-        </div> */}
-
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
           <table className="w-full border-collapse bg-white">
             <thead>
@@ -1977,7 +2718,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                     .reduce((sum, val) => sum + (val || 0), 0),
                 };
 
-                // For editable rows, recalculate totals from editableData
                 if (row.editable && editableData) {
                   const editableKey =
                     row.key === "plannedFC" ? "plannedFC" : "plannedShipments";
@@ -1998,10 +2738,18 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                   }
                 }
 
+                // Check if any cell in this row has changed
+                const rowHasUserChanges = monthLabels.some((month) =>
+                  changedCells.has(`${row.key}-${month}`)
+                );
+                const rowHasAutoChanges = monthLabels.some((month) =>
+                  autoChangedCells.has(`${row.key}-${month}`)
+                );
+
                 return (
                   <tr
                     key={index}
-                    className={`border-b border-gray-200 ${
+                    className={`border-b border-gray-200 transition-all duration-200 ${
                       row.highlight
                         ? "bg-yellow-50"
                         : row.editable
@@ -2009,33 +2757,88 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                         : index % 2 === 0
                         ? "bg-white"
                         : "bg-gray-50"
-                    } hover:bg-indigo-50 transition-colors`}
+                    } hover:bg-indigo-50 ${
+                      rowHasUserChanges || rowHasAutoChanges
+                        ? "border-l-2 border-l-gray-500"
+                        : ""
+                    }`}
                   >
                     <td className="border-r border-gray-300 px-4 py-3 text-sm font-bold text-gray-800 bg-white sticky left-0 z-10">
-                      {row.label}
-                      {row.editable && (
-                        <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                          Editable
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {row.label}
+                        {row.editable && (
+                          <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                            Editable
+                          </span>
+                        )}
+                        {rowHasUserChanges && (
+                          <span
+                            className="w-2 h-2 bg-green-500 rounded-full"
+                            title="User modified"
+                          ></span>
+                        )}
+                        {rowHasAutoChanges && !rowHasUserChanges && (
+                          <span
+                            className="w-2 h-2 bg-orange-500 rounded-full"
+                            title="Auto calculated"
+                          ></span>
+                        )}
+                      </div>
                     </td>
-                    {row.data.map((value, i) => (
-                      <td
-                        key={i}
-                        className={`border-r border-gray-300 px-3 py-3 text-center ${
-                          row.editable ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        {renderCell(row, value, i, monthLabels[i])}
-                      </td>
-                    ))}
-                    <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 bg-blue-50">
+                    {row.data.map((value, i) => {
+                      const cellKey = `${row.key}-${monthLabels[i]}`;
+                      const isUserChanged = changedCells.has(cellKey);
+                      const isAutoChanged = autoChangedCells.has(cellKey);
+                      const isJustChanged = justChangedCells.has(cellKey); // Define it here too for consistency
+
+                      return (
+                        <td
+                          key={i}
+                          className={`border-r border-gray-300 px-3 py-3 text-center transition-all duration-300 ${
+                            isJustChanged
+                              ? "bg-indigo-100 shadow-inner"
+                              : isUserChanged || isAutoChanged
+                              ? "bg-gray-100 border-r-gray-400"
+                              : row.editable
+                              ? "bg-blue-50"
+                              : ""
+                          }`}
+                        >
+                          {renderCell(row, value, i, monthLabels[i])}
+                        </td>
+                      );
+                    })}
+                    <td
+                      className={`border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 transition-all duration-200 ${
+                        rowHasUserChanges
+                          ? "bg-green-100 text-green-800"
+                          : rowHasAutoChanges
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-blue-50"
+                      }`}
+                    >
                       {formatValue(totals.annual, row.isPercentage)}
                     </td>
-                    <td className="border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 bg-green-50">
+                    <td
+                      className={`border-r border-gray-300 px-3 py-3 text-center text-sm font-bold text-gray-900 transition-all duration-200 ${
+                        rowHasUserChanges
+                          ? "bg-green-100 text-green-800"
+                          : rowHasAutoChanges
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-green-50"
+                      }`}
+                    >
                       {formatValue(totals.spring, row.isPercentage)}
                     </td>
-                    <td className="px-3 py-3 text-center text-sm font-bold text-gray-900 bg-orange-50">
+                    <td
+                      className={`px-3 py-3 text-center text-sm font-bold text-gray-900 transition-all duration-200 ${
+                        rowHasUserChanges
+                          ? "bg-green-100 text-green-800"
+                          : rowHasAutoChanges
+                          ? "bg-orange-100 text-orange-800"
+                          : "bg-orange-50"
+                      }`}
+                    >
                       {formatValue(totals.fall, row.isPercentage)}
                     </td>
                   </tr>
@@ -2045,17 +2848,26 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           </table>
         </div>
 
-        {/* Debug info - can be removed in production */}
-        {/* {lastSubmittedData && (
-          <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-            <h5 className="font-semibold text-gray-700 mb-2">
-              Last Submitted Data:
-            </h5>
-            <pre className="text-xs text-gray-600 overflow-auto">
-              {JSON.stringify(lastSubmittedData, null, 2)}
-            </pre>
+        {/* Simple legend for highlights */}
+        <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+          <div className="flex items-center gap-6 text-xs text-gray-600">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 border-2 border-gray-500 rounded"></div>
+              <span>Modified Cells</span>
+            </div>
           </div>
-        )} */}
+
+          <button
+            onClick={() => {
+              setChangedCells(new Set());
+              setAutoChangedCells(new Set());
+              setJustChangedCells(new Set());
+            }}
+            className="text-xs text-gray-500 hover:text-red-600 px-3 py-1 rounded border border-gray-300 hover:border-red-300 transition-colors"
+          >
+            Clear Highlights
+          </button>
+        </div>
       </div>
     );
   }
@@ -2109,7 +2921,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     ];
 
     const months = [
-      "jan",
       "feb",
       "mar",
       "apr",
@@ -2121,10 +2932,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       "oct",
       "nov",
       "dec",
+      "jan",
     ];
 
     const monthLabels = [
-      "JAN",
       "FEB",
       "MAR",
       "APR",
@@ -2136,6 +2947,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       "OCT",
       "NOV",
       "DEC",
+      "JAN",
     ];
 
     const calculateTotals = (forecast) => {
@@ -2304,7 +3116,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     ];
 
     const months = [
-      "jan",
       "feb",
       "mar",
       "apr",
@@ -2316,10 +3127,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       "oct",
       "nov",
       "dec",
+      "jan",
     ];
 
     const monthLabels = [
-      "JAN",
       "FEB",
       "MAR",
       "APR",
@@ -2331,6 +3142,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       "OCT",
       "NOV",
       "DEC",
+      "JAN",
     ];
 
     const calculateTotals = (forecast) => {
@@ -2509,7 +3321,92 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       key={productId}
       className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 h-100"
     >
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+      {showSaveChangesPopup && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Blurred backdrop */}
+    <div 
+      className="absolute inset-0 bg-black bg-opacity-30 backdrop-blur-sm"
+      style={{ backdropFilter: 'blur(8px)' }}
+    ></div>
+    
+    {/* Popup content */}
+    <div className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center animate-fadeIn transform transition-all duration-300 scale-100">
+      <div className="flex justify-center mb-4">
+        <div className={`p-3 rounded-full transition-all duration-300 ${
+          isSaving 
+            ? "bg-blue-100 animate-pulse" 
+            : "bg-green-100"
+        }`}>
+          {isSaving ? (
+            <RefreshCw size={32} className="text-blue-600 animate-spin" />
+          ) : (
+            <CheckCircle size={32} className="text-green-600" />
+          )}
+        </div>
+      </div>
+      
+      <h2 className={`text-2xl font-bold mb-2 transition-colors duration-300 ${
+        isSaving ? "text-blue-800" : "text-green-800"
+      }`}>
+        {isSaving ? "Applying Changes..." : "Changes Applied Successfully!"}
+      </h2>
+      
+      <p className="text-gray-600 mb-6">
+        {isSaving 
+          ? "Please wait while we save your forecast changes. This may take a moment."
+          : "Your forecast changes have been saved successfully. You may continue editing or navigate to another product."
+        }
+      </p>
+      
+      {/* Progress indicator when saving */}
+      {isSaving && (
+        <div className="mb-6">
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '70%' }}></div>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">Processing your request...</p>
+        </div>
+      )}
+      
+      {/* Close button - only show when not saving */}
+      {!isSaving && (
+        <button
+          onClick={() => setShowSaveChangesPopup(false)}
+          className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors transform hover:scale-105"
+        >
+          Close
+        </button>
+      )}
+    </div>
+  </div>
+)}
+
+
+      {showCriticalSavePopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full text-center animate-fadeIn">
+            <div className="flex justify-center mb-4">
+              <div className="bg-emerald-100 p-3 rounded-full">
+                <Save size={32} className="text-emerald-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Critical Adjustments Saved
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Your critical forecast adjustments have been saved successfully.
+            </p>
+            <button
+              onClick={() => setShowCriticalSavePopup(false)}
+              className="px-6 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="w-full mx-auto p-6 space-y-8">
         {/* Enhanced Header Section with Search and Navigation */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-visible">
           <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-10 py-6 min-h-[200px] relative">
@@ -2523,41 +3420,46 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 <span className="font-medium">Back to Products</span>
               </button>
 
-              {/* Product Link Button - Top Right */}
-              <div className="ml-auto">
-                <button
-                  onClick={handleProductLinkClick}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition-all"
-                  title="Copy product link"
-                >
-                  <ExternalLink size={18} />
-                  <span className="hidden sm:inline">Link</span>
-                </button>
-              </div>
+              
             </div>
 
             {/* Main Content Layout */}
             <div className="flex items-center gap-8">
-              {/* Large Product Image - Left */}
-              <div className="flex-shrink-0">
-                <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg bg-white/10">
-                  <img
-                    src={productImage}
-                    alt={`Product ${cardData?.productId}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback if image fails to load
-                      e.target.style.display = "none";
-                      e.target.parentElement.innerHTML = `
-                <div class="w-full h-full bg-white/20 flex items-center justify-center">
-                  <span class="text-white/60 text-sm font-medium">No Image</span>
-                </div>
-              `;
-                    }}
-                  />
-                </div>
-              </div>
-
+             {/* Large Product Image with Link - Left */}
+<div className="flex-shrink-0">
+  <div className="relative">
+    <div className="w-32 h-32 rounded-xl overflow-hidden border-2 border-white/20 shadow-lg bg-white/10">
+      <img
+        src={`${
+          import.meta.env.VITE_API_BASE_URL
+        }/media/images/${productId}.png`}
+        alt={`Product ${productId}`}
+        className="w-full h-full object-cover"
+        onError={(e) => {
+          // Fallback if image fails to load
+          e.target.style.display = "none";
+          e.target.parentElement.innerHTML = `
+    <div class="w-full h-full bg-white/20 flex items-center justify-center">
+      <span class="text-white/60 text-sm font-medium">No Image</span>
+    </div>
+  `;
+        }}
+      />
+    </div>
+    
+    {/* Product Link Button - Near Image */}
+    <div className="mt-3">
+      <button
+        onClick={handleProductLinkClick}
+        className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 border-2 border-amber-300 rounded-lg text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+        title="View on Macy's website"
+      >
+        <ExternalLink size={16} className="text-white" />
+        <span className="text-sm">Macy's Web ID</span>
+      </button>
+    </div>
+  </div>
+</div>
               {/* Center Content - Product Details and Search */}
               <div className="flex-1 flex flex-col items-center">
                 {/* Product Title - Center */}
@@ -2937,7 +3839,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                       }`}
                     >
                       {cardData.stdTrend >= 0 ? "+" : ""}
-                      {formatValue(cardData.stdTrend)}
+                      {(cardData.stdTrend * 100).toFixed(1)}%
                     </p>
                   </div>
                 </div>
@@ -3126,51 +4028,6 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                 </div>
 
                 {/* Performance Indicators */}
-                {/* Trend Performance Card */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-green-50 rounded-md">
-                        <TrendingUp
-                          className={
-                            cardData.trend >= 0
-                              ? "text-green-600"
-                              : "text-red-600"
-                          }
-                          size={14}
-                        />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600">
-                        Trend
-                      </span>
-                    </div>
-                    <p
-                      className={`text-sm font-bold ${
-                        cardData.trend >= 0 ? "text-green-600" : "text-red-600"
-                      }`}
-                    >
-                      {cardData.trend >= 0 ? "+" : ""}
-                      {formatValue(cardData.trend)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Macy's SOQ Card */}
-                <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-yellow-50 rounded-md">
-                        <Star className="text-yellow-600" size={14} />
-                      </div>
-                      <span className="text-xs font-medium text-gray-600">
-                        Macy's SOQ
-                      </span>
-                    </div>
-                    <p className="text-sm font-bold text-yellow-600">
-                      {formatValue(cardData.macysSOQ)}
-                    </p>
-                  </div>
-                </div>
 
                 {/* Status Card */}
                 {/* <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
@@ -3191,146 +4048,94 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           </div>
         )}
         {/* CRITICAL INPUT FIELDS SECTION - Dynamic Implementation */}
-        <div className="bg-white rounded-xl shadow-lg border-l-4 border-amber-500 overflow-hidden">
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4 border-b border-amber-100">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-amber-100 rounded-lg">
-                <AlertTriangle className="text-amber-600" size={20} />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Critical Forecast Adjustments
-                </h3>
-                <p className="text-amber-700 text-sm">
-                  These values directly impact forecast calculations
-                </p>
-              </div>
+        <div className="bg-white rounded-lg shadow-sm border border-amber-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="text-amber-600" size={16} />
+              <h3 className="text-sm font-semibold text-gray-800">
+                Critical Adjustments
+              </h3>
             </div>
           </div>
 
-          <div className="p-6 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* User Added Quantity Input */}
-              <div className="bg-white rounded-lg border-2 border-amber-200 shadow-sm hover:shadow-md transition-shadow p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-amber-50 rounded-lg">
-                    <Calculator className="text-amber-600" size={18} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800">
-                      User Added Quantity
-                    </label>
-                    <span className="text-xs text-amber-600 font-medium">
-                      Additional quantity to be added
-                    </span>
-                  </div>
-                </div>
+          <div className="p-4">
+            <div className="grid grid-cols-12 gap-4 items-end">
+              {/* User Added Quantity - Takes 4 columns */}
+              <div className="col-span-12 md:col-span-4">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
+                  User Added Quantity
+                </label>
                 <input
                   type="number"
                   value={userAddedQuantity}
                   onChange={(e) =>
                     handleUserAddedQuantityChange(e.target.value)
                   }
-                  // disabled={!!externalFactorPercentage}
-                  placeholder="Enter additional quantity..."
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-200 transition-all placeholder-gray-400"
+                  placeholder="Enter quantity..."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 transition-all"
                 />
                 {userAddedQuantity && (
-                  <div className="mt-3 flex items-center gap-2 text-sm text-emerald-600 font-medium">
-                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                    Value set: {formatValue(parseFloat(userAddedQuantity))}
+                  <div className="mt-1.5 text-xs text-emerald-600 font-medium flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                    Value: {formatValue(parseFloat(userAddedQuantity))}
                   </div>
                 )}
               </div>
 
-              {/* External Factor Percentage */}
-              {/* <div className="bg-white rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition-shadow p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-blue-50 rounded-lg">
-                    <TrendingUp className="text-blue-600" size={18} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-800">
-                      External Factor Percentage
-                    </label>
-                    <span className="text-xs text-blue-600 font-medium">
-                      Market adjustment factor (can be positive or negative)
-                    </span>
-                  </div>
-                </div>
-
-                <input
-                  type="number"
-                  value={externalFactorPercentage}
-                  onChange={(e) =>
-                    handleExternalFactorPercentageChange(e.target.value)
-                  }
-                  // disabled={!!userAddedQuantity}
-                  placeholder="Enter percentage (e.g., 15 or -10)..."
-                  step="0.1"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg text-base font-medium focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all placeholder-gray-400"
-                />
-                {externalFactorPercentage && (
-                  <div
-                    className={`mt-3 flex items-center gap-2 text-sm font-medium ${
-                      parseFloat(externalFactorPercentage) >= 0
-                        ? "text-emerald-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        parseFloat(externalFactorPercentage) >= 0
-                          ? "bg-emerald-500"
-                          : "bg-red-500"
-                      }`}
-                    ></div>
-                    {parseFloat(externalFactorPercentage) >= 0 ? "+" : ""}
-                    {externalFactorPercentage}% adjustment
-                  </div>
-                )}
-              </div> */}
-            </div>
-
-            {/* External Factor Notes Section */}
-            <div className="mt-6 bg-white rounded-lg border border-gray-200 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <FileText className="text-gray-600" size={18} />
-                <label className="block text-sm font-semibold text-gray-800">
+              {/* Notes - Takes 6 columns */}
+              <div className="col-span-12 md:col-span-6">
+                <label className="block text-xs font-semibold text-gray-700 mb-2">
                   Notes
                 </label>
+                <textarea
+                  value={externalFactor}
+                  onChange={(e) => setExternalFactor(e.target.value)}
+                  placeholder="Add relevant notes about external factors..."
+                  rows={2}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none transition-all"
+                />
               </div>
-              <textarea
-                value={externalFactor}
-                onChange={(e) => setExternalFactor(e.target.value)}
-                placeholder="Add any relevant notes about external factors affecting the forecast..."
-                rows={3}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 transition-all resize-none placeholder-gray-400"
-              />
+
+              {/* Save Button - Takes 2 columns */}
+              <div className="col-span-12 md:col-span-2">
+                <button
+                  onClick={handleSaveCriticalInputs}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:from-emerald-600 hover:to-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-all transform hover:scale-105 shadow-sm hover:shadow-md"
+                >
+                  <Save size={14} />
+                  Save
+                </button>
+              </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleSaveCriticalInputs}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg font-semibold shadow-md hover:from-emerald-600 hover:to-emerald-700 hover:shadow-lg transform hover:scale-105 transition-all"
-              >
-                <Save size={18} />
-                Save Critical Adjustments
-              </button>
-              {/* <button
-                onClick={() => setShowCalculatedChanges(!showCalculatedChanges)}
-                disabled={!changes}
-                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all ${
-                  changes
-                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 shadow-md hover:shadow-lg transform hover:scale-105"
-                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                <RefreshCw size={18} />
-                Show Impact Analysis
-              </button> */}
-            </div>
+            {/* Final Quantity Display - If there's a calculated value */}
+            {(userAddedQuantity || externalFactorPercentage) &&
+              cardData?.totalAddedQty && (
+                <div className="mt-4 pt-3 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-600">
+                      Final Quantity:
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-indigo-600">
+                        {userAddedQuantity
+                          ? userAddedQuantity
+                          : externalFactorPercentage
+                          ? Math.round(
+                              cardData.totalAddedQty *
+                                (1 + parseFloat(externalFactorPercentage) / 100)
+                            ).toLocaleString()
+                          : cardData.totalAddedQty.toLocaleString()}
+                      </span>
+                      {(userAddedQuantity || externalFactorPercentage) && (
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                          Updated
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
           </div>
         </div>
 
@@ -3444,73 +4249,36 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           </div>
         )}
 
-        {/* Tabs Section - Forecast Variables and Rolling Forecast */}
+        {/* Rolling Forecast Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          {/* Tab Headers - Button Style */}
           <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
-            <div className="flex items-center justify-center">
-              <div className="inline-flex bg-white rounded-lg shadow-sm border border-gray-200 p-1">
-                <button
-                  onClick={() => setActiveTab("forecast-variables")}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200 ${
-                    activeTab === "forecast-variables"
-                      ? "bg-indigo-600 text-white shadow-md transform scale-105"
-                      : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
-                  }`}
-                >
-                  <BarChart3 className="text-current" size={18} />
-                  <span>Forecast Algorithm Variables</span>
-                  {activeTab === "forecast-variables" && (
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  )}
-                </button>
-                <button
-                  onClick={() => setActiveTab("rolling-forecast")}
-                  className={`flex items-center gap-3 px-6 py-3 rounded-md font-semibold text-sm transition-all duration-200 ${
-                    activeTab === "rolling-forecast"
-                      ? "bg-indigo-600 text-white shadow-md transform scale-105"
-                      : "text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
-                  }`}
-                >
-                  <TrendingUp className="text-current" size={18} />
-                  <span>Rolling 12M Forecast</span>
-                  {activeTab === "rolling-forecast" && (
-                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-                  )}
-                </button>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-50 rounded-lg">
+                <TrendingUp className="text-indigo-600" size={20} />
               </div>
+              <h3 className="text-xl font-semibold text-gray-800">
+                Rolling 12M Forecast
+              </h3>
             </div>
           </div>
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === "forecast-variables" && (
-              <div className="animate-fadeIn">
-                <div className="mb-4 flex items-center gap-2">
-                  <div className="p-2 bg-indigo-50 rounded-lg">
-                    <BarChart3 className="text-indigo-600" size={20} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    Forecast Algorithm Variables
-                  </h3>
-                </div>
-                {renderProductVariablesTable()}
-              </div>
-            )}
-
-            {activeTab === "rolling-forecast" && (
-              <div className="animate-fadeIn">
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-50 rounded-lg">
-                        <TrendingUp className="text-indigo-600" size={20} />
-                      </div>
-                      <h3 className="text-xl font-semibold text-gray-800">
-                        Rolling Forecast Controls
-                      </h3>
+            <div className="animate-fadeIn">
+              <div className="mb-6">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-indigo-50 rounded-lg">
+                      <TrendingUp className="text-indigo-600" size={20} />
                     </div>
+                    <h3 className="text-xl font-semibold text-gray-800">
+                      Rolling Forecast Controls
+                    </h3>
+                  </div>
 
+                  {/* Updated button row with both buttons */}
+                  <div className="flex items-center gap-3">
+                    {/* Only keep the Apply Changes Button */}
                     <button
                       disabled={
                         ((!initialControlValues ||
@@ -3541,184 +4309,189 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
                         <>
                           <Settings size={16} />
                           Apply Changes
-                          {/* {JSON.stringify(initialControlValues) !==
-                            JSON.stringify(originalValuesRef.current) && (
-                            <span className="flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full animate-bounce">
-                              !
-                            </span>
-                          )} */}
                         </>
                       )}
                     </button>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    {/* Select Index */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Select Index
-                      </label>
-                      <select
-                        value={selectedIndex}
-                        onChange={(e) =>
-                          handleFieldChange("Current_FC_Index", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "Current_FC_Index"
-                        }
-                      >
-                        {[
-                          "BT",
-                          "Citrine",
-                          "Cross",
-                          "CZ",
-                          "Dia",
-                          "Ear",
-                          "EMER",
-                          "Garnet",
-                          "Gem",
-                          "GEM EAR",
-                          "Gold Chain",
-                          "GOLD EAR",
-                          "Amy",
-                          "Anklet",
-                          "Aqua",
-                          "Bridal",
-                          "Heart",
-                          "Heavy Gold Chain",
-                          "Jade",
-                          "KIDS",
-                          "Locket",
-                          "Mens Gold Bracelet",
-                          "Mens Misc",
-                          "Mens Silver chain",
-                          "Mom",
-                          "MOP",
-                          "Neck",
-                          "Onyx",
-                          "Opal",
-                          "Pearl",
-                          "Peridot",
-                          "Religious",
-                          "Ring",
-                          "Ruby",
-                          "Saph",
-                          "Womens Silver Chain",
-                          "Wrist",
-                          "Grand Total",
-                        ].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Rolling Method Dropdown */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Rolling Method
-                      </label>
-                      <select
-                        value={rollingMethod}
-                        onChange={(e) =>
-                          handleFieldChange("Rolling_method", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "Rolling_method"
-                        }
-                      >
-                        <option value="YTD">YTD</option>
-                        <option value="Current MTH">Current MTH</option>
-                        <option value="SPRING">SPRING</option>
-                        <option value="FALL">FALL</option>
-                        <option value="LY FALL">LY FALL</option>
-                      </select>
-                    </div>
-
-                    {/* Forecasting Method Dropdown */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Forecasting Method
-                      </label>
-                      <select
-                        value={forecastingMethod}
-                        onChange={(e) =>
-                          handleFieldChange(
-                            "Forecasting_Method",
-                            e.target.value
-                          )
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "Forecasting_Method"
-                        }
-                      >
-                        {[
-                          "FC By Index",
-                          "FC By Trend",
-                          "Average",
-                          "Current Year",
-                          "Last Year",
-                        ].map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Editable Trend */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Trend
-                      </label>
-                      <input
-                        type="number"
-                        value={editableTrend}
-                        onChange={(e) =>
-                          handleFieldChange("Trend", e.target.value)
-                        }
-                        step="0.1"
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        placeholder="Enter trend value"
-                        disabled={
-                          lastChangedField && lastChangedField !== "Trend"
-                        }
-                      />
-                    </div>
-
-                    {/* Editable 12 Month FC */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        12 Month FC
-                      </label>
-                      <input
-                        type="number"
-                        value={editable12MonthFC}
-                        onChange={(e) =>
-                          handleFieldChange("month_12_fc_index", e.target.value)
-                        }
-                        className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                        placeholder="Enter 12 month FC"
-                        disabled={
-                          lastChangedField &&
-                          lastChangedField !== "month_12_fc_index"
-                        }
-                      />
-                    </div>
-                  </div>
                 </div>
 
-                {/* Forecast Table */}
-                {renderRollingForecastTable()}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                  {/* Select Index */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Select Index
+                    </label>
+                    <select
+                      value={selectedIndex}
+                      onChange={(e) =>
+                        handleFieldChange("Current_FC_Index", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "Current_FC_Index"
+                      }
+                    >
+                      {[
+                        "BT",
+                        "Citrine",
+                        "Cross",
+                        "CZ",
+                        "Dia",
+                        "Ear",
+                        "EMER",
+                        "Garnet",
+                        "Gem",
+                        "GEM EAR",
+                        "Gold Chain",
+                        "GOLD EAR",
+                        "Amy",
+                        "Anklet",
+                        "Aqua",
+                        "Bridal",
+                        "Heart",
+                        "Heavy Gold Chain",
+                        "Jade",
+                        "KIDS",
+                        "Locket",
+                        "Mens Gold Bracelet",
+                        "Mens Misc",
+                        "Mens Silver chain",
+                        "Mom",
+                        "MOP",
+                        "Neck",
+                        "Onyx",
+                        "Opal",
+                        "Pearl",
+                        "Peridot",
+                        "Religious",
+                        "Ring",
+                        "Ruby",
+                        "Saph",
+                        "Womens Silver Chain",
+                        "Wrist",
+                        "Grand Total",
+                      ].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Rolling Method Dropdown */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Rolling Method
+                    </label>
+                    <select
+                      value={rollingMethod}
+                      onChange={(e) =>
+                        handleFieldChange("Rolling_method", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "Rolling_method"
+                      }
+                    >
+                      <option value="YTD">YTD</option>
+                      <option value="Current MTH">Current MTH</option>
+                      <option value="SPRING">SPRING</option>
+                      <option value="FALL">FALL</option>
+                      <option value="LY FALL">LY FALL</option>
+                    </select>
+                  </div>
+
+                  {/* Forecasting Method Dropdown */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Forecasting Method
+                    </label>
+                    <select
+                      value={forecastingMethod}
+                      onChange={(e) =>
+                        handleFieldChange("Forecasting_Method", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "Forecasting_Method"
+                      }
+                    >
+                      {[
+                        "FC By Index",
+                        "FC By Trend",
+                        "Average",
+                        "Current Year",
+                        "Last Year",
+                      ].map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Editable Trend */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Trend %
+                    </label>
+                    <input
+                      type="number"
+                      value={
+                        editableTrend !== "" &&
+                        editableTrend !== null &&
+                        !isNaN(editableTrend)
+                          ? (parseFloat(editableTrend) * 100)
+                              .toFixed(2)
+                              .replace(/\.00$/, "")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const percentageValue = parseFloat(e.target.value);
+                        if (isNaN(percentageValue)) {
+                          handleFieldChange("Trend", "");
+                        } else {
+                          const decimalValue = percentageValue / 100;
+                          handleFieldChange("Trend", decimalValue.toString());
+                        }
+                      }}
+                      step="any"
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      placeholder="Enter any percentage (e.g., 55.75, -12.3, 0.5)"
+                      disabled={
+                        lastChangedField && lastChangedField !== "Trend"
+                      }
+                    />
+                  </div>
+
+                  {/* Editable 12 Month FC */}
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      12 Month FC
+                    </label>
+                    <input
+                      type="number"
+                      value={editable12MonthFC}
+                      onChange={(e) =>
+                        handleFieldChange("month_12_fc_index", e.target.value)
+                      }
+                      className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      placeholder="Enter 12 month FC"
+                      disabled={
+                        lastChangedField &&
+                        lastChangedField !== "month_12_fc_index"
+                      }
+                    />
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Forecast Table */}
+              {renderRollingForecastTable()}
+            </div>
           </div>
         </div>
 
@@ -3765,7 +4538,85 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
             </div>
           )}
         </div>
+
+        {/* Sticky Forecast Variables Button */}
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
+          <button
+            onClick={() => setShowVariablesModal(true)}
+            className="px-8 py-4 rounded-full text-base font-semibold shadow-2xl transition-all duration-300 flex items-center gap-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white transform hover:scale-110 hover:shadow-3xl backdrop-blur-sm border border-white/20"
+            style={{
+              boxShadow:
+                "0 10px 40px rgba(59, 130, 246, 0.4), 0 4px 20px rgba(99, 102, 241, 0.3)",
+            }}
+          >
+            <BarChart3 size={20} />
+            <span>Forecast Algorithm Variables</span>
+          </button>
+        </div>
+
+        {/* Variables Modal - Add this right here */}
+        {showVariablesModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={(e) => {
+              // Close modal when clicking on the backdrop
+              if (e.target === e.currentTarget) {
+                setShowVariablesModal(false);
+              }
+            }}
+          >
+            <div
+              className="bg-white rounded-xl shadow-2xl w-full max-w-7xl flex flex-col overflow-hidden"
+              style={{ height: "90vh" }}
+              onClick={(e) => e.stopPropagation()} // Prevent event bubbling when clicking inside modal
+            >
+              {/* Modal Header - Fixed */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between flex-shrink-0 rounded-t-xl">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    <BarChart3 className="text-white" size={24} />
+                  </div>
+                  <h2 className="text-xl font-bold text-white">
+                    Forecast Algorithm Variables - {cardData?.productId}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setShowVariablesModal(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="text-white" size={24} />
+                </button>
+              </div>
+
+              {/* Modal Content - Scrollable */}
+              <div className="flex-1 overflow-hidden rounded-b-xl">
+                <div className="h-full overflow-y-auto p-6 custom-scrollbar">
+                  <ForecastVariableCards productData={productData} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+      {showSuccessPopup && (
+        <div className="fixed top-4 right-4 z-50 animate-bounce">
+          <div className="bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3">
+            <CheckCircle size={24} />
+            <div>
+              <div className="font-semibold">Changes Applied Successfully!</div>
+              <div className="text-sm opacity-90">
+                Forecast data has been updated
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSuccessPopup(false)}
+              className="ml-4 hover:bg-green-600 rounded p-1 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

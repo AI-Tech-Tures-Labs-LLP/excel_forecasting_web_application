@@ -55,18 +55,18 @@ def get_forecast_variables(product_object,sheet_object, year=2025,last_year=2024
     # Map each variable_name to its monthly data
     forecast_map = {
         fc.variable_name: {
-            "JAN": fc.jan, "FEB": fc.feb, "MAR": fc.mar, "APR": fc.apr,
+            "FEB": fc.feb, "MAR": fc.mar, "APR": fc.apr,
             "MAY": fc.may, "JUN": fc.jun, "JUL": fc.jul, "AUG": fc.aug,
-            "SEP": fc.sep, "OCT": fc.oct, "NOV": fc.nov, "DEC": fc.dec
+            "SEP": fc.sep, "OCT": fc.oct, "NOV": fc.nov, "DEC": fc.dec,"JAN": fc.jan
         }
         for fc in forecasts
     }
         # Map each variable_name to its monthly data
     forecast_map_last = {
         fc.variable_name: {
-            "JAN": fc.jan, "FEB": fc.feb, "MAR": fc.mar, "APR": fc.apr,
+            "FEB": fc.feb, "MAR": fc.mar, "APR": fc.apr,
             "MAY": fc.may, "JUN": fc.jun, "JUL": fc.jul, "AUG": fc.aug,
-            "SEP": fc.sep, "OCT": fc.oct, "NOV": fc.nov, "DEC": fc.dec
+            "SEP": fc.sep, "OCT": fc.oct, "NOV": fc.nov, "DEC": fc.dec,"JAN": fc.jan
         }
         for fc in forecasts_last_year
     }

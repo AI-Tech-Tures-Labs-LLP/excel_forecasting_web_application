@@ -39,7 +39,7 @@ STORE_RENAME_MAP = {
     'Qty_given_to_macys': 'Macys SOQ - Actual Given',
     'Below_min_order': 'Below min order',
     'Over_macys_SOQ': 'Over Macys SOQ',
-    'Added_only_to_balance_macys_SOQ': 'Macys SOQ - Only Maintained Qty Added',
+    'Added_only_to_balance_macys_SOQ': 'Qty added(only to balance Macys SOQ)',
     'Need_to_review_first': 'Needs Review (Below Planned OH)'
 }
  
