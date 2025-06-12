@@ -1,15 +1,26 @@
 import copy
 import logging
 from forecast.service.utils import *
-
+from forecast.service.staticVariable import HOLIDAYS_DATA, MONTHS, VDF_ITEMS
 logging.basicConfig(filename=r'log_file_all1.log', level=logging.INFO,
                     format='%(asctime)s:%(levelname)s:%(message)s',
                     filemode='w')
 
-def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data):
+def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data,holidays_df):
 
     (current_month,current_month_number,rolling_method, previous_week_number, year_of_previous_month,last_year_of_previous_month, last_month_of_previous_month_numeric,season, feb_weeks, mar_weeks, apr_weeks, may_weeks,jun_weeks, jul_weeks, aug_weeks, sep_weeks, oct_weeks,nov_weeks, dec_weeks, jan_weeks) = static_data
     print("****************************************************************************************************************", current_month_sales_percentage)
+    row = holidays_df[holidays_df['PID'] == loader.product_id]
+    print("row_holiday",row)
+
+    if not row.empty:
+        valentine_day = row['Valentine Day'].values[0]
+        mothers_day = row['Mothers Day'].values[0]
+        fathers_day = row['Fathers Day'].values[0]
+        womens_day = row['Womens Day'].values[0]
+    else:
+        valentine_day = mothers_day = fathers_day = womens_day = False
+
     print(f'category: {category}')
     country, lead_time = get_vendor_details(vendor, vendor_sheet)
     logging.info(f'pid: {loader.product_id}')
@@ -18,8 +29,8 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
     print(f'country: {country}')
     print(f'lead_time: {lead_time}')
 
-    print("current_date: ", current_date)   
-    forecast_date =calculate_forecast_date_basic(current_date, lead_time,country)
+    print("current_date: ", current_date)
+    forecast_date = calculate_forecast_date_basic(current_date, lead_time, country)
     logging.info(f'current_month: {current_month}')
     logging.info(f'forecast_date: {forecast_date}')
     logging.info(f'current_date: {current_date}')
@@ -504,10 +515,10 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
         target_month_abbr, target_week = calculate_week_and_month(forecast_month, week_of_forecast_month, year_of_previous_month, WEEK_TO_ADD_FOR_HOLIDAY)
         logging.info(f'target_month_abbr: {target_month_abbr}, target_week: {target_week}')
 
-        holiday_name, check_is_holiday = check_holiday(target_month_abbr, target_week, HOLIDAYS_DATA)
-        logging.info(f'holiday_name: {holiday_name}, check_is_holiday: {check_is_holiday}')
+        holiday_name, is_holiday = check_holiday(target_month_abbr, target_week, HOLIDAYS_DATA)
+        logging.info(f'holiday_name: {holiday_name}, is_holiday: {is_holiday}')
 
-        planned_shp = adjust_planned_shp_for_holiday(check_is_holiday, category, holiday_name, forecast_month, required_quantity, planned_shp)
+        planned_shp, is_considered_valentine_day, is_considered_mothers_day, is_considered_fathers_day, is_considered_womens_day = adjust_planned_shp_for_holiday(is_holiday, holiday_name, forecast_month, required_quantity, planned_shp, valentine_day, mothers_day, fathers_day, womens_day)
         logging.info(f'planned_shp after holiday adjustment: {planned_shp}')
 
         forecast_season_month = find_season_list(forecast_season)

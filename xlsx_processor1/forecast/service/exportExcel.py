@@ -40,14 +40,14 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     current_date = datetime(2025,5,8)
     logging.info(f"Input path: {input_path}, File path: {file_path}, Month from: {month_from}, Month to: {month_to}, Percentage: {percentage}, Input tuple: {input_tuple}, Current date: {current_date}")
 
-    sheets, return_qty_df = read_input_excel(input_path)
+    sheets, return_qty_df, holidays_df = read_input_excel(input_path)
 
     std_period = generate_std_period(month_from, month_to)
     current_month_sales_percentage = float(percentage)
 
     logging.info(f"Current month sales percentage: {current_month_sales_percentage} , Standard period: {std_period}")
 
-    builder = DataFrameBuilder(sheets, return_qty_df)
+    builder = DataFrameBuilder(sheets, return_qty_df, holidays_df)
 
     builder.build()
 
@@ -132,7 +132,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     logging.info("RetailInfo saved successfully.")
 
     args_list = [
-        (sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object)
+        (df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -353,7 +353,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
 def process_category(args):    
 
-    sheets, return_qty_df, df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object = args
+    df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object = args
 
     logging.info(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
 
@@ -660,7 +660,7 @@ def process_category(args):
         logging.info(f"Return Quantity DataFrame row: {return_qty_df_row}")
         master_sheet_row = df_outputs['master_sheet'].loc[df_outputs['master_sheet']['PID'] == product_id]
         print("Master sheet row:", master_sheet_row)
-        current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity = algorithm(vendor,master_sheet_row, df_outputs['vendor_sheet'],df_outputs['birthstone_sheet'], return_qty_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data )
+        current_month,pid_type,std_trend,STD_index_value ,month_12_fc_index,forecasting_method,planned_shp,planned_fc,pid_omni_status,store,coms,omni,fc_by_index, fc_by_trend, recommended_fc, planned_oh, planned_sell_thru,total_added_quantity = algorithm(vendor,master_sheet_row, df_outputs['vendor_sheet'],df_outputs['birthstone_sheet'], return_qty_df_row, loader, category, store, coms, omni, code,current_month_sales_percentage,std_period, current_date,static_data,df_outputs['holidays_df'])
         print("################################################################3",total_added_quantity)
 
         def safe_int(value):

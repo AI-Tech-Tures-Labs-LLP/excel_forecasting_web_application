@@ -39,9 +39,13 @@ def read_input_excel(input_path: str) -> Tuple[Dict[str, pd.DataFrame], pd.DataF
     return_qty_file_path = "forecast/service/Macys returns 2025.xlsx"
     return_qty_df = pd.read_excel(return_qty_file_path, engine="openpyxl")
 
+    holidays_df = pd.read_excel(r"media/Images & Category List Replen Items.xlsx", sheet_name="Replen Items Images & Category")
+    print("holidays_df shape:", holidays_df.shape)
+    print("holidays_df columns:", holidays_df.columns.tolist())
+    print("Sheets in the Excel file:")
     # Logging sheet info
     logging.info("Sheets in the Excel file: %s", ", ".join(sheets.keys()))
     logging.info("Successfully read the input Excel file and return quantity file.")
 
-    return sheets, return_qty_df
+    return sheets, return_qty_df, holidays_df
 
