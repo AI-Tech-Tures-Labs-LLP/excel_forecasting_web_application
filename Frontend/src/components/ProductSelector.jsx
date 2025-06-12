@@ -30,7 +30,7 @@ import {
   Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import ProductDetailsView from "./product-details/ProductDetailsView";
+import ProductDetailsView from "./ProductDetailsView";
 import NotesModal from "./NotesModal";
 // Import Redux actions and selectors
 import {
