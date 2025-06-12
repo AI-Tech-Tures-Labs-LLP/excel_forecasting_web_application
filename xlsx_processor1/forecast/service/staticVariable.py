@@ -280,18 +280,18 @@ VDF_ITEMS = [
 HOLIDAYS_DATA = [
     {'Holiday': 'valentine_day', 'Month': 'Feb', 'Day': 14, 'Week': 2},
     {'Holiday': 'women_day', 'Month': 'Mar', 'Day': 8, 'Week': 2},
-    {'Holiday': 'father_day', 'Month': 'Jun', 'Day': 16, 'Week': 3},
-    {'Holiday': 'men_day', 'Month': 'Nov', 'Day': 19, 'Week': 3}
+    {'Holiday': 'father_day', 'Month': 'Jun', 'Day': 21, 'Week': 3},
+    {'Holiday': 'mothers_day', 'Month': 'Nov', 'Day': 10, 'Week': 2}
 ]
 
 NOT_FORECAST_STATUS = ['VDF/MTO', 'VDF/TBD', 'NGF', 'DNP', 'MD', 'MTC', 'TEST', 'WATCH', 'MAINTAIN', 'DISC', 'nan']
 
-WEEK_TO_ADD_FOR_HOLIDAY = 6
+WEEK_TO_ADD_FOR_HOLIDAY = 5 
 MONTHS = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']
 
 SPRING_MONTHS = ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL']
- 
-FALL_MONTHS = ['AUG', 'SEP', 'OCT','NOV', 'DEC', 'JAN']
+
+FALL_MONTHS = ['AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']
 MONTH_COLUMN_MAP = {
     'FEB': 'I', 'MAR': 'J', 'APR': 'K', 'MAY': 'L', 'JUN': 'M',
     'JUL': 'N', 'AUG': 'O', 'SEP': 'P', 'OCT': 'Q', 'NOV': 'R',

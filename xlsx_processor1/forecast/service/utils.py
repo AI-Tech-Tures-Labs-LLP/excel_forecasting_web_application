@@ -800,7 +800,7 @@ def update_projection_for_month(month,required_quantity_month_dict,planned_oh,pl
  
  
  
-def calculate_week_and_month(start_month_abbr, start_week, year, weeks_to_add):
+def calculate_week_and_month(forecast_month, week_of_forecast_month, year_of_previous_month, WEEK_TO_ADD_FOR_HOLIDAY):
     # Map abbreviated month names to their respective numbers
     month_map = {
         "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
@@ -808,21 +808,21 @@ def calculate_week_and_month(start_month_abbr, start_week, year, weeks_to_add):
         "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
     }
     # Convert the abbreviated month to its numeric equivalent
-    if start_month_abbr not in month_map:
+    if forecast_month not in month_map:
         return None,None
- 
-    start_month = month_map[start_month_abbr]
- 
+
+    start_month = month_map[forecast_month]
+
     # Define the start date as the first day of the given month and year
-    start_date = datetime(year, start_month, 1)
- 
+    start_date = datetime(year_of_previous_month, start_month, 1)
+
     # Calculate the date corresponding to the given week in the start month
-    days_to_start_week = (start_week - 1) * 7
+    days_to_start_week = (week_of_forecast_month - 1) * 7
     start_week_date = start_date + timedelta(days=days_to_start_week)
  
     # Add the specified number of weeks (convert weeks to days)
-    target_date = start_week_date + timedelta(weeks=weeks_to_add)
- 
+    target_date = start_week_date + timedelta(weeks=WEEK_TO_ADD_FOR_HOLIDAY)
+
     # Determine the target month and week
     target_month = target_date.month
     target_year = target_date.year
@@ -847,12 +847,25 @@ def check_holiday(target_month_abbr, target_week ,holidays_data):
     else:
         return None,False
                
-def adjust_planned_shp_for_holiday(check_is_holiday,category,holiday_name,forecast_month,required_quantity_month_dict,planned_shp):
-    if check_is_holiday:
-        if (category == "Men's" and holiday_name in ["father_day", "men_day"]) or \
-           (category != "Men's" and holiday_name not in ["father_day", "men_day"]):
-            planned_shp[forecast_month] += (required_quantity_month_dict[forecast_month] * 1.15)
-    return planned_shp
+def adjust_planned_shp_for_holiday(is_holiday, holiday_name, forecast_month, required_quantity, planned_shp, valentine_day, mothers_day, fathers_day, womens_day):
+    if is_holiday and holiday_name == "valentine_day" and valentine_day:
+        planned_shp[forecast_month] += (required_quantity[forecast_month] * 1.15)
+        is_considered_valentine_day = True
+    elif is_holiday and holiday_name == "mothers_day" and mothers_day:
+        planned_shp[forecast_month] += (required_quantity[forecast_month] * 1.15)
+        is_considered_mothers_day = True
+    elif is_holiday and holiday_name == "fathers_day" and fathers_day:
+        planned_shp[forecast_month] += (required_quantity[forecast_month] * 1.15)
+        is_considered_fathers_day = True
+    elif is_holiday and holiday_name == "womens_day" and womens_day:
+        planned_shp[forecast_month] += (required_quantity[forecast_month] * 1.15)
+        is_considered_womens_day = True
+    else:
+        is_considered_womens_day = False
+        is_considered_fathers_day = False
+        is_considered_mothers_day = False
+        is_considered_valentine_day = False
+    return planned_shp, is_considered_valentine_day, is_considered_mothers_day, is_considered_fathers_day, is_considered_womens_day
  
 def calculate_store_sale_thru(LY_Unit_Sales, LY_MCOM_Unit_Sales, LY_OH_Units, LY_MCOM_OH_Units):
     store_sell_thru = {}

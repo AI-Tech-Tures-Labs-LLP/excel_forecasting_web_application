@@ -167,7 +167,7 @@ class ProductDetail(models.Model):
 class StoreForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE,null=True, blank=True, related_name="store_forecasts")
-    pid=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
+    product_id=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     loss = models.FloatField(null=True, blank=True)
     new_month_12_fc_index = models.FloatField(null=True, blank=True)
     new_trend = models.FloatField(null=True, blank=True)
@@ -184,7 +184,7 @@ class StoreForecast(models.Model):
 class ComForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE, null=True, blank=True, related_name="com_forecasts")
-    pid=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
+    product_id=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     new_month_12_fc_index = models.FloatField(null=True, blank=True)
     trend_of_total_sales = models.FloatField(null=True, blank=True)
     trend_of_com_sales_for_selected_month = models.FloatField(null=True, blank=True)
@@ -202,7 +202,7 @@ class ComForecast(models.Model):
 class OmniForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE, null=True, blank=True, related_name="omni_forecasts")
-    pid=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
+    product_id=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     com_month_12_fc_index = models.FloatField(null=True, blank=True)
     com_trend = models.FloatField(null=True, blank=True)
     is_com_inventory_maintained = models.BooleanField(default=False)

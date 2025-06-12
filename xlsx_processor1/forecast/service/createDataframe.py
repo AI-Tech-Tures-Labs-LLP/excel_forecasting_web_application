@@ -3,7 +3,7 @@ from forecast.service.staticVariable import VENDOR_DATA, BIRTHSTONE_DATA
 
 
 class DataFrameBuilder:
-    def __init__(self, sheets, return_qty_df):
+    def __init__(self, sheets, return_qty_df,holidays_df):
         self.sheets = sheets
         self.return_qty_df = return_qty_df
         self.index_df = None
@@ -17,6 +17,7 @@ class DataFrameBuilder:
         self.mcom_data = None
         self.birthstone_sheet = None
         self.df_filtered = None
+        self.holidays_df = holidays_df
 
     def build(self):
         self._prepare_return_qty_df()
@@ -40,7 +41,8 @@ class DataFrameBuilder:
             "all_data": self.all_data,
             "mcom_data": self.mcom_data,
             "birthstone_sheet": self.birthstone_sheet,
-            "return_qty_df": self.return_qty_df
+            "return_qty_df": self.return_qty_df,
+            "holidays_df": self.holidays_df
         }
 
     def _prepare_return_qty_df(self):
