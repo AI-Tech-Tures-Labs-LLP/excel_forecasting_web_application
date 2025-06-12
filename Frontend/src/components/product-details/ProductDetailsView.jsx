@@ -1300,6 +1300,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           cardData={cardData}
           productId={productId}
           onSave={handleCriticalSave}
+          fetchProducts={fetchProducts}
         />
 
         {/* Rolling Forecast */}

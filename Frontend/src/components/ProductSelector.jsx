@@ -13,7 +13,7 @@ import ProductTable from "./ProductSelector/ProductTable";
 import BulkActionModal from "./ProductSelector/BulkActionModal";
 import ResultsModal from "./ProductSelector/ResultsModal";
 import CategoryDownloadModal from "./ProductSelector/CategoryDownloadModal";
-import ProductDetailsView from "./ProductDetailsView";
+import ProductDetailsView from "./product-details/ProductDetailsView";
 import NotesModal from "./NotesModal";
 
 // Redux imports

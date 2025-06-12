@@ -2,6 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { AlertTriangle, Save } from "lucide-react";
 import axios from "axios";
+import { useDispatch, useSelector } from "react-redux";
 
 const CriticalAdjustments = ({
   userAddedQuantity,
@@ -13,7 +14,13 @@ const CriticalAdjustments = ({
   cardData,
   productId,
   onSave,
+  fetchProducts,
 }) => {
+  const dispatch = useDispatch();
+  const selectedFilters = useSelector((state) => state.filters.selectedFilters);
+  const selectedProductType = useSelector(
+    (state) => state.filters.selectedProductType
+  );
   const formatValue = (value) => {
     if (value === null || value === undefined || value === "") return "-";
     return typeof value === "number" ? value.toLocaleString() : value;
@@ -105,12 +112,19 @@ const CriticalAdjustments = ({
         if (externalFactor && externalFactor.trim()) {
           await handleSaveProductNote();
         }
-
+      
         // Call the onSave callback if provided
         if (onSave) {
           onSave();
         }
+        dispatch(
+          fetchProducts({
+            productType: selectedProductType,
+            filters: selectedFilters,
+          })
+        );
       }
+ 
     } catch (error) {
       console.error("Error saving critical inputs:", error);
       console.error("Error response:", error.response?.data);
