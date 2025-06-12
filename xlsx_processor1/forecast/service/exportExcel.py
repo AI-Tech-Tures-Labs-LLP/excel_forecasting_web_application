@@ -240,7 +240,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         for instance in store_instances:
             StoreForecast.objects.update_or_create(
                 sheet=sheet_object,
-                pid=instance['pid'],
+                product_id=instance['pid'],
                 defaults={
                     'loss': instance['loss'],
                     'new_month_12_fc_index': instance['new_month_12_fc_index'],
@@ -261,7 +261,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         for instance in com_instances:
             ComForecast.objects.update_or_create(
                 sheet = sheet_object,
-                pid=instance['pid'],
+                product_id=instance['pid'],
                 defaults={
                     'new_month_12_fc_index': instance['new_month_12_fc_index'],
                     'is_inventory_maintained_com_sales': instance['is_inventory_maintained_com_sales'],
@@ -281,7 +281,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
         for instance in omni_instances:
             OmniForecast.objects.update_or_create(
                 sheet=sheet_object,
-                pid=instance['pid'],
+                product_id=instance['pid'],
                 defaults={
                     'com_month_12_fc_index': instance['com_month_12_fc_index'],
                     'com_trend': instance['com_trend'],
