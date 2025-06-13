@@ -16,7 +16,6 @@
 // // Set up listeners for RTK Query
 // setupListeners(store.dispatch);
 
-// src/redux/store.js
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/query";
 import { persistStore, persistReducer } from "redux-persist";
@@ -24,20 +23,21 @@ import storage from "redux-persist/lib/storage";
 import { combineReducers } from "@reduxjs/toolkit";
 
 import { api } from "../services/api";
+import authReducer from "./authSlice"; // ADD THIS
 import productReducer from "./productSlice";
 import forecastReducer from "./forecastSlice";
 import uiReducer from "./uiSlice";
 import filtersReducer from "./filtersSlice";
 
-// Persist configuration
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["products", "forecast", "filters"], // Only persist these slices
-  blacklist: ["ui"], // Don't persist ui slice
+  whitelist: ["auth", "products", "forecast", "filters"], // ADD auth to whitelist
+  blacklist: ["ui"],
 };
 
 const rootReducer = combineReducers({
+  auth: authReducer, // ADD THIS
   products: productReducer,
   forecast: forecastReducer,
   ui: uiReducer,

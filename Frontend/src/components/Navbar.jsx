@@ -1,206 +1,164 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
-  HomeIcon,
-  FileSpreadsheet,
+  Home,
+  Upload,
   TrendingUp,
-  List,
+  Package,
+  Settings,
   User,
   LogOut,
-  Settings,
   ChevronDown,
+  Shield,
 } from "lucide-react";
+import { logout, selectUser, selectUserRole } from "../redux/authSlice";
+import RoleBasedComponent from "./auth/RoleBasedComponent";
 
-function Navbar() {
-  const location = useLocation();
+const Navbar = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef(null);
+  const location = useLocation();
+  const user = useSelector(selectUser);
+  const userRole = useSelector(selectUserRole);
 
-  // Mock user data - replace with actual user data from your auth context
-  const user = {
-    name: "Shrey",
-    avatar: null, // Set to null to show initials instead
-  };
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (profileRef.current && !profileRef.current.contains(event.target)) {
-        setIsProfileOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Determine if a link is active
-  const isActive = (path) => {
-    return location.pathname === path
-      ? "text-indigo-600 border-indigo-600"
-      : "text-gray-600 border-transparent hover:text-indigo-600 hover:border-indigo-300";
-  };
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log("Logging out...");
-    // For example:
-    // - Clear localStorage/sessionStorage
-    // - Clear auth tokens
-    // - Redirect to login page
-    // localStorage.clear();
-    // sessionStorage.clear();
+    dispatch(logout());
     navigate("/login");
   };
 
-  const getInitials = (name) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase();
+  const navItems = [
+    {
+      path: "/dashboard",
+      icon: Home,
+      label: "Dashboard",
+      permission: "dashboard",
+    },
+    {
+      path: "/file-upload",
+      icon: Upload,
+      label: "Upload",
+      permission: "forecast",
+    },
+    {
+      path: "/forecast",
+      icon: TrendingUp,
+      label: "Forecast",
+      permission: "forecast",
+    },
+    {
+      path: "/products",
+      icon: Package,
+      label: "Products",
+      permission: "products",
+    },
+    {
+      path: "/settings",
+      icon: Settings,
+      label: "Settings",
+      permission: "settings",
+    },
+  ];
+
+  const getRoleBadgeColor = (role) => {
+    const colors = {
+      admin: "bg-red-100 text-red-800",
+      manager: "bg-blue-100 text-blue-800",
+      analyst: "bg-green-100 text-green-800",
+      viewer: "bg-gray-100 text-gray-800",
+    };
+    return colors[role] || colors.viewer;
   };
 
   return (
-    <nav className="bg-white shadow-sm">
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
-              <Link
-                to="/"
-                className="text-xl font-bold text-gray-800 flex items-center gap-2"
-              >
-                <span className="text-indigo-600">
-                  <HomeIcon size={24} />
-                </span>
-                Home
-              </Link>
+          {/* Logo and navigation */}
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <h1 className="text-xl font-bold text-gray-900">Forecast Pro</h1>
             </div>
-            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              {/* <Link
-                to="/pricing"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isActive(
-                  "/pricing"
-                )}`}
-              >
-                <FileSpreadsheet className="mr-2" size={18} />
-                Pricing Tool
-              </Link> */}
-              {/* <Link
-                to="/forecast"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isActive(
-                  "/forecast"
-                )}`}
-              >
-                <TrendingUp className="mr-2" size={18} />
-                Forecast
-              </Link> */}
-              {/* <Link
-                to="/products"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors ${isActive(
-                  "/products"
-                )}`}
-              >
-                <List className="mr-2" size={18} />
-                Product Selector
-              </Link> */}
+            <div className="hidden md:ml-6 md:flex md:space-x-8">
+              {navItems.map((item) => (
+                <RoleBasedComponent
+                  key={item.path}
+                  requiredPermission={item.permission}
+                >
+                  <button
+                    onClick={() => navigate(item.path)}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                      location.pathname === item.path
+                        ? "border-indigo-500 text-gray-900"
+                        : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                    }`}
+                  >
+                    <item.icon className="w-4 h-4 mr-2" />
+                    {item.label}
+                  </button>
+                </RoleBasedComponent>
+              ))}
             </div>
           </div>
 
-          {/* Profile Dropdown */}
+          {/* User menu */}
           <div className="flex items-center">
-            <div className="relative" ref={profileRef}>
+            <div className="relative">
               <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
-                {/* Profile Avatar */}
-                <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full"
-                    />
-                  ) : (
-                    getInitials(user.name)
-                  )}
-                </div>
-                <span className="hidden md:block">{user.name}</span>
-                <ChevronDown
-                  size={16}
-                  className={`transition-transform ${
-                    isProfileOpen ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {/* Dropdown Menu */}
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  {/* User Info */}
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {user.avatar ? (
-                          <img
-                            src={user.avatar}
-                            alt="Profile"
-                            className="w-10 h-10 rounded-full"
-                          />
-                        ) : (
-                          getInitials(user.name)
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{user.name}</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
-                      </div>
+                <div className="flex items-center space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-white" />
                     </div>
                   </div>
+                  <div className="hidden md:block text-left">
+                    <div className="text-sm font-medium text-gray-700">
+                      {user?.username || "User"}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getRoleBadgeColor(
+                          userRole
+                        )}`}
+                      >
+                        <Shield className="w-3 h-3 mr-1" />
+                        {userRole}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </div>
+              </button>
 
-                  {/* Menu Items */}
-                  {/* <div className="py-1">
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        // Navigate to profile page or open profile modal
-                        console.log("View Profile clicked");
-                      }}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <User size={16} />
-                      View Profile
-                    </button>
-                    
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        // Navigate to settings page
-                        console.log("Settings clicked");
-                      }}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      <Settings size={16} />
-                      Settings
-                    </button>
-                  </div> */}
+              {showUserMenu && (
+                <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 focus:outline-none z-50">
+                  <div className="px-4 py-3">
+                    <p className="text-sm text-gray-900">{user?.username}</p>
+                    <p className="text-sm text-gray-500">{user?.email}</p>
+                  </div>
 
-                  {/* Logout */}
-                  <div className="border-t border-gray-100 py-1">
+                  <div className="py-1">
+                    <RoleBasedComponent requiredPermission="settings">
+                      <button
+                        onClick={() => navigate("/profile")}
+                        className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      >
+                        <User className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
+                        Profile Settings
+                      </button>
+                    </RoleBasedComponent>
+
                     <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        handleLogout();
-                      }}
-                      className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      onClick={handleLogout}
+                      className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
-                      <LogOut size={16} />
-                      Sign Out
+                      <LogOut className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
+                      Sign out
                     </button>
                   </div>
                 </div>
@@ -210,56 +168,33 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu - shows at bottom of screen on small devices */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-3">
-        <div className="flex justify-around">
-          <Link
-            to="/pricing"
-            className={`flex flex-col items-center px-3 py-2 rounded-md text-xs font-medium ${
-              location.pathname === "/pricing"
-                ? "text-indigo-600"
-                : "text-gray-600"
-            }`}
-          >
-            <FileSpreadsheet size={20} />
-            <span className="mt-1">Pricing</span>
-          </Link>
-          <Link
-            to="/forecast"
-            className={`flex flex-col items-center px-3 py-2 rounded-md text-xs font-medium ${
-              location.pathname === "/forecast"
-                ? "text-indigo-600"
-                : "text-gray-600"
-            }`}
-          >
-            <TrendingUp size={20} />
-            <span className="mt-1">Forecast</span>
-          </Link>
-          <Link
-            to="/products"
-            className={`flex flex-col items-center px-3 py-2 rounded-md text-xs font-medium ${
-              location.pathname === "/products"
-                ? "text-indigo-600"
-                : "text-gray-600"
-            }`}
-          >
-            <List size={20} />
-            <span className="mt-1">Products</span>
-          </Link>
-          {/* Mobile Profile */}
-          <button
-            onClick={() => setIsProfileOpen(true)}
-            className="flex flex-col items-center px-3 py-2 rounded-md text-xs font-medium text-gray-600"
-          >
-            <div className="w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-              {getInitials(user.name).slice(0, 1)}
-            </div>
-            <span className="mt-1">Profile</span>
-          </button>
+      {/* Mobile menu */}
+      <div className="md:hidden">
+        <div className="pt-2 pb-3 space-y-1">
+          {navItems.map((item) => (
+            <RoleBasedComponent
+              key={item.path}
+              requiredPermission={item.permission}
+            >
+              <button
+                onClick={() => navigate(item.path)}
+                className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium w-full text-left ${
+                  location.pathname === item.path
+                    ? "bg-indigo-50 border-indigo-500 text-indigo-700"
+                    : "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700"
+                }`}
+              >
+                <div className="flex items-center">
+                  <item.icon className="w-4 h-4 mr-3" />
+                  {item.label}
+                </div>
+              </button>
+            </RoleBasedComponent>
+          ))}
         </div>
       </div>
     </nav>
   );
-}
+};
 
 export default Navbar;
