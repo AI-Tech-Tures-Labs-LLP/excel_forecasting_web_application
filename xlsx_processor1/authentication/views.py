@@ -1,10 +1,17 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from django.contrib.auth import get_user_model
+from rest_framework import viewsets, permissions
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from django.contrib.auth import get_user_model
+
 from .serializers import CustomUserSerializer, CustomTokenObtainPairSerializer
 from .models import Role
+from .permissions import IsRoleAdmin
+
+
+
 
 User = get_user_model()
 
@@ -33,3 +40,19 @@ class RegisterView(APIView):
         )
         serializer = CustomUserSerializer(user)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = CustomUserSerializer
+    
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            return [IsRoleAdmin()]
+        else:
+            return [permissions.IsAuthenticated()]
+
+
+    def get_queryset(self):
+        # You can customize this to limit what users can see
+        return super().get_queryset()
