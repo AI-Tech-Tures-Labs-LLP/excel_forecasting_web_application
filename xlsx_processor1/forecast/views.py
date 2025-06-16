@@ -10,6 +10,8 @@ from django.conf import settings
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, JsonResponse
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 
 from rest_framework.views import APIView
@@ -28,35 +30,11 @@ from forecast.service.rollingfc import recalculate_all
 from forecast.service.adddatabase import save_forecast_data
 from forecast.service.utils import get_c2_value
 
-def make_zip_and_delete(folder_path):
-    folder_path = os.path.normpath(folder_path)
-    zip_file_path = os.path.normpath(f'{folder_path}.zip')
-    
-    try:
-        # Create a ZIP file
-        with zipfile.ZipFile(zip_file_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for root, dirs, files in os.walk(folder_path):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    arcname = os.path.relpath(file_path, folder_path)  # Preserve folder structure
-                    zipf.write(file_path, arcname)
-        
-        print(f"Folder '{folder_path}' has been compressed into '{zip_file_path}'")
 
-        # # Delete the folder after zipping
-        # shutil.rmtree(folder_path)
-        # print(f"Folder '{folder_path}' has been deleted successfully.")
-    
-    except PermissionError:
-        print(f"Permission denied: Cannot access '{folder_path}'. Please check folder permissions.")
-    except FileNotFoundError:
-        print(f"File not found: '{folder_path}' does not exist.")
-    except Exception as e:
-        print(f"An error occurred: {e}")
- 
+
 def get_product_forecast_data(pid,sheet_object):
         product = get_object_or_404(ProductDetail, product_id=pid,sheet=sheet_object)
-        return product.category, product.rolling_method, product.std_trend_original, product.std_index_value_original, product.month_12_fc_index_original, product.forecasting_method_original,  product.algorithm_generated_final_quantity
+        return product.category, product.rolling_method, product.std_trend_original, product.std_index_value_original, product.month_12_fc_index_original, product.forecasting_method, product.recommended_total_quantity
 
 def get_planned_data(pid, year,sheet_object):
     product = ProductDetail.objects.filter(product_id=pid,sheet=sheet_object).first()
@@ -92,8 +70,34 @@ def get_planned_data(pid, year,sheet_object):
             }
 
     return result
+def create_zip_from_s3_files(s3_file_paths, zip_s3_path):
+    """Create ZIP file in S3 from multiple S3 Excel files"""
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for s3_path in s3_file_paths:
+            try:
+                # Read Excel file from S3
+                file_obj = default_storage.open(s3_path, 'rb')
+                file_content = file_obj.read()
+                file_obj.close()
+                
+                # Add to ZIP with just filename
+                filename = os.path.basename(s3_path)
+                zipf.writestr(filename, file_content)
+                print(f"Added {filename} to ZIP")
+                
+            except Exception as e:
+                print(f"Error adding {s3_path} to ZIP: {e}")
+                continue
+    
+    # Save ZIP to S3
+    zip_buffer.seek(0)
+    default_storage.save(zip_s3_path, ContentFile(zip_buffer.getvalue()))
+    print(f"ZIP created in S3: {zip_s3_path}")
+    
+    return zip_s3_path
 
-# Done
 class UploadXlsxAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -104,12 +108,19 @@ class UploadXlsxAPIView(APIView):
         month_to = request.data.get('month_to')
         percentage = request.data.get('percentage')
         categories = request.data.get('categories')    
-        print(f"Received file: {uploaded_file.name} with output folder: {output_folder}, month_from: {month_from}, month_to: {month_to}, percentage: {percentage}, categories: {categories}")   
+        
+        print(f"Received file: {uploaded_file.name} with output folder: {output_folder}")
+        print(f"Parameters - month_from: {month_from}, month_to: {month_to}, percentage: {percentage}")
 
+        # Validation
+        if not uploaded_file or not output_folder:
+            return Response({'error': 'File or output folder not provided'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create sheet record - saves to uploads/ folder via Django model
         sheet = SheetUpload.objects.create(
             user=request.user,
             name=uploaded_file.name,
-            file=uploaded_file,
+            file=uploaded_file,  # This saves to uploads/ via your model
             is_processed=False,
             output_folder=output_folder,
             month_from=month_from,
@@ -117,42 +128,99 @@ class UploadXlsxAPIView(APIView):
             percentage=percentage,
             categories=categories,
         )
-        sheet.save()
+        
+        print(f"Sheet created with ID: {sheet.id}")
+        print(f"File uploaded by user: {request.user.username}")
 
-        print(f"Sheet uploaded:",sheet)
-        print(f"File uploaded: {uploaded_file.name} by user: {request.user.username}")
-        if not uploaded_file or not output_folder:
-            return Response({'error': 'File or output folder not provided'}, status=status.HTTP_400_BAD_REQUEST)
+        # ALSO save to organized processing folder structure
+        input_s3_path = f'processed_files/{output_folder}/input/{uploaded_file.name}'
+        
+        # Reset file pointer to beginning
+        uploaded_file.seek(0)
+        
+        # Save copy for processing
+        default_storage.save(input_s3_path, uploaded_file)
+        print(f"Input file copied to processing folder: {input_s3_path}")
 
+        # Parse categories if provided
         input_tuple = []
         if categories:
-            input_tuple = [(item['name'], item['value']) for item in json.loads(categories)]
+            try:
+                input_tuple = [(item['name'], item['value']) for item in json.loads(categories)]
+                print(f"Parsed categories: {input_tuple}")
+            except Exception as e:
+                print(f"Error parsing categories: {e}")
+                return Response({'error': 'Invalid categories format'}, status=status.HTTP_400_BAD_REQUEST)
 
-        processed_dir = os.path.join(settings.MEDIA_ROOT, 'processed_files')
-        os.makedirs(processed_dir, exist_ok=True)
-        output_folder_path = os.path.join(processed_dir, output_folder)
-        os.makedirs(output_folder_path, exist_ok=True)
-
-        # Save uploaded file into MEDIA_ROOT
-        save_path = os.path.join(output_folder_path, uploaded_file.name)
-        with open(save_path, 'wb+') as dest:
-            for chunk in uploaded_file.chunks():
-                dest.write(chunk)
-        input_path = save_path
-        current_date = datetime(2025,5,8)
+        current_date = datetime(2025, 5, 8)
 
         try:
             start_time = time.time()
-            process_data(input_path, output_folder_path, month_from, month_to, percentage, input_tuple, sheet, current_date)
+            print(f"Starting processing at {datetime.now()}")
+            
+            # Process data using the organized input path
+            saved_s3_files = process_data(
+                input_s3_path, 
+                output_folder, 
+                month_from, 
+                month_to, 
+                percentage, 
+                input_tuple, 
+                sheet, 
+                current_date
+            )
+            
+            print(f"Processing completed. Generated {len(saved_s3_files)} files:")
+            for file_path in saved_s3_files:
+                print(f"  - {file_path}")
+            
+            # Create ZIP from ONLY generated files (exclude input)
+            zip_s3_path = f'processed_files/{output_folder}.zip'
+            create_zip_from_s3_files(saved_s3_files, zip_s3_path)
+            
+            # Mark sheet as processed
+            sheet.is_processed = True
+            sheet.save()
+            
             elapsed_time = time.time() - start_time
-            print(f"Processing took {elapsed_time:.3f}s")
-            make_zip_and_delete(output_folder_path)
+            print(f"Total S3 processing took {elapsed_time:.3f}s")
+            
         except Exception as e:
-            return Response({'error': f'Processing error: {e}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f"Processing error: {str(e)}")
+            
+            # Mark sheet as failed
+            sheet.is_processed = False
+            sheet.save()
+            
+            # Clean up input file on error
+            try:
+                default_storage.delete(input_s3_path)
+                print(f"Cleaned up input file on error: {input_s3_path}")
+            except:
+                pass
+                
+            return Response({
+                'error': f'Processing error: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        zip_rel = f'processed_files/{output_folder}.zip'
-        zip_url = request.build_absolute_uri(settings.MEDIA_URL + zip_rel)
-        return Response({'file_url': zip_url}, status=status.HTTP_200_OK)
+        # Generate S3 URL for download
+        try:
+            zip_url = default_storage.url(zip_s3_path)
+            print(f"ZIP download URL generated: {zip_url}")
+            
+            return Response({
+                'file_url': zip_url,
+                'sheet_id': sheet.id,
+                'processed_files_count': len(saved_s3_files),
+                'processing_time': f"{elapsed_time:.2f}s",
+                'message': 'File processed successfully'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            print(f"Error generating download URL: {e}")
+            return Response({
+                'error': 'Processing completed but failed to generate download URL'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Done
 class ProductDetailViewSet(viewsets.ViewSet):
@@ -160,7 +228,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
     lookup_value_regex = r"[^/]+"
     def retrieve(self, request, pk=None):
         # Fetch product details
-        sheet_id = request.data.get("sheet_id")
+        sheet_id = request.query_params.get("sheet_id")
         if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -172,13 +240,13 @@ class ProductDetailViewSet(viewsets.ViewSet):
         forecast_serializer = MonthlyForecastSerializer(forecasts, many=True)
         
        
-        store_forecasts = StoreForecast.objects.filter(pid=pk, sheet=sheet_id)
+        store_forecasts = StoreForecast.objects.filter(product_id=pk, sheet=sheet_id)
         store_serializer = StoreForecastSerializer(store_forecasts, many=True)
 
-        com_forecasts = ComForecast.objects.filter(pid=pk, sheet=sheet_id)
+        com_forecasts = ComForecast.objects.filter(product_id=pk, sheet=sheet_id)
         com_serializer = ComForecastSerializer(com_forecasts, many=True)
 
-        omni_forecasts = OmniForecast.objects.filter(pid=pk, sheet=sheet_id)
+        omni_forecasts = OmniForecast.objects.filter(product_id=pk, sheet=sheet_id)
         omni_serializer = OmniForecastSerializer(omni_forecasts, many=True)
 
         notes     = ForecastNote.objects.filter(productdetail=product, sheet=sheet_id)
@@ -389,10 +457,12 @@ class DownloadForecastSummaryExcel(APIView):
         if not sheet.summary:
             return Response({"detail": "Summary file not found for this sheet."}, status=404)
 
-        file_path = os.path.join(settings.MEDIA_ROOT, sheet.summary.name)
-        if os.path.exists(file_path):
-            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=os.path.basename(file_path))
-        return Response({"detail": "File not found."}, status=404)
+        # Generate S3 download URL
+        try:
+            download_url = default_storage.url(sheet.summary.name)
+            return Response({"download_url": download_url}, status=200)
+        except Exception as e:
+            return Response({"detail": f"Error generating download URL: {str(e)}"}, status=500)
 
 
 # Done
@@ -416,7 +486,7 @@ class DownloadFinalQuantityReport(APIView):
             final_qty = (
                 product.user_updated_final_quantity
                 if product.user_updated_final_quantity is not None
-                else product.algorithm_generated_final_quantity
+                else product.recommended_total_quantity
             )
             if final_qty and final_qty > 0:
                 data.append({
@@ -430,18 +500,23 @@ class DownloadFinalQuantityReport(APIView):
 
         df = pd.DataFrame(data)
 
-        # Define and ensure file path
+        # Create Excel file in memory and save to S3
+        excel_buffer = io.BytesIO()
+        df.to_excel(excel_buffer, index=False)
+        excel_buffer.seek(0)
+
         file_name = f"FinalQuantityReport_Sheet_{sheet_id}.xlsx"
-        file_path = os.path.join(settings.MEDIA_ROOT, 'final_quantity_report', file_name)
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        s3_path = f'final_quantity_report/{file_name}'
+        
+        default_storage.save(s3_path, ContentFile(excel_buffer.getvalue()))
 
-        df.to_excel(file_path, index=False)
-
-        # Save path to SheetUpload model
-        sheet.final_quantity_report.name = os.path.join('final_quantity_report', file_name)
+        # Update sheet record
+        sheet.final_quantity_report.name = s3_path
         sheet.save()
 
-        return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=file_name)
+        # Return S3 download URL
+        download_url = default_storage.url(s3_path)
+        return Response({"download_url": download_url}, status=200)
 
 # Done
 class ForecastNoteViewSet(viewsets.ModelViewSet):
@@ -467,14 +542,7 @@ class ForecastNoteViewSet(viewsets.ModelViewSet):
 class FileCategoryDownloadAPIView(APIView):
     def get(self, request):
         """
-        API view to download specific category sheets from Excel files.
-        Query parameters:
-        - category: Single category name or comma-separated list of categories
-        Returns:
-        - Single Excel file for download if one category is requested
-        - Zip file containing multiple Excel files if multiple categories are requested
-        - Error response if categories are not found or invalid
-        category=Gold746,Diamond734%26737%26748&file_name=jkl
+        API view to download specific category sheets from S3.
         """
         category_param = request.GET.get('category')
         file_path = request.GET.get('file_path','')
@@ -482,19 +550,19 @@ class FileCategoryDownloadAPIView(APIView):
         if not category_param:
             return Response({'error': 'Category parameter is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Split the categories by comma to handle multiple categories
         categories = [cat.strip() for cat in category_param.split(',')]
         
-        # Define the media directory path
-        media_dir = os.path.join(settings.MEDIA_ROOT, 'processed_files', file_path)
+        # S3 directory path
+        s3_dir = f'processed_files/{file_path}'
         
-        # Find all Excel files in the directory
         try:
-            excel_files = [f for f in os.listdir(media_dir) if f.endswith('.xlsx')]
-        except FileNotFoundError:
-            return Response({'error': 'Directory not found'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # List files from S3
+            directories, files = default_storage.listdir(s3_dir)
+            excel_files = [f for f in files if f.endswith('.xlsx')]
+        except Exception as e:
+            return Response({'error': f'Directory not found in S3: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Match requested categories with available files
+        # Match categories with files
         matched_files = []
         missing_categories = []
         
@@ -516,40 +584,41 @@ class FileCategoryDownloadAPIView(APIView):
                 'missing_categories': missing_categories
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # If there are missing categories, include that in the response but continue with the ones found
+        # Include message about missing categories if any
         message = None
         if missing_categories:
             message = f"Categories not found: {', '.join(missing_categories)}"
         
-        # If only one category is requested and found, return a single Excel file directly
+        # Single file download
         if len(matched_files) == 1 and len(categories) == 1:
             category, file_name = matched_files[0]
-            file_full_path = os.path.join(media_dir, file_name)
+            file_s3_path = f'{s3_dir}/{file_name}'
             
             try:
-                with open(file_full_path, 'rb') as excel_file:
-                    file_content = excel_file.read()
+                file_content = default_storage.open(file_s3_path, 'rb').read()
                 response = HttpResponse(
                     file_content, 
                     content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
                 response['Content-Disposition'] = f'attachment; filename="{category}.xlsx"'
+                if message:
+                    response['X-Missing-Categories'] = message
                 return response
             except Exception as e:
-                return Response({'error': f'Error reading the file: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                return Response({'error': f'Error reading file from S3: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # If multiple categories are requested or found, create a zip file
+        # Multiple files - create zip
         else:
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
                 for category, file_name in matched_files:
-                    file_full_path = os.path.join(media_dir, file_name)
+                    file_s3_path = f'{s3_dir}/{file_name}'
                     try:
-                        with open(file_full_path, 'rb') as excel_file:
-                            file_content = excel_file.read()
+                        file_content = default_storage.open(file_s3_path, 'rb').read()
                         zip_file.writestr(f"{category}.xlsx", file_content)
                     except Exception as e:
                         continue
+            
             zip_buffer.seek(0)
             response = HttpResponse(zip_buffer.getvalue(), content_type='application/zip')
             response['Content-Disposition'] = 'attachment; filename="categories.zip"'

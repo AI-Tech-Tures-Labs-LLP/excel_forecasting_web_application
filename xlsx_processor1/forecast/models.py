@@ -107,14 +107,14 @@ class ProductDetail(models.Model):
     
     rolling_method = models.CharField(max_length=50, null=True, blank=True, verbose_name="Rolling Method")
     std_trend_original = models.FloatField(null=True, blank=True, verbose_name="STD Trend")
-    forecasting_method_original = models.CharField(max_length=50, null=True, blank=True, verbose_name="Forecasting Method")
+    forecasting_method= models.CharField(max_length=50, null=True, blank=True, verbose_name="Forecasting Method")
     std_index_value_original = models.JSONField(null=True, blank=True, verbose_name="STD Index Value")  # Assuming dict-like data
     current_fc_index = models.CharField(max_length=50,null=True, blank=True, verbose_name="FC Index") #Current FC Index
     month_12_fc_index_original = models.FloatField(null=True, blank=True, verbose_name="12 Month FC Index")
     external_factor_note = models.CharField(max_length=300,null=True, blank=True)
     external_factor_percentage = models.FloatField(null=True, blank=True, verbose_name="External Factor Percentage")
     user_updated_final_quantity = models.FloatField(null=True, blank=True)
-    algorithm_generated_final_quantity = models.FloatField(null=True, blank=True)
+    recommended_total_quantity = models.FloatField(null=True, blank=True)
     category = models.CharField(max_length=100, null=True, blank=True)
     
     
@@ -128,9 +128,14 @@ class ProductDetail(models.Model):
 
     forecast_month = models.CharField(max_length=10, null=True, blank=True)
     next_forecast_month = models.CharField(max_length=10, null=True, blank=True)
+    current_date = models.DateField(null=True, blank=True)
+    lead_time_old = models.FloatField(null=True, blank=True)
+    forecast_date_old = models.DateField(null=True, blank=True)
     lead_time = models.FloatField(null=True, blank=True)
-    
-    is_lead_guideline_holiday = models.BooleanField(default=False)
+    forecast_date = models.DateField(null=True, blank=True)
+
+
+    is_lead_guideline_in_holiday = models.BooleanField(default=False)
     is_added_quantity_using_macys_soq = models.BooleanField(default=False)
     is_below_min_order = models.BooleanField(default=False)
     is_over_macys_soq = models.BooleanField(default=False)
@@ -140,7 +145,7 @@ class ProductDetail(models.Model):
     is_vdf_item = models.BooleanField(default=False)
 
     average_store_sale_thru = models.FloatField(null=True, blank=True)
-    macys_soq = models.FloatField(null=True, blank=True)
+    macys_proj_receipt_upto_forecast_month = models.FloatField(null=True, blank=True)
     macy_soq_percentage = models.FloatField(null=True, blank=True)
     qty_given_to_macys = models.FloatField(null=True, blank=True)
 
@@ -150,8 +155,8 @@ class ProductDetail(models.Model):
 
     forecast_month_required_quantity = models.FloatField(null=True, blank=True)
     next_forecast_month_required_quantity = models.FloatField(null=True, blank=True)
-    forecast_month_planned_oh = models.FloatField(null=True, blank=True)
-    next_forecast_month_planned_oh = models.FloatField(null=True, blank=True)
+    forecast_month_planned_oh_before = models.FloatField(null=True, blank=True)
+    next_forecast_month_planned_oh_before = models.FloatField(null=True, blank=True)
     forecast_month_planned_shipment = models.FloatField(null=True, blank=True)
     next_forecast_month_planned_shipment = models.FloatField(null=True, blank=True)
 
@@ -168,9 +173,17 @@ class StoreForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE,null=True, blank=True, related_name="store_forecasts")
     product_id=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
+    std_index_value = models.FloatField(null=True, blank=True)
+    std_ty_unit_sales = models.FloatField(null=True, blank=True)
+    ty_unit_sales_new_trend = models.FloatField(null=True, blank=True)
+    ly_unit_sales_new_trend = models.FloatField(null=True, blank=True)
     loss = models.FloatField(null=True, blank=True)
+    loss_updated=models.FloatField(null=True, blank=True)
+    is_reduced_loss = models.BooleanField(default=False)
+    average_eoh_oh= models.FloatField(null=True, blank=True)
+    is_handle_large_trend = models.BooleanField(default=False)
     new_month_12_fc_index = models.FloatField(null=True, blank=True)
-    new_trend = models.FloatField(null=True, blank=True)
+    std_trend = models.FloatField(null=True, blank=True)
     is_inventory_maintained = models.BooleanField(default=False)
     trend_index_difference = models.FloatField(null=True, blank=True)
     average_com_oh = models.FloatField(null=True, blank=True)
@@ -182,14 +195,18 @@ class StoreForecast(models.Model):
 
 
 class ComForecast(models.Model):
-
+    """Model for Com Forecast data"""
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE, null=True, blank=True, related_name="com_forecasts")
     product_id=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
     new_month_12_fc_index = models.FloatField(null=True, blank=True)
-    trend_of_total_sales = models.FloatField(null=True, blank=True)
-    trend_of_com_sales_for_selected_month = models.FloatField(null=True, blank=True)
-    is_inventory_maintained_com_sales = models.BooleanField(default=False)
-    month_12_fc_index_for_com_sales = models.FloatField(null=True, blank=True)
+    com_trend_for_selected_month = models.FloatField(null=True, blank=True)
+    is_handle_large_trend = models.BooleanField(default=False)
+    final_com_trend= models.FloatField(null=True, blank=True)
+    is_com_inventory_maintained = models.BooleanField(default=False)
+    ty_com_sales_unit_selected_month_sum = models.FloatField(null=True, blank=True)
+    ly_com_sales_unit_selected_month_sum = models.FloatField(null=True, blank=True)
+    std_index_value = models.FloatField(null=True, blank=True)
+    trend_index_difference = models.FloatField(null=True, blank=True)
     forecasting_method = models.CharField(max_length=50, null=True, blank=True)
     minimum_required_oh_for_com = models.FloatField(null=True, blank=True)
     fldc = models.FloatField(null=True, blank=True)
@@ -203,22 +220,36 @@ class OmniForecast(models.Model):
 
     sheet = models.ForeignKey(SheetUpload, on_delete=models.CASCADE, null=True, blank=True, related_name="omni_forecasts")
     product_id=models.CharField(max_length=50, null=True, blank=True, verbose_name="Cross Ref")  # pid
+    std_index_value = models.FloatField(null=True, blank=True)
+    ty_com_sales_unit_selected_month_sum=models.FloatField(null=True, blank=True)
+    ly_com_sales_unit_selected_month_sum=models.FloatField(null=True, blank=True)
     com_month_12_fc_index = models.FloatField(null=True, blank=True)
-    com_trend = models.FloatField(null=True, blank=True)
+    com_trend_for_selected_month= models.FloatField(null=True, blank=True)
+    is_handle_large_trend_com= models.BooleanField(default=False)
+    final_com_trend = models.FloatField(null=True, blank=True)
     is_com_inventory_maintained = models.BooleanField(default=False)
     trend_index_difference_com = models.FloatField(null=True, blank=True)
     forecasting_method_for_com = models.CharField(max_length=50, null=True, blank=True)
     minimum_required_oh_for_com = models.FloatField(null=True, blank=True)
     com_fldc = models.FloatField(null=True, blank=True)
-    store_month_12_fc_index = models.FloatField(null=True, blank=True)
+    forecast_month_required_quantity_com= models.FloatField(null=True, blank=True)
+    next_forecast_month_required_quantity_com= models.FloatField(null=True, blank=True)
+    store_month_12_fc_index_original = models.FloatField(null=True, blank=True)
     loss = models.FloatField(null=True, blank=True)
+    average_eoh_oh= models.FloatField(null=True, blank=True)
+    loss_updated=models.FloatField(null=True, blank=True)
+    is_reduced_loss = models.BooleanField(default=False)
     store_month_12_fc_index_loss = models.FloatField(null=True, blank=True)
     store_trend = models.FloatField(null=True, blank=True)
     is_store_inventory_maintained = models.BooleanField(default=False)
     trend_index_difference_store = models.FloatField(null=True, blank=True)
     forecasting_method_for_store = models.CharField(max_length=50, null=True, blank=True)
     store_fldc = models.FloatField(null=True, blank=True)
-
+    is_handle_large_trend_store = models.BooleanField(default=False)
+    forecast_month_required_quantity_store= models.FloatField(null=True, blank=True)
+    next_forecast_month_required_quantity_store= models.FloatField(null=True, blank=True)
+    ty_store_sales_unit_selected_month_sum= models.FloatField(null=True, blank=True)
+    ly_store_sales_unit_selected_month_sum= models.FloatField(null=True, blank=True)
     def __str__(self):
         return f"Omni Forecast for {self.sheet.name} - Com Index: {self.com_month_12_fc_index}, Store Index: {self.store_month_12_fc_index}"
 
