@@ -1,5 +1,6 @@
 # from .createDataframe 
 import re
+import io
 import math
 import pandas as pd
 import numpy as np
@@ -11,7 +12,8 @@ import os
 from openpyxl import load_workbook
 import logging
 import calendar
-
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
 
 def get_month_abbr(month_name: str) -> str:
     """Convert full month name to its 3-letter uppercase abbreviation."""
@@ -58,16 +60,13 @@ def count_ttl_com_sale(LY_Unit_Sales, LY_MCOM_Unit_Sales):
 def find_pid_type(Safe_Non_Safe,pid_value,LY_Unit_Sales,LY_MCOM_Unit_Sales,Door_count):
     pid_type=None
     if Safe_Non_Safe  in NOT_FORECAST_STATUS and Door_count in [0,1,2]:
-        pid_type='Not forecast'
-    elif ((Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or pid_value in VDF_ITEMS) and  Door_count <3) or (Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
-        pid_type='com_pid'
-        if Safe_Non_Safe=='OMNI' and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)<=65:
-            print('com sale',count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales))
-            pid_type='store_pid'
-    elif Door_count >10 and not (Safe_Non_Safe in ['OMNI'] and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
-        pid_type='store_pid'
+        pid_type='not_forecast'
+    elif ((Safe_Non_Safe in ['FB','COM ONLY','COM REPLEN','VDF REPLEN'] or pid_value in VDF_ITEMS) and  Door_count <3):
+        pid_type='com'
+    elif(Safe_Non_Safe=='OMNI' and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
+        pid_type='omni'
     else:
-        pid_type='Not forecast'
+        pid_type='store'
     return pid_type
 
 def get_vendor_by_pid(pid_value, master_sheet):
@@ -130,14 +129,14 @@ def adjust_lead_time(country, current_date, forecast_date, lead_time):
    
     currentdate = current_date.strftime("%Y-%m-%d")
     forecast_lead_time_date = forecast_date.strftime("%Y-%m-%d")
-    leadtime_holiday=False
+    is_lead_guideline_in_holiday=False
     if country in holiday_periods:
         start_date, end_date, adjusted_lead_time = holiday_periods[country]
         if currentdate <= end_date and forecast_lead_time_date >= start_date:
-            leadtime_holiday=True
-            return adjusted_lead_time,leadtime_holiday
+            is_lead_guideline_in_holiday=True
+            return adjusted_lead_time,is_lead_guideline_in_holiday
    
-    return lead_time,leadtime_holiday
+    return lead_time,is_lead_guideline_in_holiday
 
 
 def extend_forecast_if_italy(forecast_date: datetime, country: str) -> datetime:
@@ -311,21 +310,34 @@ def calculate_loss(door_count, average_value):
     """
     Calculate loss percentage from door count and average store EOM OH.
     """
-    return (door_count / average_value) - 1
+    if average_value and not np.isnan(average_value):
+        return (door_count / average_value) - 1
+    else:
+        return 0
  
-def determine_loss_percent(loss, rank, own_retail):
+def determine_loss_updated(loss, rank, own_retail):
     """
     Determine the final loss percent based on rank and own retail price.
     """
+    is_reduced_loss = False
     if own_retail < 1000:
         if rank in ['A', 'B']:
-            return min(loss, 0.45)
+            if loss!=min(loss, 0.45):
+                is_reduced_loss= True
+            return is_reduced_loss,min(loss, 0.45)
+        
         elif rank == 'C':
-            return min(loss, 0.15)
+            if loss!=min(loss, 0.15):
+                is_reduced_loss= True
+            return is_reduced_loss,min(loss, 0.15)
         else:
-            return min(loss, 0.10)
+            if loss!=min(loss, 0.10):
+                is_reduced_loss= True
+            return is_reduced_loss,min(loss, 0.10)
     else:
-        return min(loss, 0.15)
+        if loss!=min(loss, 0.15):
+            is_reduced_loss= True
+        return is_reduced_loss,min(loss, 0.15)
  
 def update_12_month_forecast_by_loss(month_12_fc_index, loss_percent):
     """
@@ -393,26 +405,34 @@ def adjust_std_trend_minimum(std_trend_main, std_trend_new):
     Returns:
         float: The adjusted standard trend (f8).
     """
+    is_handle_large_trend=False
     if abs(std_trend_new) <= abs(std_trend_main):
+        
         std_trend = std_trend_new
     else:
+        is_handle_large_trend=True
         std_trend=std_trend_main
     if std_trend > 0.65:
+        is_handle_large_trend=True
         std_trend = 0.40
     elif std_trend < -0.60:
+        is_handle_large_trend=True
         std_trend = -0.30
     else:
         std_trend = std_trend
-    return std_trend
+    return std_trend,is_handle_large_trend
 def handle_large_trend(std_trend_main):
+    is_handle_large_trend = False
     if std_trend_main > 0.65:
+        is_handle_large_trend = True
         std_trend = 0.40
     elif std_trend_main < -0.60:
+        is_handle_large_trend = True
         std_trend = -0.30
     else:
         std_trend = std_trend_main  # keep original if not exceeding thresholds
 
-    return std_trend
+    return std_trend, is_handle_large_trend
 def contains_no_longer_red_box(text):
     # Normalize to lowercase for case-insensitive matching
     text = str(text).lower()
@@ -748,7 +768,7 @@ def calculate_required_quantity(bsp_row, pid_value, birthstone_sheet, forecast_m
 
  
  
-def calculate_average_com_eom_oh(TY_OH_MCOM_Units):
+def calculate_average_com_oh(TY_OH_MCOM_Units):
     ty_com_eom_oh=[TY_OH_MCOM_Units[month] for month in ['FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL','AUG', 'SEP', 'OCT', 'NOV', 'DEC', 'JAN']]
     non_zero_values = [x for x in ty_com_eom_oh if x > 0]
     if non_zero_values:
@@ -1331,51 +1351,148 @@ def calculate_index_value(Current_FC_Index):
 
 
 
-def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
+def get_c2_value(category, pid, std_trend, STD_index_value, month_12_fc_index, forecasting_method, planned_shp, planned_fc, s3_folder_path):
+    """
+    S3 version of get_c2_value - modifies Excel file stored in S3
     
-    base_dir = os.path.join("media/processed_files", str(path)) 
+    Args:
+        category: Category name for filename
+        pid: Product ID to find in Excel
+        std_trend, STD_index_value, month_12_fc_index, forecasting_method: Values to update
+        planned_shp, planned_fc: Dictionary with monthly values
+        s3_folder_path: S3 folder path (e.g., "testing")
+    """
     
+    # Construct S3 file path
     filename = f"{category}.xlsx"
-    filepath = os.path.join(base_dir, filename)
- 
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f"Excel file not found: {filepath}")
-   
-    # Load workbook and get the active sheet
-    wb = load_workbook(filepath, data_only=False)
-    ws = wb.active
-    for row in ws.iter_rows(min_row=1, max_col=3):  # Only search in Column C (3rd col)
-        if row[2].value == pid:  # Column C → index 2 (0-based)
-            start_row= row[2].row
- 
-    ws[f"F{start_row + 3}"]= std_trend
-    ws[f"E{start_row + 2}"]= STD_index_value
-    ws[f"F{start_row + 2}"]= month_12_fc_index  # Added IFERROR to prevent divide-by-zero issues
-    ws[f"F{start_row + 4}"]= forecasting_method
-    ws[f"I{start_row + 5}"]=planned_fc["FEB"]
-    ws[f"J{start_row + 5}"]=planned_fc["MAR"]
-    ws[f"K{start_row + 5}"]=planned_fc["APR"]
-    ws[f"L{start_row + 5}"]=planned_fc["MAY"]
-    ws[f"M{start_row + 5}"]=planned_fc["JUN"]
-    ws[f"N{start_row + 5}"]= planned_fc["JUL"]
-    ws[f"O{start_row + 5}"]=planned_fc["AUG"]
-    ws[f"P{start_row + 5}"]=planned_fc["SEP"]
-    ws[f"Q{start_row + 5}"]=planned_fc["OCT"]
-    ws[f"R{start_row + 5}"]=planned_fc["NOV"]
-    ws[f"S{start_row + 5}"]=planned_fc["DEC"]
-    ws[f"T{start_row + 5}"]=planned_fc["JAN"]
- 
-    ws[f"I{start_row + 6}"]= planned_shp["FEB"]
-    ws[f"J{start_row + 6}"]= planned_shp["MAR"]
-    ws[f"K{start_row + 6}"]=planned_shp["APR"]
-    ws[f"L{start_row + 6}"]= planned_shp["MAY"]
-    ws[f"M{start_row + 6}"]= planned_shp["JUN"]
-    ws[f"N{start_row + 6}"]= planned_shp["JUL"]
-    ws[f"O{start_row + 6}"]=planned_shp["AUG"]
-    ws[f"P{start_row + 6}"]=planned_shp["SEP"]
-    ws[f"Q{start_row + 6}"]=planned_shp["OCT"]
-    ws[f"R{start_row + 6}"]=planned_shp["NOV"]
-    ws[f"S{start_row + 6}"]=planned_shp["DEC"]
-    ws[f"T{start_row + 6}"]=planned_shp["JAN"]
- 
-    wb.save(filepath)
+    s3_filepath = f"processed_files/{s3_folder_path}/{filename}"
+    
+    print(f"Modifying S3 file: {s3_filepath}")
+    
+    try:
+        # Read Excel file from S3
+        file_obj = default_storage.open(s3_filepath, 'rb')
+        file_content = file_obj.read()
+        file_obj.close()
+        
+        # Load workbook from S3 content
+        excel_buffer = io.BytesIO(file_content)
+        wb = load_workbook(excel_buffer, data_only=False)
+        ws = wb.active
+        
+        # Find the row with matching PID
+        start_row = None
+        for row in ws.iter_rows(min_row=1, max_col=3):  # Only search in Column C (3rd col)
+            if row[2].value == pid:  # Column C → index 2 (0-based)
+                start_row = row[2].row
+                break
+        
+        if start_row is None:
+            raise ValueError(f"PID '{pid}' not found in Excel file: {s3_filepath}")
+        
+        print(f"Found PID '{pid}' at row {start_row}")
+        
+        # Update cells with new values
+        ws[f"F{start_row + 3}"] = std_trend
+        ws[f"E{start_row + 2}"] = STD_index_value
+        ws[f"F{start_row + 2}"] = month_12_fc_index
+        ws[f"F{start_row + 4}"] = forecasting_method
+        
+        # Update planned_fc values (row + 5)
+        ws[f"I{start_row + 5}"] = planned_fc["FEB"]
+        ws[f"J{start_row + 5}"] = planned_fc["MAR"]
+        ws[f"K{start_row + 5}"] = planned_fc["APR"]
+        ws[f"L{start_row + 5}"] = planned_fc["MAY"]
+        ws[f"M{start_row + 5}"] = planned_fc["JUN"]
+        ws[f"N{start_row + 5}"] = planned_fc["JUL"]
+        ws[f"O{start_row + 5}"] = planned_fc["AUG"]
+        ws[f"P{start_row + 5}"] = planned_fc["SEP"]
+        ws[f"Q{start_row + 5}"] = planned_fc["OCT"]
+        ws[f"R{start_row + 5}"] = planned_fc["NOV"]
+        ws[f"S{start_row + 5}"] = planned_fc["DEC"]
+        ws[f"T{start_row + 5}"] = planned_fc["JAN"]
+        
+        # Update planned_shp values (row + 6)
+        ws[f"I{start_row + 6}"] = planned_shp["FEB"]
+        ws[f"J{start_row + 6}"] = planned_shp["MAR"]
+        ws[f"K{start_row + 6}"] = planned_shp["APR"]
+        ws[f"L{start_row + 6}"] = planned_shp["MAY"]
+        ws[f"M{start_row + 6}"] = planned_shp["JUN"]
+        ws[f"N{start_row + 6}"] = planned_shp["JUL"]
+        ws[f"O{start_row + 6}"] = planned_shp["AUG"]
+        ws[f"P{start_row + 6}"] = planned_shp["SEP"]
+        ws[f"Q{start_row + 6}"] = planned_shp["OCT"]
+        ws[f"R{start_row + 6}"] = planned_shp["NOV"]
+        ws[f"S{start_row + 6}"] = planned_shp["DEC"]
+        ws[f"T{start_row + 6}"] = planned_shp["JAN"]
+        
+        print(f"Updated cells for PID '{pid}' - forecast and shipment data")
+        
+        # Save workbook back to S3
+        output_buffer = io.BytesIO()
+        wb.save(output_buffer)
+        output_buffer.seek(0)
+        
+        # Overwrite the file in S3
+        default_storage.save(s3_filepath, ContentFile(output_buffer.getvalue()))
+        
+        print(f"Successfully updated S3 file: {s3_filepath}")
+        
+        # Clean up
+        excel_buffer.close()
+        output_buffer.close()
+        
+    except Exception as e:
+        print(f"Error updating S3 Excel file: {e}")
+    
+        raise Exception(f"Failed to update Excel file in S3: {str(e)}")
+    
+# def get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path):
+
+#     base_dir = os.path.join("media/processed_files", str(path)) 
+
+#     filename = f"{category}.xlsx"
+#     filepath = os.path.join(base_dir, filename)
+
+#     if not os.path.exists(filepath):
+#         raise FileNotFoundError(f"Excel file not found: {filepath}")
+
+#     # Load workbook and get the active sheet
+#     wb = load_workbook(filepath, data_only=False)
+#     ws = wb.active
+#     for row in ws.iter_rows(min_row=1, max_col=3):  # Only search in Column C (3rd col)
+#         if row[2].value == pid:  # Column C → index 2 (0-based)
+#             start_row= row[2].row
+
+#     ws[f"F{start_row + 3}"]= std_trend
+#     ws[f"E{start_row + 2}"]= STD_index_value
+#     ws[f"F{start_row + 2}"]= month_12_fc_index  # Added IFERROR to prevent divide-by-zero issues
+#     ws[f"F{start_row + 4}"]= forecasting_method
+#     ws[f"I{start_row + 5}"]=planned_fc["FEB"]
+#     ws[f"J{start_row + 5}"]=planned_fc["MAR"]
+#     ws[f"K{start_row + 5}"]=planned_fc["APR"]
+#     ws[f"L{start_row + 5}"]=planned_fc["MAY"]
+#     ws[f"M{start_row + 5}"]=planned_fc["JUN"]
+#     ws[f"N{start_row + 5}"]= planned_fc["JUL"]
+#     ws[f"O{start_row + 5}"]=planned_fc["AUG"]
+#     ws[f"P{start_row + 5}"]=planned_fc["SEP"]
+#     ws[f"Q{start_row + 5}"]=planned_fc["OCT"]
+#     ws[f"R{start_row + 5}"]=planned_fc["NOV"]
+#     ws[f"S{start_row + 5}"]=planned_fc["DEC"]
+#     ws[f"T{start_row + 5}"]=planned_fc["JAN"]
+
+#     ws[f"I{start_row + 6}"]= planned_shp["FEB"]
+#     ws[f"J{start_row + 6}"]= planned_shp["MAR"]
+#     ws[f"K{start_row + 6}"]=planned_shp["APR"]
+#     ws[f"L{start_row + 6}"]= planned_shp["MAY"]
+#     ws[f"M{start_row + 6}"]= planned_shp["JUN"]
+#     ws[f"N{start_row + 6}"]= planned_shp["JUL"]
+#     ws[f"O{start_row + 6}"]=planned_shp["AUG"]
+#     ws[f"P{start_row + 6}"]=planned_shp["SEP"]
+#     ws[f"Q{start_row + 6}"]=planned_shp["OCT"]
+#     ws[f"R{start_row + 6}"]=planned_shp["NOV"]
+#     ws[f"S{start_row + 6}"]=planned_shp["DEC"]
+#     ws[f"T{start_row + 6}"]=planned_shp["JAN"]
+
+#     wb.save(filepath)
+    
