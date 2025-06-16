@@ -1203,7 +1203,7 @@ const ProductTable = ({
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-left font-medium text-gray-900">
                 <div className="flex items-center">
-                  <span className="font-mono">{product.pid}</span>
+                  <span className="font-mono">{product.product_id}</span>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">

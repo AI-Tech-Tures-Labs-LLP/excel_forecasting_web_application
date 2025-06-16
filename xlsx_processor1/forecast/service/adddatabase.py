@@ -250,7 +250,7 @@ def save_forecast_data(pid, updated_context, sheet_object):
     # Update ProductDetail fields
     product.rolling_method = updated_context.get("rolling_method", product.rolling_method)
     product.std_trend_original = updated_context.get("std_trend_original", product.std_trend_original)
-    product.forecasting_method_original = updated_context.get("forecasting_method_original", product.forecasting_method_original)
+    product.forecasting_method = updated_context.get("forecasting_method", product.forecasting_method)
     product.month_12_fc_index_original = updated_context.get("month_12_fc_index_original", product.month_12_fc_index_original)
     product.current_fc_index = updated_context.get("current_fc_index", product.current_fc_index)
 

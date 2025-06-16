@@ -1,141 +1,72 @@
-// import { createSlice } from '@reduxjs/toolkit';
-// import { api } from '../services/api';
-
-// // Initial state for the product selector
-// const initialState = {
-//   selectedCategory: '',
-//   activeFilters: [],
-//   selectedProduct: null,
-//   productData: {},
-// };
-
-// // Create a slice with reducers
-// const productSlice = createSlice({
-//   name: 'products',
-//   initialState,
-//   reducers: {
-//     // Set the selected category
-//     setSelectedCategory: (state, action) => {
-//       state.selectedCategory = action.payload;
-//       state.activeFilters = [];
-//       state.selectedProduct = null;
-//     },
-
-//     // Toggle a filter on/off
-//     toggleFilter: (state, action) => {
-//       const filter = action.payload;
-//       if (state.activeFilters.includes(filter)) {
-//         state.activeFilters = state.activeFilters.filter(f => f !== filter);
-//       } else {
-//         state.activeFilters.push(filter);
-//       }
-//     },
-
-//     // Clear all active filters
-//     clearFilters: (state) => {
-//       state.activeFilters = [];
-//     },
-
-//     // Set the selected product for detailed view
-//     setSelectedProduct: (state, action) => {
-//       state.selectedProduct = action.payload;
-//     },
-
-//     // Reset selected product (go back to list view)
-//     resetSelectedProduct: (state) => {
-//       state.selectedProduct = null;
-//     },
-
-//     // Update product data in state (when mock data is used)
-//     setProductData: (state, action) => {
-//       state.productData = action.payload;
-//     },
-//   },
-//   // Extra reducers to handle API actions
-//   extraReducers: (builder) => {
-//     builder.addMatcher(
-//       api.endpoints.getProductDetails.matchFulfilled,
-//       (state, { payload, meta }) => {
-//         // When product details are fetched, store them
-//         if (payload && meta.arg.originalArgs) {
-//           const productId = meta.arg.originalArgs;
-//           if (!state.productData[state.selectedCategory]) {
-//             state.productData[state.selectedCategory] = {};
-//           }
-//           state.productData[state.selectedCategory][productId] = payload;
-//         }
-//       }
-//     );
-//   }
-// });
-
-// // Export the actions
-// export const {
-//   setSelectedCategory,
-//   toggleFilter,
-//   clearFilters,
-//   setSelectedProduct,
-//   resetSelectedProduct,
-//   setProductData,
-// } = productSlice.actions;
-
-// // Selectors
-// export const selectCategory = (state) => state.products.selectedCategory;
-// export const selectActiveFilters = (state) => state.products.activeFilters;
-// export const selectSelectedProduct = (state) => state.products.selectedProduct;
-// export const selectProductData = (state) => state.products.productData;
-// export const selectDisplayedProducts = (state) => {
-//   const { selectedCategory, activeFilters, productData } = state.products;
-
-//   // If no category is selected, return empty array
-//   if (!selectedCategory || !productData[selectedCategory]) {
-//     return [];
-//   }
-
-//   const categoryData = productData[selectedCategory];
-
-//   // If no filters are active, show all products
-//   if (activeFilters.length === 0 && categoryData.Pid_to_all) {
-//     return [...new Set(categoryData.Pid_to_all)];
-//   }
-
-//   // Combine products from all active filters
-//   let filteredProducts = [];
-//   activeFilters.forEach(filter => {
-//     if (categoryData[filter]) {
-//       filteredProducts = [...filteredProducts, ...categoryData[filter]];
-//     }
-//   });
-
-//   // Remove duplicates
-//   return [...new Set(filteredProducts)];
-// };
-
-// export default productSlice.reducer;
-
-// // src/redux/productSlice.js - Complete with all selectors
+// // Updated productSlice.js with enhanced filter support
 // import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 // import axios from "axios";
 
 // const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// // Async thunks for API calls
+// // Updated async thunk for API calls with enhanced filters
 // export const fetchProducts = createAsyncThunk(
 //   "products/fetchProducts",
 //   async ({ productType, filters }, { rejectWithValue }) => {
 //     try {
 //       const params = new URLSearchParams();
 
-//       // Add filters to params
-//       Object.entries(filters).forEach(([key, values]) => {
+//       if (sheetId) {
+//         params.append("sheet_id", sheetId);
+//       }
+
+//       // Multi-select filters (arrays)
+//       const multiSelectFilters = [
+//         "category",
+//         "birthstone",
+//         "red_box_item",
+//         "vdf_status",
+//       ];
+
+//       multiSelectFilters.forEach((filterKey) => {
+//         const values = filters[filterKey];
 //         if (Array.isArray(values) && values.length > 0) {
-//           values.forEach((value) => params.append(key, value));
+//           values.forEach((value) => {
+//             if (filterKey === "red_box_item" || filterKey === "vdf_status") {
+//               // Convert string values to boolean for API
+//               const boolValue =
+//                 value === "Yes" ? "true" : value === "No" ? "false" : value;
+//               params.append(filterKey, boolValue);
+//             } else {
+//               params.append(filterKey, value);
+//             }
+//           });
 //         }
 //       });
 
+//       // Single-select boolean filters
+//       const booleanFilters = [
+//         "considered_birthstone",
+//         "added_qty_macys_soq",
+//         "below_min_order",
+//         "over_macys_soq",
+//         "added_only_to_balance_soq",
+//         "need_to_review_first",
+//         "valentine_day",
+//         "mothers_day",
+//         "fathers_day",
+//         "mens_day",
+//         "womens_day",
+//       ];
+
+//       booleanFilters.forEach((filterKey) => {
+//         const value = filters[filterKey];
+//         if (value !== null && value !== undefined && value !== "") {
+//           params.append(filterKey, value);
+//         }
+//       });
+
+//       // Product type filter
 //       if (productType) {
 //         params.append("product_type", productType);
 //       }
+
+//       console.log("API Request params:", params.toString()); // Debug log
 
 //       const response = await axios.get(
 //         `${API_BASE_URL}/forecast/query/filter_products/?${params}`
@@ -145,6 +76,7 @@
 //         productType,
 //         data: response.data,
 //         filters,
+//         sheetId,
 //         timestamp: Date.now(),
 //       };
 //     } catch (error) {
@@ -206,6 +138,25 @@
 //     com: { page: 1, totalPages: 1, totalItems: 0 },
 //     omni: { page: 1, totalPages: 1, totalItems: 0 },
 //   },
+
+//   // Enhanced filter state
+//   appliedFilters: {
+//     category: [],
+//     birthstone: [],
+//     red_box_item: [],
+//     vdf_status: [],
+//     considered_birthstone: null,
+//     added_qty_macys_soq: null,
+//     below_min_order: null,
+//     over_macys_soq: null,
+//     added_only_to_balance_soq: null,
+//     need_to_review_first: null,
+//     valentine_day: null,
+//     mothers_day: null,
+//     fathers_day: null,
+//     mens_day: null,
+//     womens_day: null,
+//   },
 // };
 
 // const productSlice = createSlice({
@@ -227,6 +178,31 @@
 //     clearSelectedProduct: (state) => {
 //       state.selectedProduct = null;
 //       state.selectedProductDetails = null;
+//     },
+
+//     // Filter management
+//     setAppliedFilters: (state, action) => {
+//       state.appliedFilters = { ...state.appliedFilters, ...action.payload };
+//     },
+
+//     clearAppliedFilters: (state) => {
+//       state.appliedFilters = {
+//         category: [],
+//         birthstone: [],
+//         red_box_item: [],
+//         vdf_status: [],
+//         considered_birthstone: null,
+//         added_qty_macys_soq: null,
+//         below_min_order: null,
+//         over_macys_soq: null,
+//         added_only_to_balance_soq: null,
+//         need_to_review_first: null,
+//         valentine_day: null,
+//         mothers_day: null,
+//         fathers_day: null,
+//         mens_day: null,
+//         womens_day: null,
+//       };
 //     },
 
 //     // Clear errors
@@ -263,20 +239,24 @@
 //         state.errors.products = null;
 //       })
 //       .addCase(fetchProducts.fulfilled, (state, action) => {
-//         const { productType, data, timestamp } = action.payload;
+//         const { productType, data, filters, timestamp } = action.payload;
 
 //         state.loading.products = false;
+//         state.appliedFilters = filters;
 //         state.lastFetch[productType] = timestamp;
 
-//         // Update products based on type
+//         // Update products based on type - handle all types if no specific type provided
 //         if (!productType || productType === "store") {
-//           state.storeProducts = data.store_products || [];
+//           state.storeProducts =
+//             data.filter((d) => d.product_type === "store") || [];
 //         }
 //         if (!productType || productType === "com") {
-//           state.comProducts = data.com_products || [];
+//           state.comProducts =
+//             data.filter((d) => d.product_type === "com") || [];
 //         }
 //         if (!productType || productType === "omni") {
-//           state.omniProducts = data.omni_products || [];
+//           state.omniProducts =
+//             data.filter((d) => d.product_type === "omni") || [];
 //         }
 //       })
 //       .addCase(fetchProducts.rejected, (state, action) => {
@@ -306,7 +286,7 @@
 //   },
 // });
 
-// // Selectors - COMPLETE LIST WITH ALL MISSING SELECTORS
+// // Selectors
 // export const selectSelectedProductType = (state) =>
 //   state.products.selectedProductType;
 
@@ -335,7 +315,7 @@
 //   state.products.selectedProductDetails;
 // export const selectProductErrors = (state) => state.products.errors;
 
-// // Additional selectors that might be needed
+// // Additional selectors
 // export const selectStoreProducts = (state) => state.products.storeProducts;
 // export const selectComProducts = (state) => state.products.comProducts;
 // export const selectOmniProducts = (state) => state.products.omniProducts;
@@ -349,6 +329,7 @@
 //   state.products.cache.productDetails;
 // export const selectLastFetch = (state) => state.products.lastFetch;
 // export const selectPagination = (state) => state.products.pagination;
+// export const selectAppliedFilters = (state) => state.products.appliedFilters;
 
 // // Check if data needs refresh (older than 5 minutes)
 // export const selectShouldRefreshProducts = (state, productType) => {
@@ -357,10 +338,23 @@
 //   return Date.now() - lastFetch > 5 * 60 * 1000; // 5 minutes
 // };
 
+// // Check if any filters are active
+// export const selectHasActiveFilters = (state) => {
+//   const filters = state.products.appliedFilters;
+//   return Object.entries(filters).some(([key, value]) => {
+//     if (Array.isArray(value)) {
+//       return value.length > 0;
+//     }
+//     return value !== null && value !== undefined && value !== "";
+//   });
+// };
+
 // export const {
 //   setSelectedProductType,
 //   setSelectedProduct,
 //   clearSelectedProduct,
+//   setAppliedFilters,
+//   clearAppliedFilters,
 //   clearErrors,
 //   clearCache,
 //   resetProductState,
@@ -369,7 +363,7 @@
 
 // export default productSlice.reducer;
 
-// Updated productSlice.js with enhanced filter support
+// Updated productSlice.js with enhanced filter support and fixes
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -378,7 +372,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Updated async thunk for API calls with enhanced filters
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
-  async ({ productType, filters }, { rejectWithValue }) => {
+  async ({ productType, filters, sheetId }, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams();
 
@@ -451,6 +445,7 @@ export const fetchProducts = createAsyncThunk(
         timestamp: Date.now(),
       };
     } catch (error) {
+      console.error("Error in fetchProducts:", error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -465,6 +460,7 @@ export const fetchProductDetails = createAsyncThunk(
       );
       return { productId, data: response.data };
     } catch (error) {
+      console.error("Error in fetchProductDetails:", error);
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -612,24 +608,87 @@ const productSlice = createSlice({
       .addCase(fetchProducts.fulfilled, (state, action) => {
         const { productType, data, filters, timestamp } = action.payload;
 
+        console.log("Products fetched successfully:", {
+          productType,
+          dataLength: Array.isArray(data) ? data.length : "not array",
+          dataType: typeof data,
+          sampleData: Array.isArray(data) ? data[0] : data,
+        });
+
         state.loading.products = false;
         state.appliedFilters = filters;
         state.lastFetch[productType] = timestamp;
 
-        // Update products based on type - handle all types if no specific type provided
-        if (!productType || productType === "store") {
-          state.storeProducts = data.store_products || [];
+        // Handle the case where data is already filtered by product type from API
+        if (Array.isArray(data)) {
+          // If API returns a flat array, filter by product_type
+          if (!productType) {
+            // If no specific product type requested, update all
+            state.storeProducts =
+              data.filter((d) => d.product_type === "store") || [];
+            state.comProducts =
+              data.filter((d) => d.product_type === "com") || [];
+            state.omniProducts =
+              data.filter((d) => d.product_type === "omni") || [];
+          } else {
+            // Update specific product type
+            switch (productType) {
+              case "store":
+                state.storeProducts =
+                  data.filter((d) => d.product_type === "store") || [];
+                break;
+              case "com":
+                state.comProducts =
+                  data.filter((d) => d.product_type === "com") || [];
+                break;
+              case "omni":
+                state.omniProducts =
+                  data.filter((d) => d.product_type === "omni") || [];
+                break;
+              default:
+                // If productType doesn't match known types, still filter the data
+                state.storeProducts =
+                  data.filter((d) => d.product_type === "store") || [];
+                state.comProducts =
+                  data.filter((d) => d.product_type === "com") || [];
+                state.omniProducts =
+                  data.filter((d) => d.product_type === "omni") || [];
+            }
+          }
+        } else if (data && typeof data === "object") {
+          // If API returns an object with separate arrays (legacy format)
+          if (data.store_products !== undefined) {
+            state.storeProducts = data.store_products || [];
+          }
+          if (data.com_products !== undefined) {
+            state.comProducts = data.com_products || [];
+          }
+          if (data.omni_products !== undefined) {
+            state.omniProducts = data.omni_products || [];
+          }
+        } else {
+          // Fallback: if data format is unexpected
+          console.warn("Unexpected data format received:", data);
+          state.storeProducts = [];
+          state.comProducts = [];
+          state.omniProducts = [];
         }
-        if (!productType || productType === "com") {
-          state.comProducts = data.com_products || [];
-        }
-        if (!productType || productType === "omni") {
-          state.omniProducts = data.omni_products || [];
-        }
+
+        // Log the final state for debugging
+        console.log("Final product counts:", {
+          store: state.storeProducts.length,
+          com: state.comProducts.length,
+          omni: state.omniProducts.length,
+        });
       })
       .addCase(fetchProducts.rejected, (state, action) => {
+        console.error("fetchProducts rejected:", action.payload);
         state.loading.products = false;
         state.errors.products = action.payload;
+        // Clear products on error
+        state.storeProducts = [];
+        state.comProducts = [];
+        state.omniProducts = [];
       })
 
       // Fetch product details
@@ -648,6 +707,7 @@ const productSlice = createSlice({
         };
       })
       .addCase(fetchProductDetails.rejected, (state, action) => {
+        console.error("fetchProductDetails rejected:", action.payload);
         state.loading.productDetails = false;
         state.errors.productDetails = action.payload;
       });
@@ -716,6 +776,19 @@ export const selectHasActiveFilters = (state) => {
     return value !== null && value !== undefined && value !== "";
   });
 };
+
+// Debug selector to check product data structure
+export const selectProductsDebug = (state) => ({
+  storeCount: state.products.storeProducts.length,
+  comCount: state.products.comProducts.length,
+  omniCount: state.products.omniProducts.length,
+  loading: state.products.loading.products,
+  errors: state.products.errors.products,
+  selectedType: state.products.selectedProductType,
+  sampleStoreProduct: state.products.storeProducts[0] || null,
+  sampleComProduct: state.products.comProducts[0] || null,
+  sampleOmniProduct: state.products.omniProducts[0] || null,
+});
 
 export const {
   setSelectedProductType,

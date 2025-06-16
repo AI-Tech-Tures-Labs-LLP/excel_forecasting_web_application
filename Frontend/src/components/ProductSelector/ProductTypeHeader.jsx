@@ -28,6 +28,7 @@ const ProductTypeHeader = ({
   };
 
   const getProductCount = (productType) => {
+    console.log("Calculating product count for:", productType);
     switch (productType) {
       case "store":
         return storeProducts.length;

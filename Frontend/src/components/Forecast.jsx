@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -322,6 +321,10 @@ function Forecast() {
             );
             setProgress(Math.min(uploadPercent, 20));
           },
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          }
         }
       );
 

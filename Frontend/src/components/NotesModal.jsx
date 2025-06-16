@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useDispatch } from "react-redux";
+import { useParams } from "react-router-dom";
 
 const NotesModal = ({
   isOpen,
@@ -21,6 +22,7 @@ const NotesModal = ({
   selectedProductType,
   onTaggedUserAdded,
 }) => {
+  const { sheetId } = useParams();
   const dispatch = useDispatch();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +62,8 @@ const NotesModal = ({
     setSaving(true);
     try {
       const noteData = {
-        pid: productId,
+        sheet: sheetId,
+        productdetail: productId,
         note: newNote.note.trim(),
         assigned_to: newNote.assigned_to.trim() || "Unassigned",
         reviewed: newNote.reviewed,
