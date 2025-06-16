@@ -160,7 +160,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
     lookup_value_regex = r"[^/]+"
     def retrieve(self, request, pk=None):
         # Fetch product details
-        sheet_id = request.data.get("sheet_id")
+        sheet_id = request.query_params.get("sheet_id")
         if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=status.HTTP_400_BAD_REQUEST)
         

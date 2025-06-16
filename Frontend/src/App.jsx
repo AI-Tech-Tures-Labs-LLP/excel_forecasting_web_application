@@ -187,6 +187,15 @@ function App() {
               }
             />
 
+            <Route
+              path="/products/:sheetId"
+              element={
+                <ProtectedRoute>
+                  <ProductSelector />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Fallback route */}
             <Route
               path="*"
