@@ -1,10 +1,14 @@
-// src/App.jsx
-import React, { useEffect, useState, createContext, useContext } from "react";
+// src/App.jsx - SIMPLIFIED VERSION
+import React, { useEffect, useState } from "react";
 import { useLocation, Routes, Route, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppContextProvider } from "./context/AppContext";
 
-// Components
+// Auth components
+import LoginPage from "./components/auth/LoginPage";
+import RegisterPage from "./components/auth/RegisterPage";
+
+// Your existing components
 import LandingPage from "./components/LandingPage";
 import XLSXUploader from "./components/XLSXUploader";
 import FileUploadStep from "./components/FileUploadStep";
@@ -13,74 +17,31 @@ import ProductSelector from "./components/ProductSelector";
 import Navbar from "./components/Navbar";
 import Toast from "./components/Toast";
 import LoadingOverlay from "./components/LoadingOverlay";
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
 
 // Redux imports
 import { setCurrentView } from "./redux/uiSlice";
 import { setCurrentSession } from "./redux/forecastSlice";
 
-// Auth Context
-const AuthContext = createContext();
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+// Simple auth check function
+const isAuthenticated = () => {
+  const token = localStorage.getItem("access_token");
+  const user = localStorage.getItem("user");
+  return !!(token && user);
 };
 
-// Auth Provider Component
-const AuthProvider = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    // Check if user was previously authenticated (optional persistence)
-    return localStorage.getItem("isAuthenticated") === "true";
-  });
-  const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
-
-  const login = (username) => {
-    setIsAuthenticated(true);
-    const userData = { username, loginTime: new Date().toISOString() };
-    setUser(userData);
-
-    // Optional: Persist authentication state
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("currentUser", JSON.stringify(userData));
-  };
-
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-
-    // Clear authentication state
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("currentUser");
-  };
-
-  return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-// Protected Route Component
+// Simple ProtectedRoute component
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login", { replace: true });
+    if (!isAuthenticated()) {
+      navigate("/login", { state: { from: location } });
     }
-  }, [isAuthenticated, navigate]);
+  }, [navigate, location]);
 
-  if (!isAuthenticated) {
-    return null; // or a loading spinner
+  if (!isAuthenticated()) {
+    return null;
   }
 
   return children;
@@ -89,22 +50,29 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   const dispatch = useDispatch();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const [authChecked, setAuthChecked] = useState(false);
 
   const isHomePage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
   const isRegisterPage = location.pathname === "/register";
+  const isAuthPage = isLoginPage || isRegisterPage;
+  const authenticated = isAuthenticated();
 
   // Global state
-  const globalLoading = useSelector((state) => state.ui.globalLoading);
-  const toasts = useSelector((state) => state.ui.toasts);
-  const theme = useSelector((state) => state.ui.theme);
+  const globalLoading = useSelector(
+    (state) => state.ui?.globalLoading || false
+  );
+  const toasts = useSelector((state) => state.ui?.toasts || []);
+  const theme = useSelector((state) => state.ui?.theme || "light");
 
-  // Initialize app state
+  // Simple auth check on mount
   useEffect(() => {
-    // Only initialize app data if user is authenticated
-    if (isAuthenticated) {
+    setAuthChecked(true);
+  }, []);
+
+  // Initialize app state for authenticated users
+  useEffect(() => {
+    if (authenticated && authChecked) {
       // Load forecast data from localStorage if available
       const storedForecastData = localStorage.getItem("forecastData");
       if (storedForecastData) {
@@ -120,29 +88,34 @@ function App() {
       // Set initial view based on route
       const viewMap = {
         "/": "landing",
+        "/dashboard": "dashboard",
         "/pricing": "pricing",
-        "/file-upload": "file-upload", // ADD THIS LINE
+        "/file-upload": "file-upload",
         "/forecast": "forecast",
         "/products": "products",
-        "/login": "login",
       };
 
       const currentView = viewMap[location.pathname] || "landing";
       dispatch(setCurrentView(currentView));
     }
-  }, [dispatch, location.pathname, isAuthenticated]);
-
-  // Redirect to login if not authenticated and not already on login page
-  useEffect(() => {
-    if (!isAuthenticated && !isLoginPage) {
-      navigate("/login", { replace: true });
-    }
-  }, [isAuthenticated, isLoginPage, navigate]);
+  }, [dispatch, location.pathname, authenticated, authChecked]);
 
   // Apply theme to document
   useEffect(() => {
     document.documentElement.className = theme;
   }, [theme]);
+
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AppContextProvider>
@@ -150,24 +123,31 @@ function App() {
         {/* Global Loading Overlay */}
         {globalLoading && <LoadingOverlay />}
 
-        {/* Navigation - only show if authenticated and not on login/home page */}
-        {isAuthenticated && !isHomePage && !isLoginPage && !isRegisterPage && (
-          <Navbar />
-        )}
+        {/* Navigation - only show if authenticated and not on auth pages */}
+        {authenticated && !isHomePage && !isAuthPage && <Navbar />}
 
         {/* Main Content */}
         <div
           className={`flex-grow ${
-            isAuthenticated && !isHomePage && !isLoginPage
-              ? "pb-16 sm:pb-0"
-              : ""
+            authenticated && !isHomePage && !isAuthPage ? "pb-16 sm:pb-0" : ""
           }`}
         >
           <Routes>
+            {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+
+            {/* Protected routes */}
             <Route
               path="/"
+              element={
+                <ProtectedRoute>
+                  <LandingPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <LandingPage />
@@ -182,7 +162,6 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            {/* ADD THIS NEW ROUTE */}
             <Route
               path="/file-upload"
               element={
@@ -207,15 +186,20 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+            {/* Fallback route */}
             <Route
-              path="/products/:sheetId"
+              path="*"
               element={
-                <ProtectedRoute>
-                  <ProductSelector />
-                </ProtectedRoute>
+                authenticated ? (
+                  <ProtectedRoute>
+                    <LandingPage />
+                  </ProtectedRoute>
+                ) : (
+                  <LoginPage />
+                )
               }
             />
-            <Route path="*" element={<LoginPage />} />
           </Routes>
         </div>
 
@@ -236,13 +220,4 @@ function App() {
   );
 }
 
-// Main App Wrapper with Auth Provider
-function AppWithAuth() {
-  return (
-    <AuthProvider>
-      <App />
-    </AuthProvider>
-  );
-}
-
-export default AppWithAuth;
+export default App;
