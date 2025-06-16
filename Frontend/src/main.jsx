@@ -1,4 +1,4 @@
-// src/main.jsx
+// Updated src/main.jsx with authentication
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -7,6 +7,9 @@ import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "./redux/store";
 import App from "./App.jsx";
 import "./index.css";
+
+// Import API setup to initialize interceptors
+import "./utils/apiSetup";
 
 // Loading component for PersistGate
 const LoadingComponent = () => (

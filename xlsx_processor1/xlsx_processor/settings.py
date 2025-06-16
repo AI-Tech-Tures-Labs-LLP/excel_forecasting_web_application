@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     'storages',
     'api',
     'forecast',
-    'storages'
+
 ]
 
 REST_FRAMEWORK = {
