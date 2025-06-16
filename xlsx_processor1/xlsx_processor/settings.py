@@ -32,10 +32,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
+    'channels',
     'corsheaders',
     'storages',
     'api',
     'forecast',
+    'uvicorn',
 
 ]
 
@@ -85,8 +87,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'xlsx_processor.wsgi.application'
-
+# WSGI_APPLICATION = 'xlsx_processor.wsgi.application'
+ASGI_APPLICATION = 'xlsx_processor.asgi.application'
 # Database
 DATABASES = {
     'default': {
@@ -185,6 +187,11 @@ FILE_UPLOAD_HANDLERS = [
     "django.core.files.uploadhandler.TemporaryFileUploadHandler",
 ]
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # ✅ Works for local dev
+    },
+}
 # Additional S3 settings for better performance
 if AWS_STORAGE_BUCKET_NAME:
     AWS_S3_FILE_OVERWRITE = False
