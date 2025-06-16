@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Upload,
@@ -12,10 +12,13 @@ import {
   List,
   FolderOpen,
 } from "lucide-react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { formatDateTime } from "../utils/dateFormat";
+import { getAllFiles } from "../services/forecast.service";
+import { setFiles } from "../redux/forecastSlice";
 
 function FileUploadStep() {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedFile, setSelectedFile] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
@@ -23,7 +26,7 @@ function FileUploadStep() {
 
   // Get files from Redux store
   const files = useSelector((state) => state.forecast.files);
-
+  console.log("Files from Redux:", files);
   const handleFileClick = (file) => {
     setSelectedFile(file);
 
@@ -63,6 +66,17 @@ function FileUploadStep() {
     );
   };
 
+  const getFiles = async () => {
+    try {
+      const res = await getAllFiles();
+      console.log("Fetched files:", res.data);
+      dispatch(setFiles(res.data));
+    } catch (err) {
+      console.error("Error fetching files:", err);
+      return [];
+    }
+  };
+
   const getFileCardClasses = (file) => {
     let baseClasses = "p-4 rounded-lg border-2 transition-all duration-200";
 
@@ -94,6 +108,10 @@ function FileUploadStep() {
       return "";
     }
   };
+
+  useEffect(() => {
+    getFiles();
+  }, []);
 
   const filteredFiles = files.filter((file) =>
     file.name.toLowerCase().includes(searchTerm.toLowerCase())

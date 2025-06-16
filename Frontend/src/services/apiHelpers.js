@@ -114,11 +114,12 @@ export const fetchAvailableFilters = async () => {
       `${API_BASE_URL}/forecast/query/filter_products/`
     );
 
-    const allProducts = [
-      ...(response.data.store_products || []),
-      ...(response.data.com_products || []),
-      ...(response.data.omni_products || []),
-    ];
+    // const allProducts = [
+    //   ...(response.data.store_products || []),
+    //   ...(response.data.com_products || []),
+    //   ...(response.data.omni_products || []),
+    // ];
+    const allProducts = response.data || [];
 
     // Extract unique values for each filter type
     const categories = [

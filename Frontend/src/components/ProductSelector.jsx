@@ -165,12 +165,14 @@ function ProductSelector() {
         }/forecast/query/filter_products/?sheet_id=${sheetId}`
       );
       const data = await response.json();
+      console.log("Available filters data:", data);
+      // const allProducts = [
+      //   ...(data.store_products || []),
+      //   ...(data.com_products || []),
+      //   ...(data.omni_products || []),
+      // ];
 
-      const allProducts = [
-        ...(data.store_products || []),
-        ...(data.com_products || []),
-        ...(data.omni_products || []),
-      ];
+      const allProducts = [...data];
 
       const categories = [
         ...new Set(allProducts.map((p) => p.category).filter(Boolean)),

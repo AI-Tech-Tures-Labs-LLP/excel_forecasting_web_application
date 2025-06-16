@@ -52,8 +52,7 @@ const ResultsModal = ({ showResults, setShowResults, lastAppliedResults }) => {
                   {lastAppliedResults.factorPercentage > 0
                     ? "Increased"
                     : "Decreased"}{" "}
-                  quantities by{" "}
-                  {Math.abs(lastAppliedResults.factorPercentage)}%
+                  quantities by {Math.abs(lastAppliedResults.factorPercentage)}%
                 </p>
               </div>
             </div>
@@ -110,9 +109,7 @@ const ResultsModal = ({ showResults, setShowResults, lastAppliedResults }) => {
                   <ChevronUp className="w-5 h-5 text-green-600" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs text-gray-600 font-medium">
-                    New Total
-                  </p>
+                  <p className="text-xs text-gray-600 font-medium">New Total</p>
                   <p className="text-xl font-bold text-green-600">
                     {lastAppliedResults.summary.totalNewQty.toLocaleString()}
                   </p>
@@ -188,9 +185,7 @@ const ResultsModal = ({ showResults, setShowResults, lastAppliedResults }) => {
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-gray-600 text-xs font-medium">
-                  Note:
-                </span>
+                <span className="text-gray-600 text-xs font-medium">Note:</span>
                 <span
                   className="font-medium text-gray-800 truncate"
                   title={lastAppliedResults.factorNote || "No notes provided"}
