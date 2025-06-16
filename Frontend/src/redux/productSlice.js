@@ -382,6 +382,10 @@ export const fetchProducts = createAsyncThunk(
     try {
       const params = new URLSearchParams();
 
+      if (sheetId) {
+        params.append("sheet_id", sheetId);
+      }
+
       // Multi-select filters (arrays)
       const multiSelectFilters = [
         "category",
@@ -443,6 +447,7 @@ export const fetchProducts = createAsyncThunk(
         productType,
         data: response.data,
         filters,
+        sheetId,
         timestamp: Date.now(),
       };
     } catch (error) {

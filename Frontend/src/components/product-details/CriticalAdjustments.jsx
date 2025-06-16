@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import { AlertTriangle, Save } from "lucide-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
 
 const CriticalAdjustments = ({
   userAddedQuantity,
@@ -17,6 +18,7 @@ const CriticalAdjustments = ({
   fetchProducts,
 }) => {
   const dispatch = useDispatch();
+  const { sheetId } = useParams();
   const selectedFilters = useSelector((state) => state.filters.selectedFilters);
   const selectedProductType = useSelector(
     (state) => state.filters.selectedProductType
@@ -112,7 +114,7 @@ const CriticalAdjustments = ({
         if (externalFactor && externalFactor.trim()) {
           await handleSaveProductNote();
         }
-      
+
         // Call the onSave callback if provided
         if (onSave) {
           onSave();
@@ -121,10 +123,10 @@ const CriticalAdjustments = ({
           fetchProducts({
             productType: selectedProductType,
             filters: selectedFilters,
+            sheetId: sheetId,
           })
         );
       }
- 
     } catch (error) {
       console.error("Error saving critical inputs:", error);
       console.error("Error response:", error.response?.data);

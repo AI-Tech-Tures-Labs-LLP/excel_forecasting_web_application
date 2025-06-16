@@ -52,13 +52,18 @@ const forecastSlice = createSlice({
 
     // History
     forecastHistory: [],
-
+    files: [],
     // Errors
     error: null,
   },
 
   reducers: {
     // Form data management
+
+    setFiles: (state, action) => {
+      state.files = action.payload;
+    },
+
     updateFormData: (state, action) => {
       state.formData = { ...state.formData, ...action.payload };
     },
@@ -170,6 +175,7 @@ export const selectForecastHistory = (state) => state.forecast.forecastHistory;
 export const selectForecastError = (state) => state.forecast.error;
 
 export const {
+  setFiles,
   updateFormData,
   resetFormData,
   setCurrentSession,

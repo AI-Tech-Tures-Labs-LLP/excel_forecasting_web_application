@@ -1,6 +1,15 @@
 // ProductSelector/SearchBar.jsx
 import React, { useState, useEffect } from "react";
-import { Search, Clock, Calendar, MessageSquare, User, Eye, ChevronDown, Package } from "lucide-react";
+import {
+  Search,
+  Clock,
+  Calendar,
+  MessageSquare,
+  User,
+  Eye,
+  ChevronDown,
+  Package,
+} from "lucide-react";
 
 const SearchBar = ({
   searchQuery,
@@ -161,7 +170,8 @@ const SearchBar = ({
                             <div className="flex items-center space-x-1">
                               <MessageSquare className="w-3 h-3" />
                               <span>
-                                {productNotesData[product.pid]?.count || 0} Notes
+                                {productNotesData[product.pid]?.count || 0}{" "}
+                                Notes
                               </span>
                             </div>
                             <div className="flex items-center space-x-1">
@@ -227,7 +237,8 @@ const SearchBar = ({
                             <div className="flex items-center space-x-1">
                               <MessageSquare className="w-3 h-3" />
                               <span>
-                                {productNotesData[product.pid]?.count || 0} Notes
+                                {productNotesData[product.pid]?.count || 0}{" "}
+                                Notes
                               </span>
                             </div>
                             <div className="flex items-center space-x-1">

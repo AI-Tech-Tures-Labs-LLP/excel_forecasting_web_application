@@ -29,7 +29,7 @@ const AppRoutes = () => {
 
           {/* Product Selector route */}
           <Route path="/products" element={<ProductSelector />} />
-
+          <Route path="/products/:sheetId" element={<ProductSelector />} />
           {/* Fallback route - redirect to landing page */}
           <Route path="*" element={<LandingPage />} />
         </Routes>

@@ -210,4 +210,3 @@ const CategoryDownloadModal = ({
 };
 
 export default CategoryDownloadModal;
-  

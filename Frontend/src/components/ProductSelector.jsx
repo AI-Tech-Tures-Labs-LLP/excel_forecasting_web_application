@@ -1,7 +1,7 @@
 // ProductSelector.jsx - Main component (refactored)
 import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, RefreshCw, FileDown } from "lucide-react";
 
 // Import sub-components
@@ -37,7 +37,7 @@ import axios from "axios";
 function ProductSelector() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
+  const { sheetId } = useParams();
   // Redux state
   const products = useSelector(selectCurrentProducts);
   const loading = useSelector(selectProductsLoading);
@@ -118,6 +118,7 @@ function ProductSelector() {
           fetchProducts({
             productType: selectedProductType,
             filters: selectedFilters,
+            sheetId: sheetId,
           })
         );
       } catch (error) {
@@ -141,6 +142,7 @@ function ProductSelector() {
         fetchProducts({
           productType: selectedProductType,
           filters: selectedFilters,
+          sheetId: sheetId,
         })
       );
     }
@@ -158,7 +160,9 @@ function ProductSelector() {
     setFiltersLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/query/filter_products/`
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/query/filter_products/?sheet_id=${sheetId}`
       );
       const data = await response.json();
 
@@ -195,7 +199,9 @@ function ProductSelector() {
       let taggedToUsers = ["Unassigned"];
       try {
         const notesResponse = await fetch(
-          `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`
+          `${
+            import.meta.env.VITE_API_BASE_URL
+          }/forecast/forecast-notes/?sheet_id=${sheetId}`
         );
         const notesData = await notesResponse.json();
         const notes = notesData.results || notesData;
@@ -252,7 +258,9 @@ function ProductSelector() {
       const uniqueIds = [...new Set(productIds)];
 
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/forecast-notes/?sheet_id=${sheetId}`
       );
       const allNotes = await response.json();
 
@@ -468,6 +476,7 @@ function ProductSelector() {
       fetchProducts({
         productType: selectedProductType,
         filters: selectedFilters,
+        sheetId: sheetId,
       })
     );
   };
@@ -856,6 +865,7 @@ function ProductSelector() {
             fetchProducts({
               productType: selectedProductType,
               filters: selectedFilters,
+              sheetId: sheetId,
             })
           );
         }}

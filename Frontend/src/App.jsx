@@ -13,7 +13,8 @@ import ProductSelector from "./components/ProductSelector";
 import Navbar from "./components/Navbar";
 import Toast from "./components/Toast";
 import LoadingOverlay from "./components/LoadingOverlay";
-import LoginPage from "./components/LoginPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
 
 // Redux imports
 import { setCurrentView } from "./redux/uiSlice";
@@ -93,6 +94,7 @@ function App() {
 
   const isHomePage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
+  const isRegisterPage = location.pathname === "/register";
 
   // Global state
   const globalLoading = useSelector((state) => state.ui.globalLoading);
@@ -149,7 +151,9 @@ function App() {
         {globalLoading && <LoadingOverlay />}
 
         {/* Navigation - only show if authenticated and not on login/home page */}
-        {isAuthenticated && !isHomePage && !isLoginPage && <Navbar />}
+        {isAuthenticated && !isHomePage && !isLoginPage && !isRegisterPage && (
+          <Navbar />
+        )}
 
         {/* Main Content */}
         <div
@@ -161,6 +165,7 @@ function App() {
         >
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route
               path="/"
               element={
@@ -196,6 +201,14 @@ function App() {
             />
             <Route
               path="/products"
+              element={
+                <ProtectedRoute>
+                  <ProductSelector />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products/:sheetId"
               element={
                 <ProtectedRoute>
                   <ProductSelector />

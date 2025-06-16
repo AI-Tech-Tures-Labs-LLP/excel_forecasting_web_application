@@ -1,6 +1,6 @@
 // src/components/LoginPage.jsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { Lock, User, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../App"; // Import from your App.jsx
@@ -196,6 +196,17 @@ const LoginPage = () => {
                 "Sign In"
               )}
             </button>
+            <div className="mt-6 text-center">
+              <p className="text-gray-400 text-sm">
+                Don't have an account?{" "}
+                <Link
+                  to="/register"
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  Create account
+                </Link>
+              </p>
+            </div>
           </form>
 
           <div className="mt-6 text-center"></div>
