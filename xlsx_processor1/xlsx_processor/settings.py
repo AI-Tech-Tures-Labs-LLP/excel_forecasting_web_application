@@ -35,10 +35,12 @@ INSTALLED_APPS = [
     'authentication',
     'rest_framework',
     'rest_framework_simplejwt',
+    'channels',
     'drf_spectacular',
     'corsheaders',
     'api',
     'forecast',
+    'uvicorn',
 
 ]
 
@@ -91,7 +93,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'xlsx_processor.wsgi.application'
+# WSGI_APPLICATION = 'xlsx_processor.wsgi.application'
+ASGI_APPLICATION = 'xlsx_processor.asgi.application'
 
 
 # Database
@@ -175,6 +178,14 @@ FILE_UPLOAD_HANDLERS = [
 ]
 
 
+
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # ✅ Works for local dev
+    },
+}
 # AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
 # AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
 # AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
