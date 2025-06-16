@@ -28,16 +28,16 @@ const FilterPanel = ({
     { value: "false", label: "No" },
   ];
 
-  // Special Day (Holiday) filter configuration
+  // Special Day (Holiday) filter configuration - UPDATED FIELD NAMES
   const specialDayFilters = [
-    { key: "valentine_day", label: "Valentine's Day" },
-    { key: "mothers_day", label: "Mother's Day" },
-    { key: "fathers_day", label: "Father's Day" },
-    { key: "mens_day", label: "Men's Day" },
-    { key: "womens_day", label: "Women's Day" },
+    { key: "valentine_day", label: "Valentine's Day" }, // Changed from Valentine_day
+    { key: "mothers_day", label: "Mother's Day" }, // Changed from Mothers_day
+    { key: "fathers_day", label: "Father's Day" }, // Changed from Fathers_day
+    { key: "mens_day", label: "Men's Day" }, // Changed from Mens_day
+    { key: "womens_day", label: "Women's Day" }, // Changed from Womens_day
   ];
 
-  // Additional boolean filters configuration
+  // Additional boolean filters configuration - UPDATED FIELD NAMES
   const additionalBooleanFilters = [
     {
       key: "considered_birthstone",
@@ -51,12 +51,12 @@ const FilterPanel = ({
       showFor: ["store", "com", "omni"],
     },
     {
-      key: "below_min_order",
+      key: "below_min_order", // Changed from below_Min_order
       label: "Below Min Order",
       showFor: ["store", "com", "omni"],
     },
     {
-      key: "over_macys_soq",
+      key: "over_macys_soq", // Changed from over_macy_SOQ
       label: "Over Macy's SOQ",
       showFor: ["store", "com", "omni"],
       priority: true,
@@ -288,7 +288,7 @@ const FilterPanel = ({
 
                   <div className="border border-purple-200 rounded-lg p-3 bg-purple-50/30 max-h-64 overflow-y-auto">
                     <div className="space-y-2">
-                      {availableFilters.birthstones.map((birthstone) => (
+                      {availableFilters.birthstones?.map((birthstone) => (
                         <label
                           key={birthstone}
                           className="flex items-center gap-3 p-2 hover:bg-purple-100 rounded-lg cursor-pointer transition-colors group"
@@ -351,7 +351,7 @@ const FilterPanel = ({
                 </div>
 
                 <div className="space-y-2">
-                  {availableFilters.red_box_items.map((item) => (
+                  {availableFilters.red_box_items?.map((item) => (
                     <label
                       key={item}
                       className="flex items-center gap-3 p-3 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer transition-all duration-200 hover:border-red-300 bg-red-50/30"
@@ -400,8 +400,8 @@ const FilterPanel = ({
                       (filter) =>
                         filter.showFor.includes(selectedProductType) &&
                         ![
-                          "below_min_order",
-                          "over_macys_soq",
+                          "below_min_order", // Updated field name
+                          "over_macys_soq", // Updated field name
                           "need_to_review_first",
                         ].includes(filter.key)
                     )
@@ -452,7 +452,7 @@ const FilterPanel = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Below Min Order */}
+                {/* Below Min Order - UPDATED FIELD NAME */}
                 <div className="bg-white rounded-xl p-5 shadow-sm border border-indigo-200 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-3 h-3 bg-gradient-to-r from-red-500 to-orange-500 rounded-full"></div>
@@ -461,10 +461,10 @@ const FilterPanel = ({
                     </label>
                   </div>
                   <select
-                    value={selectedFilters.below_min_order || ""}
+                    value={selectedFilters.below_min_order || ""} // Updated field name
                     onChange={(e) =>
                       handleSingleSelectFilterChange(
-                        "below_min_order",
+                        "below_min_order", // Updated field name
                         e.target.value
                       )
                     }
@@ -481,7 +481,7 @@ const FilterPanel = ({
                   </p>
                 </div>
 
-                {/* Over Macy's SOQ */}
+                {/* Over Macy's SOQ - UPDATED FIELD NAME */}
                 <div className="bg-white rounded-xl p-5 shadow-sm border border-indigo-200 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"></div>
@@ -490,10 +490,10 @@ const FilterPanel = ({
                     </label>
                   </div>
                   <select
-                    value={selectedFilters.over_macys_soq || ""}
+                    value={selectedFilters.over_macys_soq || ""} // Updated field name
                     onChange={(e) =>
                       handleSingleSelectFilterChange(
-                        "over_macys_soq",
+                        "over_macys_soq", // Updated field name
                         e.target.value
                       )
                     }

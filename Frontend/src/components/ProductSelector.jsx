@@ -133,7 +133,7 @@ function ProductSelector() {
     };
 
     initializeData();
-  }, [dispatch, selectedProductType]);
+  }, []);
 
   // Refetch products when filters change
   useEffect(() => {
@@ -256,7 +256,7 @@ function ProductSelector() {
   // Load comprehensive product notes data
   const loadProductNotesData = async () => {
     try {
-      const productIds = products.map((p) => p.pid);
+      const productIds = products.map((p) => p.product_id);
       const uniqueIds = [...new Set(productIds)];
 
       const response = await fetch(
@@ -269,8 +269,10 @@ function ProductSelector() {
       const notesData = {};
       const notes = allNotes.results || allNotes;
 
-      uniqueIds.forEach((pid) => {
-        const productNotes = notes.filter((note) => note.pid === pid);
+      uniqueIds.forEach((product_id) => {
+        const productNotes = notes.filter(
+          (note) => note.product_id === product_id
+        );
 
         if (productNotes.length > 0) {
           const sortedNotes = productNotes.sort(
@@ -296,7 +298,7 @@ function ProductSelector() {
           } else if (isPending) {
             status = "pending";
           }
-          notesData[pid] = {
+          notesData[product_id] = {
             notes: sortedNotes,
             latestNote: latestNote,
             assignedTo: latestNote.assigned_to || "Unassigned",
@@ -306,7 +308,7 @@ function ProductSelector() {
             hasUnreviewed: hasUnreviewed,
           };
         } else {
-          notesData[pid] = {
+          notesData[product_id] = {
             notes: [],
             latestNote: null,
             assignedTo: "Unassigned",
@@ -331,7 +333,9 @@ function ProductSelector() {
     if (searchQuery) {
       filteredProducts = filteredProducts.filter(
         (product) =>
-          product.pid?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          product.product_id
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
           product.category?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
@@ -340,7 +344,7 @@ function ProductSelector() {
     if (selectedFilters.tagged_to && selectedFilters.tagged_to.length > 0) {
       filteredProducts = filteredProducts.filter((product) => {
         const assignedTo =
-          productNotesData[product.pid]?.assignedTo || "Unassigned";
+          productNotesData[product.product_id]?.assignedTo || "Unassigned";
         return selectedFilters.tagged_to.includes(assignedTo);
       });
     }
@@ -377,7 +381,7 @@ function ProductSelector() {
     // Apply status filter
     if (selectedFilters.status && selectedFilters.status.length > 0) {
       filteredProducts = filteredProducts.filter((product) => {
-        const note = productNotesData[product.pid]?.latestNote;
+        const note = productNotesData[product.product_id]?.latestNote;
         const status = note?.status;
 
         let productStatus = "Not Reviewed";
@@ -396,8 +400,8 @@ function ProductSelector() {
     // Apply sorting
     if (selectedFilters.notes_sort) {
       filteredProducts.sort((a, b) => {
-        const aNotesData = productNotesData[a.pid];
-        const bNotesData = productNotesData[b.pid];
+        const aNotesData = productNotesData[a.product_id];
+        const bNotesData = productNotesData[b.product_id];
 
         const aDate = aNotesData?.latestNote?.created_at
           ? new Date(aNotesData.latestNote.created_at)
@@ -429,8 +433,8 @@ function ProductSelector() {
 
     if (selectedFilters.last_reviewed_sort) {
       filteredProducts.sort((a, b) => {
-        const aNotesData = productNotesData[a.pid];
-        const bNotesData = productNotesData[b.pid];
+        const aNotesData = productNotesData[a.product_id];
+        const bNotesData = productNotesData[b.product_id];
 
         const aDate = aNotesData?.latestNote?.updated_at
           ? new Date(aNotesData.latestNote.updated_at)
@@ -518,7 +522,7 @@ function ProductSelector() {
   const handleOpenNotes = (product) => {
     setNotesModal({
       isOpen: true,
-      productId: product.pid,
+      productId: product.product_id,
       productName: product.category || "",
     });
   };
@@ -536,7 +540,7 @@ function ProductSelector() {
   if (currentView === "details") {
     const handleNavigateToProduct = (productId) => {
       const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
-      const targetProduct = allProducts.find((p) => p.pid === productId);
+      const targetProduct = allProducts.find((p) => p.product_id === productId);
       if (targetProduct) {
         dispatch(setSelectedProduct(targetProduct));
       }
@@ -544,7 +548,7 @@ function ProductSelector() {
 
     return (
       <ProductDetailsView
-        productId={selectedProduct?.pid}
+        productId={selectedProduct?.product_id}
         onBack={handleBackToSelector}
         onNavigateToProduct={handleNavigateToProduct}
       />
