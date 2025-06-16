@@ -79,7 +79,7 @@ const Navbar = () => {
           {/* Logo and navigation */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-gray-900">Forecast Pro</h1>
+              <h1 className="text-xl font-bold text-gray-900">Home</h1>
             </div>
             <div className="hidden md:ml-6 md:flex md:space-x-8">
               {navItems.map((item) => (
