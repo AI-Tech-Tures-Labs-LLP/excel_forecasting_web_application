@@ -1276,9 +1276,14 @@ const ProductTable = ({
                     product.external_factor_percentage !== null &&
                     product.external_factor_percentage !== undefined
                   ) {
+                    const baseQty =
+                      product.user_updated_final_quantity != null &&
+                      product.user_updated_final_quantity !== 0
+                        ? product.user_updated_final_quantity
+                        : product.recommended_total_quantity || 0;
+
                     const calculatedQty = Math.round(
-                      product.user_updated_final_quantity *
-                        (1 + product.external_factor_percentage / 100)
+                      baseQty * (1 + product.external_factor_percentage / 100)
                     );
                     return (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">

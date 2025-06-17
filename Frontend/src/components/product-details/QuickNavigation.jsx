@@ -27,7 +27,9 @@ const QuickNavigation = ({
               className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
             >
               <ChevronLeft size={16} />
-              <span className="hidden sm:inline">{previousProduct.pid}</span>
+              <span className="hidden sm:inline">
+                {previousProduct.product_id}
+              </span>
               <span className="sm:hidden">Previous</span>
             </button>
           )}
@@ -36,7 +38,7 @@ const QuickNavigation = ({
               onClick={onNavigateNext}
               className="flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium"
             >
-              <span className="hidden sm:inline">{nextProduct.pid}</span>
+              <span className="hidden sm:inline">{nextProduct.product_id}</span>
               <span className="sm:hidden">Next</span>
               <ChevronRight size={16} />
             </button>

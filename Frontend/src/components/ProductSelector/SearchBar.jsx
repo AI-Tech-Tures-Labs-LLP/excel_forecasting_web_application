@@ -50,7 +50,7 @@ const SearchBar = ({
 
       // Remove the product if it already exists (to avoid duplicates)
       const filteredSearches = existingSearches.filter(
-        (item) => item.pid !== product.pid
+        (item) => item.product_id !== product.product_id
       );
 
       // Add the new product to the beginning of the array
@@ -141,7 +141,7 @@ const SearchBar = ({
               <div className="max-h-80 overflow-y-auto">
                 {recentSearches.map((product) => (
                   <div
-                    key={`recent-${product.pid}`}
+                    key={`recent-${product.product_id}`}
                     onClick={() => handleRecentSearchClick(product)}
                     className="relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer overflow-hidden group last:border-b-0"
                   >
@@ -155,7 +155,7 @@ const SearchBar = ({
                             <div className="flex items-center space-x-2">
                               <Clock className="w-3 h-3 text-gray-400" />
                               <h3 className="font-bold text-gray-900 text-base">
-                                {product.pid}
+                                {product.product_id}
                               </h3>
                             </div>
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -170,15 +170,16 @@ const SearchBar = ({
                             <div className="flex items-center space-x-1">
                               <MessageSquare className="w-3 h-3" />
                               <span>
-                                {productNotesData[product.pid]?.count || 0}{" "}
+                                {productNotesData[product.product_id]?.count ||
+                                  0}{" "}
                                 Notes
                               </span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <User className="w-3 h-3" />
                               <span>
-                                {productNotesData[product.pid]?.assignedTo ||
-                                  "Unassigned"}
+                                {productNotesData[product.product_id]
+                                  ?.assignedTo || "Unassigned"}
                               </span>
                             </div>
                           </div>
@@ -211,7 +212,7 @@ const SearchBar = ({
               <div className="max-h-80 overflow-y-auto">
                 {processedProducts.slice(0, 10).map((product) => (
                   <div
-                    key={product.pid}
+                    key={product.product_id}
                     onClick={() => handleViewDetails(product)}
                     className="relative bg-white border-b border-gray-100 hover:bg-gray-50 transition-all duration-200 cursor-pointer overflow-hidden group last:border-b-0"
                   >
@@ -223,7 +224,7 @@ const SearchBar = ({
                         <div className="flex-1">
                           <div className="flex items-center space-x-3 mb-2">
                             <h3 className="font-bold text-gray-900 text-base">
-                              {product.pid}
+                              {product.product_id}
                             </h3>
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               {product.category}
@@ -237,15 +238,16 @@ const SearchBar = ({
                             <div className="flex items-center space-x-1">
                               <MessageSquare className="w-3 h-3" />
                               <span>
-                                {productNotesData[product.pid]?.count || 0}{" "}
+                                {productNotesData[product.product_id]?.count ||
+                                  0}{" "}
                                 Notes
                               </span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <User className="w-3 h-3" />
                               <span>
-                                {productNotesData[product.pid]?.assignedTo ||
-                                  "Unassigned"}
+                                {productNotesData[product.product_id]
+                                  ?.assignedTo || "Unassigned"}
                               </span>
                             </div>
                           </div>

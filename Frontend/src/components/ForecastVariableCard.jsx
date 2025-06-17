@@ -1259,7 +1259,7 @@ const ForecastVariableCards = ({ productData }) => {
 
   // Dynamic variable configuration (from your original code)
   const getDynamicVariableConfig = (data) => {
-    const excludeFields = ["id", "category", "pid"];
+    const excludeFields = ["id", "category", "product_id"];
     const allKeys = Object.keys(data).filter(
       (key) =>
         !excludeFields.includes(key) &&

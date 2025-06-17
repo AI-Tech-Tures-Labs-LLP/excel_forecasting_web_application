@@ -83,6 +83,7 @@ const CriticalAdjustments = ({
             : null,
           external_factor: externalFactor || null,
         },
+        tagged_to: [],
       };
 
       console.log("Saving critical inputs:", payload);

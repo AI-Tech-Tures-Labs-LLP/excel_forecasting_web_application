@@ -23,7 +23,7 @@ const filtersSlice = createSlice({
 
     // Search and sorting
     searchQuery: "",
-    sortBy: "pid",
+    sortBy: "product_id",
     sortOrder: "asc",
 
     // View preferences

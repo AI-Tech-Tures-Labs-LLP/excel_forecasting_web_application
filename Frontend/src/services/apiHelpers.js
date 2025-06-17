@@ -190,32 +190,32 @@ export const fetchProductDetails = async (productId, sheetId) => {
 };
 
 // Fetch product notes
-export const fetchProductNotes = async (productIds = []) => {
-  try {
-    let url = `${API_BASE_URL}/forecast/forecast-notes/`;
+// export const fetchProductNotes = async (productIds = []) => {
+//   try {
+//     let url = `${API_BASE_URL}/forecast/forecast-notes/`;
 
-    // If specific product IDs are provided, filter by them
-    if (productIds.length > 0) {
-      const params = new URLSearchParams();
-      productIds.forEach((pid) => params.append("pid", pid));
-      url += `?${params.toString()}`;
-    }
+//     // If specific product IDs are provided, filter by them
+//     if (productIds.length > 0) {
+//       const params = new URLSearchParams();
+//       productIds.forEach((pid) => params.append("pid", pid));
+//       url += `?${params.toString()}`;
+//     }
 
-    const response = await axios.get(url);
+//     const response = await axios.get(url);
 
-    return {
-      success: true,
-      data: response.data.results || response.data,
-    };
-  } catch (error) {
-    console.error("Error fetching product notes:", error);
-    return {
-      success: false,
-      error: error.response?.data || error.message,
-      data: [],
-    };
-  }
-};
+//     return {
+//       success: true,
+//       data: response.data.results || response.data,
+//     };
+//   } catch (error) {
+//     console.error("Error fetching product notes:", error);
+//     return {
+//       success: false,
+//       error: error.response?.data || error.message,
+//       data: [],
+//     };
+//   }
+// };
 
 // Create or update product note
 export const saveProductNote = async (noteData) => {

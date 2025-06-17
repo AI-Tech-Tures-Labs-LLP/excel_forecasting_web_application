@@ -532,33 +532,33 @@ class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')
     serializer_class = ForecastNoteSerializer
  
-    # def get_queryset(self):
-    #     queryset = super().get_queryset()
-    #     pid = self.request.query_params.get("pid")
-    #     sheet_id = self.request.query_params.get("sheet_id")
-    #     if not sheet_id:
-    #         return Response({"detail": "sheet_id is required."}, status=400)
-    #     if pid:
-    #         queryset = queryset.filter(productdetail__product_id=pid)
-    #     return queryset.filter(sheet_id=sheet_id)
- 
     def get_queryset(self):
-        user = self.request.user
         queryset = super().get_queryset()
- 
         pid = self.request.query_params.get("pid")
         sheet_id = self.request.query_params.get("sheet_id")
- 
         if not sheet_id:
-            return ForecastNote.objects.none()
- 
-        # Filter by tagged user
-        queryset = queryset.filter(tagged_to=user)
- 
+            return Response({"detail": "sheet_id is required."}, status=400)
         if pid:
             queryset = queryset.filter(productdetail__product_id=pid)
- 
         return queryset.filter(sheet_id=sheet_id)
+ 
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     queryset = super().get_queryset()
+ 
+    #     pid = self.request.query_params.get("pid")
+    #     sheet_id = self.request.query_params.get("sheet_id")
+ 
+    #     if not sheet_id:
+    #         return ForecastNote.objects.none()
+ 
+    #     # Filter by tagged user
+    #     queryset = queryset.filter(tagged_to=user)
+ 
+    #     if pid:
+    #         queryset = queryset.filter(productdetail__product_id=pid)
+ 
+    #     return queryset.filter(sheet_id=sheet_id)
    
    
     def perform_create(self, serializer):
