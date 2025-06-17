@@ -125,7 +125,7 @@ class ProductDetail(models.Model):
     fathers_day = models.BooleanField(default=False)
     mens_day = models.BooleanField(default=False)
     womens_day = models.BooleanField(default=False)
-
+    selected_months=models.CharField(max_length=100, null=True, blank=True)
     forecast_month = models.CharField(max_length=10, null=True, blank=True)
     next_forecast_month = models.CharField(max_length=10, null=True, blank=True)
     current_date = models.DateField(null=True, blank=True)
@@ -133,7 +133,7 @@ class ProductDetail(models.Model):
     forecast_date_old = models.DateField(null=True, blank=True)
     lead_time = models.FloatField(null=True, blank=True)
     forecast_date = models.DateField(null=True, blank=True)
-
+    forecast_month_week=models.FloatField(null=True, blank=True)
 
     is_lead_guideline_in_holiday = models.BooleanField(default=False)
     is_added_quantity_using_macys_soq = models.BooleanField(default=False)

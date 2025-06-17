@@ -37,8 +37,16 @@ from forecast.service.utils import generate_std_period
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import io
+
 from django.contrib.auth import get_user_model
 CustomUser = get_user_model()
+
+from django.db import connections
+
+def close_db_connections():
+    for conn in connections.all():
+        conn.close()
+
 def save_workbook_to_s3(workbook, s3_path):
     """Save openpyxl workbook directly to S3"""
     try:
@@ -153,7 +161,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     ]
 
 
-
+    close_db_connections()
     with Pool(processes=cpu_count()) as pool:
         results = pool.map(process_category, args_list)
 
@@ -315,11 +323,6 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     df_omni = pd.DataFrame(omni_data)
 
 
-    # Write to different sheets in one Excel file
-    summary_filename = f"forecast_summary_{sheet_object.id}.xlsx"
-    output_file = os.path.join(settings.MEDIA_ROOT, "summary", summary_filename)
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-
     # df_store_renamed = df_store.rename(columns=STORE_RENAME_MAP)
     # df_coms_renamed = df_com.rename(columns=COM_RENAME_MAP)
     # df_omni_renamed = df_omni.rename(columns=OMNI_RENAME_MAP)
@@ -370,7 +373,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     sheet_object.save()
     
     print(f"Summary file saved to S3: {s3_summary_path}")
-    # Return S3 paths instead of local paths
+
     return saved_s3_files
 
 
@@ -379,6 +382,8 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
 def process_category(args):    
 
+
+    connections.close_all()
     df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object,category_assigned_to_dict = args
 
     logging.info(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
@@ -774,7 +779,7 @@ def process_category(args):
 
         user_id = category_assigned_to_dict.get(f"{category}{code}", None)
         user_instance = CustomUser.objects.filter(id=user_id).first() if user_id else None
- 
+        print("-------------------------------------------------------------------------",user_instance)
        
         with transaction.atomic():
             if pid_type!='not_forecast':

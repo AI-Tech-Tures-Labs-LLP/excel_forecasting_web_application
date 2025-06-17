@@ -102,6 +102,19 @@ def create_zip_from_s3_files(s3_file_paths, zip_s3_path):
     
     return zip_s3_path
 
+def delete_s3_folder(prefix):
+    """
+    Delete all files under a specific folder (prefix) in S3 bucket storage.
+    """
+    try:
+        files = default_storage.listdir(prefix)[1]  # Only files
+        for f in files:
+            file_path = os.path.join(prefix, f)
+            default_storage.delete(file_path)
+            print(f"Deleted: {file_path}")
+    except Exception as e:
+        print(f"Error deleting folder {prefix}: {e}")
+
 class UploadXlsxAPIView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
@@ -112,19 +125,25 @@ class UploadXlsxAPIView(APIView):
         month_to = request.data.get('month_to')
         percentage = request.data.get('percentage')
         categories = request.data.get('categories')    
-        
+
         print(f"Received file: {uploaded_file.name} with output folder: {output_folder}")
         print(f"Parameters - month_from: {month_from}, month_to: {month_to}, percentage: {percentage}")
 
-        # Validation
         if not uploaded_file or not output_folder:
             return Response({'error': 'File or output folder not provided'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create sheet record - saves to uploads/ folder via Django model
+        # 🔥 Clean up previously processed files
+        delete_s3_folder(f'processed_files/{output_folder}')
+        zip_s3_path = f'processed_files/{output_folder}.zip'
+        if default_storage.exists(zip_s3_path):
+            default_storage.delete(zip_s3_path)
+            print(f"Old ZIP deleted: {zip_s3_path}")
+
+        # Create sheet record
         sheet = SheetUpload.objects.create(
             user=request.user,
             name=uploaded_file.name,
-            file=uploaded_file,  # This saves to uploads/ via your model
+            file=uploaded_file,
             is_processed=False,
             output_folder=output_folder,
             month_from=month_from,
@@ -132,22 +151,17 @@ class UploadXlsxAPIView(APIView):
             percentage=percentage,
             categories=categories,
         )
-        
+
         print(f"Sheet created with ID: {sheet.id}")
         print(f"File uploaded by user: {request.user.username}")
 
-        # ALSO save to organized processing folder structure
         input_s3_path = f'processed_files/{output_folder}/input/{uploaded_file.name}'
-        
-        # Reset file pointer to beginning
         uploaded_file.seek(0)
-        
-        # Save copy for processing
         default_storage.save(input_s3_path, uploaded_file)
         print(f"Input file copied to processing folder: {input_s3_path}")
 
-        # Parse categories if provided
         input_tuple = []
+        category_assigned_to_dict = {}
         if categories:
             try:
                 input_tuple = [(item['name'], item['value']) for item in json.loads(categories)]
@@ -165,8 +179,7 @@ class UploadXlsxAPIView(APIView):
         try:
             start_time = time.time()
             print(f"Starting processing at {datetime.now()}")
-            
-            # Process data using the organized input path
+
             saved_s3_files = process_data(
                 input_s3_path, 
                 output_folder, 
@@ -178,45 +191,35 @@ class UploadXlsxAPIView(APIView):
                 current_date,
                 category_assigned_to_dict
             )
-            
+
             print(f"Processing completed. Generated {len(saved_s3_files)} files:")
             for file_path in saved_s3_files:
                 print(f"  - {file_path}")
-            
-            # Create ZIP from ONLY generated files (exclude input)
-            zip_s3_path = f'processed_files/{output_folder}.zip'
+
+            # 🆕 Create fresh ZIP from updated files
             create_zip_from_s3_files(saved_s3_files, zip_s3_path)
-            
-            # Mark sheet as processed
+
             sheet.is_processed = True
             sheet.save()
-            
+
             elapsed_time = time.time() - start_time
             print(f"Total S3 processing took {elapsed_time:.3f}s")
-            
+
         except Exception as e:
             print(f"Processing error: {str(e)}")
-            
-            # Mark sheet as failed
             sheet.is_processed = False
             sheet.save()
-            
-            # Clean up input file on error
             try:
                 default_storage.delete(input_s3_path)
                 print(f"Cleaned up input file on error: {input_s3_path}")
             except:
                 pass
-                
-            return Response({
-                'error': f'Processing error: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': f'Processing error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # Generate S3 URL for download
         try:
             zip_url = default_storage.url(zip_s3_path)
             print(f"ZIP download URL generated: {zip_url}")
-            
+
             return Response({
                 'file_url': zip_url,
                 'sheet_id': sheet.id,
@@ -224,12 +227,13 @@ class UploadXlsxAPIView(APIView):
                 'processing_time': f"{elapsed_time:.2f}s",
                 'message': 'File processed successfully'
             }, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             print(f"Error generating download URL: {e}")
             return Response({
                 'error': 'Processing completed but failed to generate download URL'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 # Done
 class ProductDetailViewSet(viewsets.ViewSet):
@@ -407,33 +411,37 @@ class ForecastViewSet(ViewSet):
     def filter_products(self, request):
         sheet_id = request.query_params.get("sheet_id")
         product_type = request.query_params.get("product_type")
-
+ 
         if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=400)
-
+ 
         queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
-
+ 
         if product_type:
             queryset = queryset.filter(product_type=product_type)
-
-        multi_value_fields = ["category", "birthstone"]
+ 
+        multi_value_fields = ["category", "birthstone", "assigned_to"]
         boolean_fields = [
             "is_red_box_item", "is_considered_birthstone",
             "is_added_quantity_using_macys_soq", "is_added_only_to_balance_macys_soq",
             "is_below_min_order", "is_over_macys_soq", "is_need_to_review_first",
             "valentine_day", "mothers_day", "fathers_day", "mens_day", "womens_day"
         ]
-
+ 
         for field in multi_value_fields:
             values = request.query_params.getlist(field)
             if values:
-                queryset = queryset.filter(**{f"{field}__in": values})
-
+                # Use `_id__in` for foreign key fields
+                if field == "assigned_to":
+                    queryset = queryset.filter(assigned_to_id__in=values)
+                else:
+                    queryset = queryset.filter(**{f"{field}__in": values})
+ 
         for field in boolean_fields:
             value = request.query_params.get(field)
             if value is not None and value.lower() in ["true", "false"]:
                 queryset = queryset.filter(**{field: value.lower() == "true"})
-
+ 
         product_ids = [product.product_id for product in queryset]
         notes = ForecastNote.objects.filter(productdetail__product_id__in=product_ids)
         notes_map = {}
@@ -443,13 +451,13 @@ class ForecastViewSet(ViewSet):
             if pid not in notes_map:
                 notes_map[pid] = []
             notes_map[pid].append(note)
-
+ 
         result = []
         for product in queryset:
             serialized_product = ProductDetailSerializer(product).data
             serialized_product["forecast_notes"] = notes_map.get(product.id, [])
             result.append(serialized_product)
-
+ 
         return Response(result)
 
 
