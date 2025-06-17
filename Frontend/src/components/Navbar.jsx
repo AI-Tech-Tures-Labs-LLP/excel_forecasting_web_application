@@ -640,13 +640,13 @@ const Navbar = () => {
                       Files
                     </button>
 
-                    <button
+                    {/* <button
                       onClick={() => handleNavigate("/products")}
                       className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       <Package className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
                       Products
-                    </button>
+                    </button> */}
 
                     {/* Admin-only options */}
                     {currentUser?.role === "admin" && (
@@ -696,24 +696,24 @@ const Navbar = () => {
                       </>
                     )}
 
-                    <button
+                    {/* <button
                       onClick={() => handleNavigate("/settings")}
                       className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       <Settings className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
                       Settings
-                    </button>
+                    </button> */}
                   </div>
 
                   {/* User Actions */}
                   <div className="py-1">
-                    <button
+                    {/* <button
                       onClick={() => handleNavigate("/profile")}
                       className="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                     >
                       <User className="mr-3 h-4 w-4 text-gray-400 group-hover:text-gray-500" />
                       Profile Settings
-                    </button>
+                    </button> */}
 
                     <button
                       onClick={handleLogout}
