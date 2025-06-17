@@ -151,6 +151,10 @@ class UploadXlsxAPIView(APIView):
         if categories:
             try:
                 input_tuple = [(item['name'], item['value']) for item in json.loads(categories)]
+                category_assigned_to_dict = {
+                    f"{item['name']}{item['value']}": item['assigned_to']
+                    for item in json.loads(categories)
+                }
                 print(f"Parsed categories: {input_tuple}")
             except Exception as e:
                 print(f"Error parsing categories: {e}")
@@ -171,7 +175,8 @@ class UploadXlsxAPIView(APIView):
                 percentage, 
                 input_tuple, 
                 sheet, 
-                current_date
+                current_date,
+                category_assigned_to_dict
             )
             
             print(f"Processing completed. Generated {len(saved_s3_files)} files:")

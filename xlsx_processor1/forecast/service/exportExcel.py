@@ -37,7 +37,8 @@ from forecast.service.utils import generate_std_period
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import io
-
+from django.contrib.auth import get_user_model
+CustomUser = get_user_model()
 def save_workbook_to_s3(workbook, s3_path):
     """Save openpyxl workbook directly to S3"""
     try:
@@ -51,7 +52,7 @@ def save_workbook_to_s3(workbook, s3_path):
         print(f"Error saving workbook to S3: {e}")
         raise
 
-def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple,  sheet_object, current_date):
+def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple,  sheet_object, current_date,category_assigned_to_dict):
     current_date = datetime(2025,5,8)
     logging.info(f"Input path: {input_path}, File path: {file_path}, Month from: {month_from}, Month to: {month_to}, Percentage: {percentage}, Input tuple: {input_tuple}, Current date: {current_date}")
 
@@ -147,7 +148,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     logging.info("RetailInfo saved successfully.")
 
     args_list = [
-        (df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object)
+        (df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object,category_assigned_to_dict)
         for category, code, num_products in dynamic_categories
     ]
 
@@ -378,7 +379,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
 
 def process_category(args):    
 
-    df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object = args
+    df_outputs, category, code, num_products, static_data, file_path, std_period, current_month_sales_percentage, current_date, sheet_object,category_assigned_to_dict = args
 
     logging.info(f"[DEBUG] category: {category}, code: {code}, num_products: {num_products}")
 
@@ -770,8 +771,11 @@ def process_category(args):
         months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
         current_year = datetime.now().year 
         website_link = f"http://www.macys.com/shop/product/{loader.product_description}?ID={loader.marketing_id}"
+
+        user_id = category_assigned_to_dict.get(f"{category}{code}", None)
+        user_instance = CustomUser.objects.filter(id=user_id).first() if user_id else None
+ 
        
-    
         with transaction.atomic():
             if pid_type!='not_forecast':
                 ProductDetail.objects.update_or_create(
@@ -884,7 +888,7 @@ def process_category(args):
                         "qty_added_to_maintain_oh_forecast_month": common_variable_dict["qty_added_to_maintain_oh_forecast_month"],
                         "qty_added_to_maintain_oh_next_forecast_month": common_variable_dict["qty_added_to_maintain_oh_next_forecast_month"],
                         "qty_added_to_balance_soq_forecast_month": common_variable_dict["qty_added_to_balance_soq_forecast_month"],
-
+                        "assigned_to":user_instance
                     }
                 )
 
