@@ -31,6 +31,10 @@ from forecast.service.adddatabase import save_forecast_data
 from forecast.service.utils import get_c2_value
 
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from .models import ForecastNote
+from .serializers import ForecastNoteSerializer
 
 def get_product_forecast_data(pid,sheet_object):
         product = get_object_or_404(ProductDetail, product_id=pid,sheet=sheet_object)
@@ -147,6 +151,10 @@ class UploadXlsxAPIView(APIView):
         if categories:
             try:
                 input_tuple = [(item['name'], item['value']) for item in json.loads(categories)]
+                category_assigned_to_dict = {
+                    f"{item['name']}{item['value']}": item['assigned_to']
+                    for item in json.loads(categories)
+                }
                 print(f"Parsed categories: {input_tuple}")
             except Exception as e:
                 print(f"Error parsing categories: {e}")
@@ -167,7 +175,8 @@ class UploadXlsxAPIView(APIView):
                 percentage, 
                 input_tuple, 
                 sheet, 
-                current_date
+                current_date,
+                category_assigned_to_dict
             )
             
             print(f"Processing completed. Generated {len(saved_s3_files)} files:")
@@ -522,21 +531,69 @@ class DownloadFinalQuantityReport(APIView):
 class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')
     serializer_class = ForecastNoteSerializer
-
+ 
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+    #     pid = self.request.query_params.get("pid")
+    #     sheet_id = self.request.query_params.get("sheet_id")
+    #     if not sheet_id:
+    #         return Response({"detail": "sheet_id is required."}, status=400)
+    #     if pid:
+    #         queryset = queryset.filter(productdetail__product_id=pid)
+    #     return queryset.filter(sheet_id=sheet_id)
+ 
     def get_queryset(self):
+        user = self.request.user
         queryset = super().get_queryset()
+ 
         pid = self.request.query_params.get("pid")
         sheet_id = self.request.query_params.get("sheet_id")
+ 
         if not sheet_id:
-            return Response({"detail": "sheet_id is required."}, status=400)
-        
+            return ForecastNote.objects.none()
+ 
+        # Filter by tagged user
+        queryset = queryset.filter(tagged_to=user)
+ 
         if pid:
             queryset = queryset.filter(productdetail__product_id=pid)
-
-        if sheet_id:
-            queryset = queryset.filter(sheet_id=sheet_id)
-
-        return queryset
+ 
+        return queryset.filter(sheet_id=sheet_id)
+   
+   
+    def perform_create(self, serializer):
+        note = serializer.save()
+        self.notify_tagged_users(note)
+ 
+    def notify_tagged_users(self, note):
+        channel_layer = get_channel_layer()
+        if not channel_layer:
+            print("❌ channel_layer is None. Check CHANNEL_LAYERS in settings.py")
+            return
+ 
+        common_payload = {
+            "note_id": note.id,
+            "note": note.note,
+            "sheet_id": note.sheet_id,
+            "tagged_to": [user.username for user in note.tagged_to.all()],
+            "product_id": note.productdetail.product_id if note.productdetail else None,
+            "created_at": str(note.created_at),
+        }
+ 
+        # ✅ Broadcast to public group (Postman/dev listeners)
+        async_to_sync(channel_layer.group_send)(
+            "public_test_group",
+            {"type": "send_notification", "message": common_payload}
+        )
+ 
+        # ✅ Targeted user-level notifications
+        for user in note.tagged_to.all():
+            group_name = f"user_{user.id}"
+            async_to_sync(channel_layer.group_send)(
+                group_name,
+                {"type": "send_notification", "message": common_payload}
+            )
+ 
 
 # Done 
 class FileCategoryDownloadAPIView(APIView):
