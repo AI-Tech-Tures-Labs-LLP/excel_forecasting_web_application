@@ -73,6 +73,7 @@ const CriticalAdjustments = ({
   const handleSaveCriticalInputs = async () => {
     try {
       const payload = {
+        sheet_id: sheetId,
         product_details: {
           user_updated_final_quantity: userAddedQuantity
             ? parseFloat(userAddedQuantity)
@@ -86,10 +87,8 @@ const CriticalAdjustments = ({
 
       console.log("Saving critical inputs:", payload);
 
-      const response = await axios.put(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/product/${productId}/sheet_id=${sheetId}`,
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${productId}/`,
         payload
       );
 

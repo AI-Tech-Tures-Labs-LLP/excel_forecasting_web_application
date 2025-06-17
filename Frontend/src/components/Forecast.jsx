@@ -324,7 +324,7 @@ function Forecast() {
           headers: {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-          }
+          },
         }
       );
 

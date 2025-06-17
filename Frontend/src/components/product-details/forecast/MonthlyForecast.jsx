@@ -8,45 +8,45 @@ const MonthlyForecast = ({ productData, expandedSections, toggleSection }) => {
   const lastYear = currentYear - 1;
 
   const currentYearRows = [
-    { key: "TY_Unit_Sales", label: "Total Sales Units" },
-    { key: "TY_store_unit_sales", label: "Store Sales Units" },
-    { key: "TY_MCOM_Unit_Sales", label: "COM Sales Units" },
+    { key: "ty_total_sales_units", label: "Total Sales Units" },
+    { key: "ty_store_sales_units", label: "Store Sales Units" },
+    { key: "ty_com_sales_units", label: "COM Sales Units" },
     {
-      key: "TY_COM_to_TTL",
+      key: "ty_com_to_ttl_sales_pct",
       label: "COM % to TTL (Sales)",
       isPercentage: true,
     },
-    { key: "TY_OH_Units", label: "TOTAL EOM OH" },
-    { key: "TY_store_EOM_OH", label: "STORE EOM OH" },
-    { key: "TY_OH_MCOM_Units", label: "COM EOH OH" },
+    { key: "ty_total_eom_oh", label: "TOTAL EOM OH" },
+    { key: "ty_store_eom_oh", label: "STORE EOM OH" },
+    { key: "ty_com_eom_oh", label: "COM EOH OH" },
     {
-      key: "TY_COM_to_TTL_OH",
+      key: "ty_com_to_ttl_eoh_pct",
       label: "COM % to TTL (EOH)",
       isPercentage: true,
     },
-    { key: "PTD_TY_Sales", label: "Omni Sales $" },
-    { key: "MCOM_PTD_TY_Sales", label: "COM Sales $" },
+    { key: "ty_omni_sales_usd", label: "Omni Sales $" },
+    { key: "ty_com_sales_usd", label: "COM Sales $" },
   ];
 
   const lastYearRows = [
-    { key: "LY_Unit_Sales", label: "Total Sales Units" },
-    { key: "LY_store_unit_sales", label: "Store Sales Units" },
-    { key: "LY_MCOM_Unit_Sales", label: "COM Sales Units" },
+    { key: "ly_total_sales_units", label: "Total Sales Units" },
+    { key: "ly_store_sales_units", label: "Store Sales Units" },
+    { key: "ly_com_sales_units", label: "COM Sales Units" },
     {
-      key: "LY_COM_to_TTL",
+      key: "ly_com_to_ttl_sales_pct",
       label: "COM % to TTL (Sales)",
       isPercentage: true,
     },
-    { key: "LY_OH_Units", label: "TOTAL EOM OH" },
-    { key: "LY_store_EOM_OH", label: "STORE EOM OH" },
-    { key: "LY_MCOM_OH_Units", label: "COM EOH OH" },
+    { key: "ly_total_eom_oh", label: "TOTAL EOM OH" },
+    { key: "ly_store_eom_oh", label: "STORE EOM OH" },
+    { key: "ly_com_eom_oh", label: "COM EOH OH" },
     {
-      key: "LY_COM_to_TTL_OH",
+      key: "ly_com_to_ttl_eoh_pct",
       label: "COM % to TTL (EOH)",
       isPercentage: true,
     },
-    { key: "LY_PTD_Sales", label: "Omni Sales $" },
-    { key: "MCOM_PTD_LY_Sales", label: "COM Sales $" },
+    { key: "ly_omni_sales_usd", label: "Omni Sales $" },
+    { key: "ly_com_sales_usd", label: "COM Sales $" },
   ];
 
   return (

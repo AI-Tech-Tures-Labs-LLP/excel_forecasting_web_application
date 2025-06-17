@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { X, Settings, Package, AlertCircle, CheckCircle } from "lucide-react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 const BulkActionModal = ({
   showModal,
@@ -10,6 +11,7 @@ const BulkActionModal = ({
   processedProducts,
   onSuccess,
 }) => {
+  const { sheetId } = useParams();
   const [bulkFactor, setBulkFactor] = useState("");
   const [bulkFactorNote, setBulkFactorNote] = useState("");
   const [error, setError] = useState("");
@@ -67,11 +69,12 @@ const BulkActionModal = ({
           originalQty * (1 + parseFloat(bulkFactor) / 100)
         );
 
-        const response = await axios.put(
+        const response = await axios.patch(
           `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${
             product.product_id
           }/`,
           {
+            sheet_id: sheetId,
             product_details: {
               external_factor_percentage: parseFloat(bulkFactor),
               user_updated_final_quantity: newUserAddedQty,

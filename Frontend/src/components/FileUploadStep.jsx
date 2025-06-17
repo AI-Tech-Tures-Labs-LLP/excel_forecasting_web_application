@@ -15,7 +15,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { formatDateTime } from "../utils/dateFormat";
 import { getAllFiles } from "../services/forecast.service";
-import { setFiles } from "../redux/forecastSlice";
+import { setCurrentSession, setFiles } from "../redux/forecastSlice";
 
 function FileUploadStep() {
   const dispatch = useDispatch();
@@ -29,19 +29,21 @@ function FileUploadStep() {
   console.log("Files from Redux:", files);
   const handleFileClick = (file) => {
     setSelectedFile(file);
-
+    // dispatch(setCurrentSession(file));
     // Store file data for navigation
-    // const fileData = {
-    //   id: file.id,
-    //   name: file.name,
-    //   file_url: file.file,
-    //   summary_url: file.summary,
-    //   month_from: file.month_from,
-    //   month_to: file.month_to,
-    //   categories: JSON.parse(file.categories || "[]"),
-    //   output_folder: file.output_folder,
-    //   uploaded_at: file.uploaded_at,
-    // };
+    const fileData = {
+      id: file.id,
+      name: file.name,
+      file_url: file.file,
+      summary_url: file.summary,
+      month_from: file.month_from,
+      month_to: file.month_to,
+      categories: JSON.parse(file.categories || "[]"),
+      output_folder: file.output_folder,
+      uploaded_at: file.uploaded_at,
+      percentage: file.percentage,
+    };
+    dispatch(setCurrentSession(fileData));
     // sessionStorage.setItem("selectedFile", JSON.stringify(fileData));
 
     setTimeout(() => {

@@ -8,14 +8,17 @@ import {
   User,
   Calendar,
   CheckCircle,
+  ChevronDown,
 } from "lucide-react";
 import axios from "axios";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
+import { selectAllProducts } from "../redux/productSlice";
 
 const NotesModal = ({
   isOpen,
   onClose,
+  productDetailId,
   productId,
   productName = "",
   loadProductNotesData,
@@ -23,20 +26,40 @@ const NotesModal = ({
   onTaggedUserAdded,
 }) => {
   const { sheetId } = useParams();
+  const products = useSelector(selectAllProducts);
   const dispatch = useDispatch();
   const [notes, setNotes] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newNote, setNewNote] = useState({
     note: "",
-    assigned_to: "",
+    tagged_to: [], // Changed to array for multiple selection
     reviewed: false,
   });
+
+  const getAllUsers = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/users/`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        }
+      );
+      setUsers(response.data);
+    } catch (err) {
+      console.log("Error fetching users:", err);
+    }
+  };
 
   // Fetch notes for the product when modal opens
   useEffect(() => {
     if (isOpen && productId) {
       fetchNotes();
+      getAllUsers();
     }
   }, [isOpen, productId]);
 
@@ -46,9 +69,17 @@ const NotesModal = ({
       const response = await axios.get(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/?pid=${productId}`
+        }/forecast/forecast-notes/?sheet_id=${sheetId}`
       );
-      setNotes(response.data.results || response.data);
+      console.log("Fetched notes:", response.data);
+
+      const filteredNotes = response.data.filter(
+        (note) =>
+          parseInt(note.productdetail) ===
+          parseInt(products.find((p) => p.product_id === productId).id)
+      );
+      console.log("Filtered notes:", filteredNotes);
+      setNotes(filteredNotes);
     } catch (error) {
       console.error("Error fetching notes:", error);
     } finally {
@@ -63,9 +94,10 @@ const NotesModal = ({
     try {
       const noteData = {
         sheet: sheetId,
-        productdetail: productId,
+        productdetail: products.find((p) => p.product_id === productId).id,
         note: newNote.note.trim(),
-        assigned_to: newNote.assigned_to.trim() || "Unassigned",
+        tagged_to:
+          newNote.tagged_to.length > 0 ? newNote.tagged_to : ["Unassigned"],
         reviewed: newNote.reviewed,
       };
 
@@ -75,15 +107,18 @@ const NotesModal = ({
       );
 
       setNotes([response.data, ...notes]);
-      if (
-        newNote.assigned_to.trim() &&
-        newNote.assigned_to.trim() !== "Unassigned"
-      ) {
-        if (onTaggedUserAdded) {
-          onTaggedUserAdded(newNote.assigned_to.trim());
-        }
+
+      // Notify parent component about tagged users
+      if (newNote.tagged_to.length > 0 && onTaggedUserAdded) {
+        newNote.tagged_to.forEach((userId) => {
+          const user = users.find((u) => u.id === parseInt(userId));
+          if (user && user.username !== "Unassigned") {
+            onTaggedUserAdded(user.username);
+          }
+        });
       }
-      setNewNote({ note: "", assigned_to: "", reviewed: false });
+
+      setNewNote({ note: "", tagged_to: [], reviewed: false });
     } catch (error) {
       console.error("Error saving note:", error);
       alert("Failed to save note");
@@ -108,20 +143,18 @@ const NotesModal = ({
     }
   };
 
-  // const handleToggleReviewed = async (noteId, currentStatus) => {
+  // const handleToggleStatus = async (noteId, newStatus) => {
   //   try {
   //     const response = await axios.patch(
   //       `${
   //         import.meta.env.VITE_API_BASE_URL
-  //       }/forecast/forecast-notes/${noteId}/`,
-  //       { reviewed: !currentStatus }
+  //       }/forecast/forecast-notes/${noteId}/?sheet_id=${sheetId}`,
+  //       { status: newStatus }
   //     );
 
-  //     setNotes(
-  //       notes.map((note) =>
-  //         note.id === noteId
-  //           ? { ...note, reviewed: response.data.reviewed }
-  //           : note
+  //     setNotes((prev) =>
+  //       prev.map((note) =>
+  //         note.id === noteId ? { ...note, status: response.data.status } : note
   //       )
   //     );
   //   } catch (error) {
@@ -130,24 +163,41 @@ const NotesModal = ({
   //   }
   // };
 
-  const handleToggleStatus = async (noteId, newStatus) => {
-    try {
-      const response = await axios.patch(
-        `${
-          import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/${noteId}/`,
-        { status: newStatus }
-      );
+  // Handle multiple user selection
+  const handleUserSelection = (userId) => {
+    setNewNote((prev) => ({
+      ...prev,
+      tagged_to: prev.tagged_to.includes(userId)
+        ? prev.tagged_to.filter((id) => id !== userId)
+        : [...prev.tagged_to, userId],
+    }));
+  };
 
-      setNotes((prev) =>
-        prev.map((note) =>
-          note.id === noteId ? { ...note, status: response.data.status } : note
-        )
-      );
-    } catch (error) {
-      console.error("Error updating note status:", error);
-      alert("Failed to update note status");
+  // Remove a selected user
+  const removeSelectedUser = (userId) => {
+    setNewNote((prev) => ({
+      ...prev,
+      tagged_to: prev.tagged_to.filter((id) => id !== userId),
+    }));
+  };
+
+  // Get username by ID
+  const getUsernameById = (userId) => {
+    const user = users.find((u) => u.id === parseInt(userId));
+    return user ? user.username : "Unknown User";
+  };
+
+  // Get usernames for display (handling both single string and array)
+  const getTaggedUsernames = (taggedTo) => {
+    if (!taggedTo) return "Unassigned";
+
+    if (Array.isArray(taggedTo)) {
+      if (taggedTo.length === 0) return "Unassigned";
+      return taggedTo.map((userId) => getUsernameById(userId)).join(", ");
     }
+
+    // Handle legacy single assignment
+    return taggedTo === "Unassigned" ? "Unassigned" : getUsernameById(taggedTo);
   };
 
   const formatDate = (dateString) => {
@@ -207,38 +257,61 @@ const NotesModal = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tagged To
+                    Tag Users
                   </label>
-                  <input
-                    type="text"
-                    value={newNote.assigned_to}
-                    onChange={(e) =>
-                      setNewNote({ ...newNote, assigned_to: e.target.value })
-                    }
-                    placeholder="Enter name or leave blank"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  />
-                </div>
 
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status
-                  </label>
-                  <select
-                    value={newNote.status}
-                    onChange={(e) =>
-                      setNewNote({ ...newNote, status: e.target.value })
-                    }
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  >
-                    <option value="not_reviewed">Not Reviewed</option>
-                    <option value="pending">Pending</option>
-                    <option value="reviewed">Reviewed</option>
-                  </select>
-                </div> */}
+                  {/* Selected Users Display */}
+                  {newNote.tagged_to.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {newNote.tagged_to.map((userId) => (
+                        <span
+                          key={userId}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-full"
+                        >
+                          {getUsernameById(userId)}
+                          <button
+                            type="button"
+                            onClick={() => removeSelectedUser(userId)}
+                            className="ml-1 text-indigo-600 hover:text-indigo-800"
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* User Selection Dropdown */}
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2">
+                    {users?.map((user) => (
+                      <label
+                        key={user.id}
+                        className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={newNote.tagged_to.includes(
+                            user.id.toString()
+                          )}
+                          onChange={() =>
+                            handleUserSelection(user.id.toString())
+                          }
+                          className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700">
+                          {user.username}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select one or more users to tag in this note
+                  </p>
+                </div>
               </div>
 
               <button
@@ -288,11 +361,13 @@ const NotesModal = ({
                     }`}
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <User size={14} />
                           <span className="font-medium">
-                            {note.assigned_to || "Unassigned"}
+                            {getTaggedUsernames(
+                              note.tagged_to || note.assigned_to
+                            )}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
@@ -308,7 +383,7 @@ const NotesModal = ({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <select
+                        {/* <select
                           value={note.status}
                           onChange={(e) =>
                             handleToggleStatus(note.id, e.target.value)
@@ -322,7 +397,7 @@ const NotesModal = ({
                           <option value="not_reviewed">Not Reviewed</option>
                           <option value="pending">Pending</option>
                           <option value="reviewed">Reviewed</option>
-                        </select>
+                        </select> */}
 
                         <button
                           onClick={() => handleDeleteNote(note.id)}

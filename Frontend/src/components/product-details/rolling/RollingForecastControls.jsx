@@ -239,12 +239,13 @@ const RollingForecastControls = ({
             type="number"
             value={editable12MonthFC}
             onChange={(e) =>
-              handleFieldChange("month_12_fc_index", e.target.value)
+              handleFieldChange("month_12_fc_index_original", e.target.value)
             }
             className="w-full border-2 border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
             placeholder="Enter 12 month FC"
             disabled={
-              lastChangedField && lastChangedField !== "month_12_fc_index"
+              lastChangedField &&
+              lastChangedField !== "month_12_fc_index_original"
             }
           />
         </div>

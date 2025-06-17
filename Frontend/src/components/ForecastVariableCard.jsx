@@ -94,7 +94,7 @@
 //       title: "Trend Analysis",
 //       icon: TrendingUp,
 //       color: "green",
-//       keywords: ["trend", "loss", "std_trend", "com_trend", "store_trend"]
+//       keywords: ["trend", "loss", "std_trend_original", "com_trend", "store_trend"]
 //     },
 
 //     inventory: {
@@ -1052,7 +1052,7 @@ const ForecastVariableCards = ({ productData }) => {
       keywords: [
         "selected_months",
         "std_index",
-        "month_12_fc_index",
+        "month_12_fc_index_original",
         "loss",
         "month_12_fc_index_loss",
         "trend",
@@ -1325,7 +1325,7 @@ const ForecastVariableCards = ({ productData }) => {
     if (
       key &&
       (key === "trend" ||
-        key === "std_trend" ||
+        key === "std_trend_original" ||
         key === "com_trend" ||
         key === "store_trend")
     ) {
@@ -1421,7 +1421,7 @@ const ForecastVariableCards = ({ productData }) => {
       leadtime_holiday_adjustment: "leadtime",
       lead_time: "leadtime",
       selected_months: "trends_index",
-      month_12_fc_index: "trends_index",
+      month_12_fc_index_original: "trends_index",
       loss: "trends_index",
       month_12_fc_index_loss: "trends_index",
       trend: "trends_index",

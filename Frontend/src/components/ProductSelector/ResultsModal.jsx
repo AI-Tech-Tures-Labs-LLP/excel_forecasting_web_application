@@ -239,11 +239,11 @@ const ResultsModal = ({ showResults, setShowResults, lastAppliedResults }) => {
                     const change = result.newQty - result.originalQty;
                     return (
                       <tr
-                        key={result.pid}
+                        key={result.product_id}
                         className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
                       >
                         <td className="px-4 py-3 text-sm font-mono text-gray-900 border-r border-gray-100">
-                          {result.pid}
+                          {result.product_id}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-100">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 font-medium">

@@ -64,13 +64,13 @@ const ProductHeader = ({
 
   const handlePreviousProduct = () => {
     if (canNavigatePrevious && previousProduct) {
-      handleNavigateToProduct(previousProduct.pid);
+      handleNavigateToProduct(previousProduct.product_id);
     }
   };
 
   const handleNextProduct = () => {
     if (canNavigateNext && nextProduct) {
-      handleNavigateToProduct(nextProduct.pid);
+      handleNavigateToProduct(nextProduct.product_id);
     }
   };
 
@@ -174,13 +174,13 @@ const ProductHeader = ({
                     </div>
                     {recentSearches.map((recentSearch, index) => (
                       <div
-                        key={recentSearch.pid}
+                        key={recentSearch.product_id}
                         className={`px-4 py-3 cursor-pointer hover:bg-gray-50 flex items-center justify-between group ${
                           index !== recentSearches.length - 1
                             ? "border-b border-gray-100"
                             : ""
                         } ${
-                          recentSearch.pid === productId
+                          recentSearch.product_id === productId
                             ? "bg-indigo-50 border-indigo-200"
                             : ""
                         }`}
@@ -192,7 +192,7 @@ const ProductHeader = ({
                           <div className="flex items-center gap-2">
                             <History size={14} className="text-gray-400" />
                             <div className="font-medium text-gray-900">
-                              {recentSearch.pid}
+                              {recentSearch.product_id}
                             </div>
                           </div>
                           {recentSearch.category && (
@@ -202,14 +202,14 @@ const ProductHeader = ({
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          {recentSearch.pid === productId && (
+                          {recentSearch.product_id === productId && (
                             <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
                               Current
                             </span>
                           )}
                           <button
                             onClick={() =>
-                              removeFromRecentSearches(recentSearch.pid)
+                              removeFromRecentSearches(recentSearch.product_id)
                             }
                             className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-opacity"
                             title="Remove from recent searches"
@@ -227,21 +227,21 @@ const ProductHeader = ({
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-60 overflow-y-auto">
                     {searchResults.map((product, index) => (
                       <div
-                        key={product.pid}
+                        key={product.product_id}
                         onClick={() => handleSearchResultClick(product)}
                         className={`px-4 py-3 cursor-pointer hover:bg-gray-50 flex items-center justify-between ${
                           index !== searchResults.length - 1
                             ? "border-b border-gray-100"
                             : ""
                         } ${
-                          product.pid === productId
+                          product.product_id === productId
                             ? "bg-indigo-50 border-indigo-200"
                             : ""
                         }`}
                       >
                         <div>
                           <div className="font-medium text-gray-900">
-                            {product.pid}
+                            {product.product_id}
                           </div>
                           {product.category && (
                             <div className="text-sm text-gray-500">
@@ -249,7 +249,7 @@ const ProductHeader = ({
                             </div>
                           )}
                         </div>
-                        {product.pid === productId && (
+                        {product.product_id === productId && (
                           <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
                             Current
                           </span>
@@ -287,7 +287,7 @@ const ProductHeader = ({
                 }`}
                 title={
                   canNavigatePrevious
-                    ? `Previous: ${previousProduct?.pid}`
+                    ? `Previous: ${previousProduct?.product_id}`
                     : "No previous product"
                 }
               >
@@ -308,7 +308,7 @@ const ProductHeader = ({
                 }`}
                 title={
                   canNavigateNext
-                    ? `Next: ${nextProduct?.pid}`
+                    ? `Next: ${nextProduct?.product_id}`
                     : "No next product"
                 }
               >

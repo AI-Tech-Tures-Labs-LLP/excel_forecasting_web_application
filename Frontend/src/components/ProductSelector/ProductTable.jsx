@@ -48,7 +48,7 @@ const ProductTable = ({
 
   const isAllSelected =
     processedProducts.length > 0 &&
-    processedProducts.every((p) => selectedProductIds.includes(p.pid));
+    processedProducts.every((p) => selectedProductIds.includes(p.product_id));
 
   const isSomeSelected = selectedProductIds.length > 0 && !isAllSelected;
 
@@ -114,7 +114,7 @@ const ProductTable = ({
 
   const handleSelectAll = (checked) => {
     if (checked) {
-      const allProductIds = processedProducts.map((p) => p.pid);
+      const allProductIds = processedProducts.map((p) => p.product_id);
       setSelectedProductIds(allProductIds);
     } else {
       setSelectedProductIds([]);
@@ -136,17 +136,7 @@ const ProductTable = ({
   };
 
   const formatStatusDisplay = (product) => {
-    const note = productNotesData[product.pid]?.latestNote;
-    const status = note?.status;
-
-    if (!status) {
-      return (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-          <Clock size={12} className="mr-1" />
-          Not Reviewed
-        </span>
-      );
-    }
+    const status = product.status;
 
     const statusConfig = {
       reviewed: {
@@ -169,8 +159,14 @@ const ProductTable = ({
       },
     };
 
-    const { icon, bg, text, label } =
-      statusConfig[status] || statusConfig.pending;
+    const fallback = {
+      icon: <AlertCircle size={12} className="mr-1" />,
+      bg: "bg-gray-100",
+      text: "text-gray-800",
+      label: "Unknown",
+    };
+
+    const { icon, bg, text, label } = statusConfig[status] || fallback;
 
     return (
       <span
@@ -183,7 +179,7 @@ const ProductTable = ({
   };
 
   const formatAssignedToDisplay = (product) => {
-    const notesData = productNotesData[product.pid];
+    const notesData = productNotesData[product.product_id];
     const assignedTo = notesData?.assignedTo || "Unassigned";
     const productAssignedTo = notesData?.productAssignedTo || "Unassigned";
     return (
@@ -195,7 +191,7 @@ const ProductTable = ({
   };
 
   const formatNotesDisplay = (product) => {
-    const notesData = productNotesData[product.pid];
+    const notesData = productNotesData[product.product_id];
 
     if (!notesData || notesData.count === 0) {
       return (
@@ -1179,7 +1175,7 @@ const ProductTable = ({
         <tbody className="bg-white divide-y divide-gray-200">
           {currentProducts.map((product, index) => (
             <tr
-              key={`${product.pid}-${index}`}
+              key={`${product.product_id}-${index}`}
               onClick={() => onViewDetails(product)}
               className="hover:bg-gray-50 transition-colors cursor-pointer"
               title="Click to view details"
@@ -1190,13 +1186,13 @@ const ProductTable = ({
               >
                 <input
                   type="checkbox"
-                  checked={selectedProductIds.includes(product.pid)}
+                  checked={selectedProductIds.includes(product.product_id)}
                   onChange={(e) => {
                     const checked = e.target.checked;
                     setSelectedProductIds((prev) =>
                       checked
-                        ? [...prev, product.pid]
-                        : prev.filter((id) => id !== product.pid)
+                        ? [...prev, product.product_id]
+                        : prev.filter((id) => id !== product.product_id)
                     );
                   }}
                 />
@@ -1240,14 +1236,19 @@ const ProductTable = ({
                   {getAddedQty(product).toLocaleString()}
                 </span>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
-                {formatStatusDisplay(product)}
+              <td
+                className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* {formatStatusDisplay(product)} */}
+                <StatusDropdownWithBadge product={product} />
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">
-                {productNotesData[product.pid]?.latestNote?.updated_at
+                {productNotesData[product.product_id]?.latestNote?.updated_at
                   ? (() => {
                       const [date, time] = formatDateTime(
-                        productNotesData[product.pid].latestNote.updated_at
+                        productNotesData[product.product_id].latestNote
+                          .updated_at
                       ).split(", ");
                       return (
                         <>
@@ -1311,3 +1312,81 @@ const ProductTable = ({
 };
 
 export default ProductTable;
+
+const StatusDropdownWithBadge = ({ product, onStatusChange }) => {
+  const [currentStatus, setCurrentStatus] = useState(product.status);
+
+  const statusConfig = {
+    reviewed: {
+      icon: <CheckCircle size={12} className="mr-1" />,
+      bg: "bg-green-100",
+      text: "text-green-800",
+      label: "Reviewed",
+    },
+    not_reviewed: {
+      icon: <AlertCircle size={12} className="mr-1" />,
+      bg: "bg-red-100",
+      text: "text-red-800",
+      label: "Not Reviewed",
+    },
+    pending: {
+      icon: <Clock size={12} className="mr-1" />,
+      bg: "bg-yellow-100",
+      text: "text-yellow-800",
+      label: "Pending",
+    },
+  };
+
+  const fallback = {
+    icon: <AlertCircle size={12} className="mr-1" />,
+    bg: "bg-gray-100",
+    text: "text-gray-800",
+    label: "Unknown",
+  };
+
+  const { icon, bg, text, label } = statusConfig[currentStatus] || fallback;
+
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.value;
+
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/${
+          product.latest_note_id
+        }/`,
+        { status: newStatus }
+      );
+      setCurrentStatus(newStatus);
+      if (onStatusChange) onStatusChange(newStatus);
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      alert("Could not update status");
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {/* <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}
+      >
+        {icon}
+        {label}
+      </span> */}
+      <select
+        value={currentStatus}
+        onChange={handleStatusChange}
+        className={`text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 border ${
+          currentStatus === "reviewed"
+            ? "bg-green-100 text-green-800"
+            : currentStatus === "pending"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-red-100 text-red-800"
+        }`}
+      >
+        <option value="not_reviewed">Not Reviewed</option>
+        <option value="pending">Pending</option>
+        <option value="reviewed">Reviewed</option>
+      </select>
+    </div>
+  );
+};

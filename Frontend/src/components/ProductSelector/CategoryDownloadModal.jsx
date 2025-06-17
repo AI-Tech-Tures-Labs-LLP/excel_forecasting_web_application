@@ -1,12 +1,15 @@
 // ProductSelector/CategoryDownloadModal.jsx
 import React from "react";
 import { X, Package, FileDown } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const CategoryDownloadModal = ({
   categoryDownloadModal,
   setCategoryDownloadModal,
   onToast,
 }) => {
+  const forecastData = useSelector((state) => state.forecast.currentSession);
+
   const handleCloseCategoryDownload = () => {
     setCategoryDownloadModal((prev) => ({
       ...prev,
@@ -63,10 +66,10 @@ const CategoryDownloadModal = ({
       const categoriesParam = processedCategories.join(",");
 
       // Get the output filename from localStorage forecast data
-      const forecastData = JSON.parse(
-        localStorage.getItem("forecastData") || "{}"
-      );
-      const outputFileName = forecastData.outputFileName || "";
+      // const forecastData = JSON.parse(
+      //   localStorage.getItem("forecastData") || "{}"
+      // );
+      const outputFileName = forecastData.output_folder || "";
 
       console.log(
         "Original categories:",

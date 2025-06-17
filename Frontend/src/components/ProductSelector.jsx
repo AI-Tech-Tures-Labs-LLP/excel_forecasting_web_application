@@ -29,6 +29,7 @@ import {
   selectStoreProducts,
   selectComProducts,
   selectOmniProducts,
+  selectAllProducts,
 } from "../redux/productSlice";
 import { setCurrentView, addToast, selectCurrentView } from "../redux/uiSlice";
 import { selectCurrentSession } from "../redux/forecastSlice";
@@ -48,7 +49,8 @@ function ProductSelector() {
   const storeProducts = useSelector(selectStoreProducts);
   const comProducts = useSelector(selectComProducts);
   const omniProducts = useSelector(selectOmniProducts);
-
+  const everyProducts = useSelector(selectAllProducts);
+  console;
   // Local state
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [selectedFilters, setSelectedFilters] = useState({
@@ -114,13 +116,13 @@ function ProductSelector() {
     const initializeData = async () => {
       try {
         await loadAvailableFilters();
-        dispatch(
-          fetchProducts({
-            productType: selectedProductType,
-            filters: selectedFilters,
-            sheetId: sheetId,
-          })
-        );
+        // dispatch(
+        //   fetchProducts({
+        //     productType: selectedProductType,
+        //     filters: selectedFilters,
+        //     sheetId: sheetId,
+        //   })
+        // );
       } catch (error) {
         dispatch(
           addToast({
@@ -256,8 +258,14 @@ function ProductSelector() {
   // Load comprehensive product notes data
   const loadProductNotesData = async () => {
     try {
-      const productIds = products.map((p) => p.product_id);
-      const uniqueIds = [...new Set(productIds)];
+      // Create mapping from internal product `id` to external `product_id`
+      const productIdMap = {};
+      products.forEach((p) => {
+        productIdMap[p.id] = p.product_id;
+      });
+
+      // Extract unique product_ids for filtering
+      const uniqueProductIds = [...new Set(products.map((p) => p.product_id))];
 
       const response = await fetch(
         `${
@@ -266,13 +274,15 @@ function ProductSelector() {
       );
       const allNotes = await response.json();
 
-      const notesData = {};
       const notes = allNotes.results || allNotes;
+      const notesData = {};
 
-      uniqueIds.forEach((product_id) => {
-        const productNotes = notes.filter(
-          (note) => note.product_id === product_id
-        );
+      uniqueProductIds.forEach((product_id) => {
+        const productNotes = notes.filter((note) => {
+          const internalId = note.productdetail;
+          const mappedProductId = productIdMap[internalId];
+          return mappedProductId === product_id;
+        });
 
         if (productNotes.length > 0) {
           const sortedNotes = productNotes.sort(
@@ -298,6 +308,7 @@ function ProductSelector() {
           } else if (isPending) {
             status = "pending";
           }
+
           notesData[product_id] = {
             notes: sortedNotes,
             latestNote: latestNote,
@@ -319,6 +330,7 @@ function ProductSelector() {
         }
       });
 
+      console.log("Product notes data loaded:", notesData);
       setProductNotesData(notesData);
     } catch (error) {
       console.error("Error loading product notes data:", error);
@@ -490,7 +502,9 @@ function ProductSelector() {
   const handleDownloadFinalQuantityReport = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/final-quantity-report/`,
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/final-quantity-report/?sheet_id=${sheetId}`,
         { responseType: "blob" }
       );
 
@@ -554,7 +568,7 @@ function ProductSelector() {
   //     />
   //   );
   // }
-
+  console.log("productnotedata", productNotesData);
   return (
     <>
       <div className="w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
@@ -583,7 +597,7 @@ function ProductSelector() {
               <a
                 href={`${
                   import.meta.env.VITE_API_BASE_URL
-                }/forecast/export-summary`}
+                }/forecast/export-summary/?sheet_id=${sheetId}`}
               >
                 <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20">
                   <FileDown size={18} />
@@ -635,13 +649,14 @@ function ProductSelector() {
                   <div className="text-sm text-indigo-700 space-y-1">
                     <p>
                       <strong>Categories:</strong>{" "}
-                      {forecastSession.selectedCategories
+                      {forecastSession.categories
                         ?.map((cat) => `${cat.name} (${cat.value})`)
                         .join(", ")}
                     </p>
                     <p>
-                      <strong>Period:</strong> {forecastSession.monthFrom} to{" "}
-                      {forecastSession.monthTo} ({forecastSession.percentage}%)
+                      <strong>Period:</strong> {forecastSession.month_from} to{" "}
+                      {forecastSession.month_to} ({forecastSession.percentage}
+                      %)
                     </p>
                   </div>
                 </div>
@@ -894,6 +909,7 @@ function ProductSelector() {
         selectedProductType={selectedProductType}
         isOpen={notesModal.isOpen}
         onClose={handleCloseNotes}
+        productDetailId={notesModal.id}
         productId={notesModal.productId}
         productName={notesModal.productName}
         loadProductNotesData={loadProductNotesData}

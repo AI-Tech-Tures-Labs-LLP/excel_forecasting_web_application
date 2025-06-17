@@ -19,8 +19,12 @@ import QuickNavigation from "./QuickNavigation";
 // Import selectors
 import {
   fetchProducts,
+  selectAllProducts,
+  selectComProducts,
   selectCurrentProducts,
+  selectOmniProducts,
   selectSelectedProductType,
+  selectStoreProducts,
 } from "../../redux/productSlice";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -28,7 +32,11 @@ const ProductDetailsView = () => {
   const dispatch = useDispatch();
   const { sheetId, productId } = useParams();
   const navigate = useNavigate();
-
+  const files = useSelector((state) => state.forecast.files);
+  // const allProductsInRedux = useSelector(selectAllProducts);
+  const storeProducts = useSelector(selectStoreProducts);
+  const comProducts = useSelector(selectComProducts);
+  const omniProducts = useSelector(selectOmniProducts);
   const handleNavigateToProduct = (productId) => {
     const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
     const targetProduct = allProducts.find((p) => p.product_id === productId);
@@ -196,16 +204,16 @@ const ProductDetailsView = () => {
         return monthOrder.map((m) => item[m] ?? 0);
       };
 
-      rolling.index = getForecastValues("IndexPercentage");
-      rolling.fcByIndex = getForecastValues("ForecastByIndex");
-      rolling.fcByTrend = getForecastValues("ForecastByTrend");
-      rolling.recommendedFC = getForecastValues("RecommendedForecast");
-      rolling.plannedFC = getForecastValues("PlannedForecast");
-      rolling.plannedShipments = getForecastValues("PlannedShipment");
-      rolling.plannedEOH = getForecastValues("PlannedEOH");
-      rolling.grossProjection = getForecastValues("GrossProjection");
-      rolling.macysProjReceipts = getForecastValues("MacysProjectionReciepts");
-      rolling.plannedSellThru = getForecastValues("PlannedSellThru");
+      rolling.index = getForecastValues("index");
+      rolling.fcByIndex = getForecastValues("fc_by_index");
+      rolling.fcByTrend = getForecastValues("fc_by_trend");
+      rolling.recommendedFC = getForecastValues("recommended_fc");
+      rolling.plannedFC = getForecastValues("planned_fc");
+      rolling.plannedShipments = getForecastValues("planned_shipments");
+      rolling.plannedEOH = getForecastValues("planned_eoh_cal");
+      rolling.grossProjection = getForecastValues("gross_projection_nav");
+      rolling.macysProjReceipts = getForecastValues("macys_proj_receipts");
+      rolling.plannedSellThru = getForecastValues("planned_sell_thru_pct");
 
       setRollingForecastData(rolling);
     } catch (error) {
@@ -224,8 +232,9 @@ const ProductDetailsView = () => {
         }/forecast/product/${productId}/?sheet_id=${sheetId}` // Ensure sheetId is included in the request
       );
       const rolling = res.data.product_details.rolling_method;
-      const trend = res.data.product_details.std_trend;
-      const editablemonths = res.data.product_details.month_12_fc_index;
+      const trend = res.data.product_details.std_trend_original;
+      const editablemonths =
+        res.data.product_details.month_12_fc_index_original;
       const selectedIndexVal = res.data.product_details.currect_fc_index;
       const forecasting = res.data.product_details.forecasting_method;
       setRollingMethod(rolling || "YTD");
@@ -370,12 +379,12 @@ const ProductDetailsView = () => {
         }
         break;
 
-      case "month_12_fc_index":
+      case "month_12_fc_index_original":
         setEditable12MonthFC(value);
-        if (value !== originalValuesRef.current.month_12_fc_index) {
-          setLastChangedField("month_12_fc_index");
-          setPendingChangeField("month_12_fc_index");
-        } else if (lastChangedField === "month_12_fc_index") {
+        if (value !== originalValuesRef.current.month_12_fc_index_original) {
+          setLastChangedField("month_12_fc_index_original");
+          setPendingChangeField("month_12_fc_index_original");
+        } else if (lastChangedField === "month_12_fc_index_original") {
           setLastChangedField(null);
         }
         break;
@@ -408,6 +417,94 @@ const ProductDetailsView = () => {
   };
 
   // GET SOPHISTICATED CARD DATA
+  // const getSophisticatedCardData = () => {
+  //   if (!productData) return null;
+
+  //   const { product_details, store_forecast, com_forecast, omni_forecast } =
+  //     productData;
+  //   const forecastData =
+  //     store_forecast?.[0] || com_forecast?.[0] || omni_forecast?.[0] || {};
+
+  //   return {
+  //     category:
+  //       product_details?.department_description ||
+  //       product_details?.subclass_decription ||
+  //       forecastData?.category ||
+  //       "Unknown Category",
+  //     vendor:
+  //       forecastData?.vendor ||
+  //       product_details?.vendor_name ||
+  //       product_details?.vendor ||
+  //       "Unknown Vendor",
+  //     doorCount:
+  //       forecastData?.door_count ||
+  //       product_details?.current_door_count ||
+  //       forecastData?.Door_count ||
+  //       0,
+  //     leadTime:
+  //       forecastData?.lead_time ||
+  //       product_details?.lead_time ||
+  //       forecastData?.Lead_time ||
+  //       0,
+  //     minOrder:
+  //       forecastData?.Min_order ||
+  //       forecastData?.min_order ||
+  //       product_details?.min_order ||
+  //       0,
+  //     retailValue:
+  //       forecastData?.retail_value ||
+  //       product_details?.retail_price ||
+  //       forecastData?.Retail_value ||
+  //       product_details?.price ||
+  //       0,
+  //     macys_owned_retail: product_details?.macys_owned_retail || 0,
+  //     STD_index_value: product_details?.STD_index_value || 0,
+  //     selectedMonth:
+  //       forecastData?.selected_months ||
+  //       product_details?.selected_months ||
+  //       forecastData?.Selected_month ||
+  //       "N/A",
+  //     forecastMonth:
+  //       forecastData?.forecast_month || forecastData?.Forecast_month || "N/A",
+  //     nextForecastMonth:
+  //       forecastData?.next_forecast_month ||
+  //       forecastData?.Next_forecast_month ||
+  //       "N/A",
+  //     productId: product_details?.product_id || productId,
+  //     trend: forecastData?.trend || 0,
+  //     addedQty: forecastData?.recommended_total_quantity || 0,
+  //     macysSOQ: forecastData?.Macys_SOQ || 0,
+  //     stdTrend:
+  //       forecastData?.std_trend_original ||
+  //       product_details?.std_trend_original ||
+  //       0,
+  //     monthFCIndex:
+  //       forecastData?.month_12_fc_index_original ||
+  //       forecastData?.["12_month_FC_index"] ||
+  //       forecastData?.com_month_12_fc_index ||
+  //       forecastData?.store_month_12_fc_index ||
+  //       product_details?.month_12_fc_index_original ||
+  //       0,
+  //     stdIndexValue:
+  //       forecastData?.std_index_value ||
+  //       forecastData?.STD_index_value ||
+  //       product_details?.std_index_value ||
+  //       0,
+  //     birthstone:
+  //       forecastData?.birthstone || product_details?.birthstone || "N/A",
+  //     birthstoneMonth:
+  //       forecastData?.birthstone_month ||
+  //       forecastData?.bithstone_month ||
+  //       product_details?.birthstone_month ||
+  //       "N/A",
+  //     totalAddedQty:
+  //       forecastData?.recommended_total_quantity ||
+  //       product_details?.recommended_total_quantity ||
+  //       forecastData?.addedQty ||
+  //       0,
+  //   };
+  // };
+
   const getSophisticatedCardData = () => {
     if (!productData) return null;
 
@@ -418,78 +515,53 @@ const ProductDetailsView = () => {
 
     return {
       category:
-        product_details?.department_description ||
-        product_details?.subclass_decription ||
-        forecastData?.category ||
+        product_details?.category ||
+        // forecastData?.category ||
         "Unknown Category",
-      vendor:
-        forecastData?.vendor ||
-        product_details?.vendor_name ||
-        product_details?.vendor ||
-        "Unknown Vendor",
-      doorCount:
-        forecastData?.door_count ||
-        product_details?.current_door_count ||
-        forecastData?.Door_count ||
-        0,
-      leadTime:
-        forecastData?.lead_time ||
-        product_details?.lead_time ||
-        forecastData?.Lead_time ||
-        0,
-      minOrder:
-        forecastData?.Min_order ||
-        forecastData?.min_order ||
-        product_details?.min_order ||
-        0,
-      retailValue:
-        forecastData?.retail_value ||
-        product_details?.retail_price ||
-        forecastData?.Retail_value ||
-        product_details?.price ||
-        0,
+      vendor: product_details?.vendor_name || "Unknown Vendor",
+      doorCount: product_details?.kpi_door_count || 0,
+      leadTime: product_details?.lead_time || 0,
+      minOrder: product_details?.min_order || 0,
+
       macys_owned_retail: product_details?.macys_owned_retail || 0,
-      STD_index_value: product_details?.STD_index_value || 0,
+      STD_index_value: product_details?.std_index_value_original || 0,
       selectedMonth:
-        forecastData?.selected_months ||
+        // forecastData?.selected_months ||
         product_details?.selected_months ||
-        forecastData?.Selected_month ||
+        // forecastData?.Selected_month ||
         "N/A",
-      forecastMonth:
-        forecastData?.forecast_month || forecastData?.Forecast_month || "N/A",
+      forecastMonth: product_details?.forecast_month || "N/A",
       nextForecastMonth:
-        forecastData?.next_forecast_month ||
-        forecastData?.Next_forecast_month ||
+        product_details?.next_forecast_month ||
+        // forecastData?.next_forecast_month ||
         "N/A",
       productId: product_details?.product_id || productId,
-      trend: forecastData?.trend || 0,
-      addedQty: forecastData?.recommended_total_quantity || 0,
-      macysSOQ: forecastData?.Macys_SOQ || 0,
-      stdTrend: forecastData?.std_trend || product_details?.std_trend || 0,
-      monthFCIndex:
-        forecastData?.month_12_fc_index ||
-        forecastData?.["12_month_FC_index"] ||
-        forecastData?.com_month_12_fc_index ||
-        forecastData?.store_month_12_fc_index ||
-        product_details?.month_12_fc_index ||
-        0,
-      stdIndexValue:
-        forecastData?.std_index_value ||
-        forecastData?.STD_index_value ||
-        product_details?.std_index_value ||
-        0,
-      birthstone:
-        forecastData?.birthstone || product_details?.birthstone || "N/A",
-      birthstoneMonth:
-        forecastData?.birthstone_month ||
-        forecastData?.bithstone_month ||
-        product_details?.birthstone_month ||
-        "N/A",
-      totalAddedQty:
-        forecastData?.recommended_total_quantity ||
+      trend: product_details?.std_trend_original || 0,
+      addedQty:
         product_details?.recommended_total_quantity ||
-        forecastData?.addedQty ||
+        // forecastData?.recommended_total_quantity ||
         0,
+      macysSOQ:
+        product_details?.Macys_SOQ ||
+        // forecastData?.Macys_SOQ ||
+        0,
+      stdTrend:
+        // forecastData?.std_trend_original ||
+        product_details?.std_trend_original || 0,
+      monthFCIndex:
+        // forecastData?.month_12_fc_index_original ||
+        // forecastData?.["12_month_FC_index"] ||
+        // forecastData?.com_month_12_fc_index ||
+        // forecastData?.store_month_12_fc_index ||
+        product_details?.month_12_fc_index_original || 0,
+      stdIndexValue:
+        // forecastData?.std_index_value ||
+        product_details?.std_index_value || 0,
+      birthstone: product_details?.birthstone || "N/A",
+      birthstoneMonth:
+        // forecastData?.birthstone_month ||
+        product_details?.birthstone_month || "N/A",
+      totalAddedQty: product_details?.recommended_total_quantity || 0,
     };
   };
 
@@ -516,7 +588,7 @@ const ProductDetailsView = () => {
 
   // APPLY CHANGES FUNCTION
   const handleApplyChanges = async () => {
-    if (!rollingForecastData || !productId) return;
+    if (!rollingForecastData || !productId || !sheetId) return;
 
     setIsSubmitting(true);
 
@@ -540,7 +612,7 @@ const ProductDetailsView = () => {
         Rolling_method: rollingMethod,
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+        month_12_fc_index_original: parseFloat(editable12MonthFC) || 100,
         Current_FC_Index: selectedIndex,
       };
 
@@ -580,7 +652,7 @@ const ProductDetailsView = () => {
         switch (lastChangedField) {
           case "Trend":
             return parseFloat(editableTrend) || 0;
-          case "month_12_fc_index":
+          case "month_12_fc_index_original":
             return parseFloat(editable12MonthFC) || 0;
           case "Forecasting_Method":
             return forecastingMethod;
@@ -601,16 +673,17 @@ const ProductDetailsView = () => {
       }
 
       const payload = {
+        sheet_id: parseInt(sheetId),
         changed_variable: lastChangedField || "TREND",
         new_value: getChangedFieldValue(),
         context_data: contextData,
-        product_id: productId,
+        pid: productId,
       };
 
       const response = await axios.post(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/recalculate_forecast/`,
+        }/forecast/product/recalculate_forecast/`,
         payload
       );
 
@@ -666,7 +739,7 @@ const ProductDetailsView = () => {
           Trend: parseFloat(editableTrend) || 0,
           Forecasting_Method: forecastingMethod,
           Rolling_method: rollingMethod,
-          month_12_fc_index: editable12MonthFC,
+          month_12_fc_index_original: editable12MonthFC,
           Current_FC_Index: selectedIndex,
         };
 
@@ -713,7 +786,7 @@ const ProductDetailsView = () => {
         Rolling_method: rollingMethod || "YTD",
         Trend: parseFloat(editableTrend) || -0.29,
         Forecasting_Method: "Average",
-        month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+        month_12_fc_index_original: parseFloat(editable12MonthFC) || 100,
         Current_FC_Index: "Gem",
       };
 
@@ -754,7 +827,7 @@ const ProductDetailsView = () => {
       const response = await axios.post(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/recalculate_forecast/`,
+        }/forecast/product/recalculate_forecast/`,
         payload
       );
 
@@ -808,7 +881,10 @@ const ProductDetailsView = () => {
     setIsSaving(true);
     setShowSaveChangesPopup(true);
 
-    const file_path = localStorage.getItem("file_path");
+    // const file_path = localStorage.getItem("file_path");
+    const file_path = files.find(
+      (f) => f.id === parseInt(sheetId)
+    ).output_folder;
     try {
       const monthLabels = [
         "FEB",
@@ -829,7 +905,7 @@ const ProductDetailsView = () => {
         Rolling_method: rollingMethod,
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 100,
+        month_12_fc_index_original: parseFloat(editable12MonthFC) || 100,
         Current_FC_Index: selectedIndex,
       };
 
@@ -869,7 +945,7 @@ const ProductDetailsView = () => {
         Rolling_method: rollingMethod,
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+        month_12_fc_index_original: parseFloat(editable12MonthFC) || 0,
         Current_FC_Index: selectedIndex,
         Index: contextData.Index_value,
         FC_by_Index: contextData.FC_by_Index,
@@ -884,15 +960,16 @@ const ProductDetailsView = () => {
       };
 
       const payload = {
+        sheet_id: parseInt(sheetId),
         updated_context: updated_context,
         file_path: file_path,
-        product_id: productId,
+        pid: productId,
       };
 
       const response = await axios.post(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/save_recalculate/`,
+        }/forecast/product/save_recalculate/`,
         payload
       );
 
@@ -950,7 +1027,7 @@ const ProductDetailsView = () => {
           Trend: parseFloat(editableTrend) || 0,
           Forecasting_Method: forecastingMethod,
           Rolling_method: rollingMethod,
-          month_12_fc_index: editable12MonthFC,
+          month_12_fc_index_original: editable12MonthFC,
           Current_FC_Index: selectedIndex,
         };
 
@@ -958,7 +1035,7 @@ const ProductDetailsView = () => {
           Trend: parseFloat(editableTrend) || 0,
           Forecasting_Method: forecastingMethod,
           Rolling_method: rollingMethod,
-          month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+          month_12_fc_index_original: parseFloat(editable12MonthFC) || 0,
           Current_FC_Index: selectedIndex,
         });
 
@@ -1034,14 +1111,15 @@ const ProductDetailsView = () => {
       forecastingMethod !== originalValuesRef.current.Forecasting_Method ||
       parseFloat(editableTrend) !== originalValuesRef.current.Trend ||
       parseFloat(editable12MonthFC) !==
-        originalValuesRef.current.month_12_fc_index;
+        originalValuesRef.current.month_12_fc_index_original;
 
     const hasInitialDiff =
       selectedIndex !== initialControlValues.Current_FC_Index ||
       rollingMethod !== initialControlValues.Rolling_method ||
       forecastingMethod !== initialControlValues.Forecasting_Method ||
       parseFloat(editableTrend) !== initialControlValues.Trend ||
-      parseFloat(editable12MonthFC) !== initialControlValues.month_12_fc_index;
+      parseFloat(editable12MonthFC) !==
+        initialControlValues.month_12_fc_index_original;
 
     setHasControlChanges(hasChanges);
     setHasInitialChanges(hasInitialDiff);
@@ -1067,7 +1145,7 @@ const ProductDetailsView = () => {
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
         Rolling_method: rollingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+        month_12_fc_index_original: parseFloat(editable12MonthFC) || 0,
         Current_FC_Index: selectedIndex,
       });
     }
@@ -1126,7 +1204,7 @@ const ProductDetailsView = () => {
         Trend: parseFloat(editableTrend) || 0,
         Forecasting_Method: forecastingMethod,
         Rolling_method: rollingMethod,
-        month_12_fc_index: parseFloat(editable12MonthFC) || 0,
+        month_12_fc_index_original: parseFloat(editable12MonthFC) || 0,
         Current_FC_Index: selectedIndex,
       };
     }
