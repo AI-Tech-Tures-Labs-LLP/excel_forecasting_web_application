@@ -18,14 +18,10 @@ import {
   Percent,
   Box,
   Info,
-  DollarSign,
   Target,
   Activity,
-  Users,
   Layers,
-  Tag,
   Search,
-  Filter,
   Grid,
   List,
   X,
@@ -36,9 +32,8 @@ import {
 
 const ForecastVariableCards = ({ productData }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState("grouped"); // "grouped" or "flat"
+  const [viewMode, setViewMode] = useState("grouped");
   const [selectedGroup, setSelectedGroup] = useState("all");
-  const [selectedForecastType, setSelectedForecastType] = useState("all");
 
   if (!productData) {
     return (
@@ -49,455 +44,883 @@ const ForecastVariableCards = ({ productData }) => {
     );
   }
 
-  const { store_forecast, com_forecast, omni_forecast } = productData;
+  const { product_details, store_forecast, com_forecast, omni_forecast } =
+    productData;
+  const productType = product_details?.product_type?.toLowerCase();
 
-  const hasStoreData = store_forecast && store_forecast.length > 0;
-  const hasComData = com_forecast && com_forecast.length > 0;
-  const hasOmniData = omni_forecast && omni_forecast.length > 0;
+  // Get data for the current product type
+  const getCurrentTypeData = () => {
+    switch (productType) {
+      case "store":
+        return store_forecast && store_forecast.length > 0
+          ? store_forecast[0]
+          : {};
+      case "com":
+        return com_forecast && com_forecast.length > 0 ? com_forecast[0] : {};
+      case "omni":
+        return omni_forecast && omni_forecast.length > 0
+          ? omni_forecast[0]
+          : {};
+      default:
+        return {};
+    }
+  };
 
-  if (!hasStoreData && !hasComData && !hasOmniData) {
+  const currentTypeData = getCurrentTypeData();
+  const allData = { ...product_details, ...currentTypeData };
+
+  // Define variable configurations for each product type
+  const getVariableConfigByType = (type) => {
+    switch (type) {
+      case "store":
+        return [
+          // Lead Time Calculation
+          {
+            key: "vendor_name",
+            label: "Vendor",
+            icon: Truck,
+            groupKey: "leadtime",
+          },
+          {
+            key: "country",
+            label: "Country",
+            icon: MapPin,
+            groupKey: "leadtime",
+          },
+          {
+            key: "lead_time",
+            label: "Lead Time",
+            icon: Clock,
+            groupKey: "leadtime",
+          },
+
+          // Trend and Index Calculation
+          {
+            key: "selected_months",
+            label: "STD Months",
+            icon: Calendar,
+            groupKey: "trends_index",
+          },
+          {
+            key: "month_12_fc_index",
+            label: "12-Month FC Index",
+            icon: BarChart3,
+            groupKey: "trends_index",
+          },
+          {
+            key: "loss",
+            label: "Loss (%)",
+            icon: TrendingDown,
+            groupKey: "trends_index",
+            type: "percentage",
+          },
+          {
+            key: "month_12_fc_index_loss",
+            label: "12-Month FC Index (Loss %)",
+            icon: TrendingDown,
+            groupKey: "trends_index",
+          },
+          {
+            key: "trend",
+            label: "Trend",
+            icon: TrendingUp,
+            groupKey: "trends_index",
+            type: "trend",
+          },
+
+          // Selecting Forecasting Method
+          {
+            key: "inventory_maintained",
+            label: "Inventory Maintained",
+            icon: Box,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+          {
+            key: "trend_index_difference",
+            label: "Trend Index Difference",
+            icon: BarChart3,
+            groupKey: "forecasting_method",
+          },
+          {
+            key: "is_red_box_item",
+            label: "Red Box Item",
+            icon: AlertTriangle,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+          {
+            key: "forecasting_method",
+            label: "Forecasting Method",
+            icon: Settings,
+            groupKey: "forecasting_method",
+          },
+
+          // Required Qty for Forecast Month
+          {
+            key: "forecast_month",
+            label: "Forecast Month",
+            icon: Calendar,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "kpi_door_count",
+            label: "Door Count",
+            icon: Building2,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "average_com_oh",
+            label: "Average COM OH",
+            icon: Box,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "fldc",
+            label: "FLDC",
+            icon: MapPin,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "birthstone",
+            label: "Birthstone",
+            icon: Gem,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "birthstone_month",
+            label: "Birthstone Month",
+            icon: Calendar,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "is_considered_birthstone",
+            label: "Considered Birthstone",
+            icon: Gem,
+            groupKey: "forecast_month_req",
+            type: "boolean",
+          },
+          {
+            key: "forecast_month_required_quantity",
+            label: "Forecast Month - Required Quantity",
+            icon: Target,
+            groupKey: "forecast_month_req",
+            clickable: true,
+            modalType: "required_quantity",
+          },
+
+          // Required Qty for Next Forecast Month
+          {
+            key: "next_forecast_month",
+            label: "Next Forecast Month",
+            icon: Calendar,
+            groupKey: "next_forecast_month_req",
+          },
+          {
+            key: "next_forecast_month_required_quantity",
+            label: "Next Forecast Month - Required Quantity",
+            icon: Target,
+            groupKey: "next_forecast_month_req",
+            clickable: true,
+            modalType: "required_quantity",
+            forecastMonth: "next",
+          },
+
+          // Planned Shipment
+          {
+            key: "forecast_month_planned_oh_before",
+            label: "Forecast Month - Planned OH (Before Added Qty)",
+            icon: Package,
+            groupKey: "planned_shipment",
+          },
+          {
+            key: "qty_added_to_maintain_oh_forecast_month",
+            label: "Forecast Month - Planned Shipment",
+            icon: Truck,
+            groupKey: "planned_shipment",
+          },
+
+          // Next Planned Shipment
+          {
+            key: "next_forecast_month_planned_oh_before",
+            label: "Next Forecast Month - Planned OH (Before Added Qty)",
+            icon: Package,
+            groupKey: "next_planned_shipment",
+          },
+          {
+            key: "qty_added_to_maintain_oh_next_forecast_month",
+            label: "Next Forecast Month - Planned Shipment",
+            icon: Truck,
+            groupKey: "next_planned_shipment",
+          },
+
+          // Macy's SOQ
+          {
+            key: "macys_proj_receipt_upto_forecast_month",
+            label: "Macys SOQ - Total",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+          {
+            key: "qty_given_to_macys",
+            label: "Macys SOQ - Actual Given",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+          {
+            key: "macy_soq_percentage",
+            label: "Macys SOQ - Percentage Required",
+            icon: Percent,
+            groupKey: "macys_soq",
+            type: "percentage",
+          },
+          {
+            key: "qty_added_to_balance_soq_forecast_month",
+            label: "Macys SOQ - Qty Added",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+
+          // Final Qty
+          {
+            key: "min_order",
+            label: "Min Order",
+            icon: Package,
+            groupKey: "final_qty",
+          },
+          {
+            key: "is_added_only_to_balance_macys_soq",
+            label: "Qty Added Only Macy Rule",
+            icon: Star,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_below_min_order",
+            label: "Below Min Order",
+            icon: AlertTriangle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_over_macys_soq",
+            label: "Over Macys SOQ",
+            icon: AlertCircle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_need_to_review_first",
+            label: "Needs Review (Below Planned OH)",
+            icon: AlertTriangle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "recommended_total_quantity",
+            label: "Total Added Qty",
+            icon: Calculator,
+            groupKey: "final_qty",
+          },
+        ];
+
+      case "com":
+        return [
+          // Lead Time Calculation
+          {
+            key: "vendor_name",
+            label: "Vendor",
+            icon: Truck,
+            groupKey: "leadtime",
+          },
+          {
+            key: "country",
+            label: "Country",
+            icon: MapPin,
+            groupKey: "leadtime",
+          },
+          {
+            key: "lead_time",
+            label: "Lead Time",
+            icon: Clock,
+            groupKey: "leadtime",
+          },
+
+          // Trend and Index Calculation
+          {
+            key: "selected_months",
+            label: "STD Months",
+            icon: Calendar,
+            groupKey: "trends_index",
+          },
+          {
+            key: "new_month_12_fc_index",
+            label: "12-Month FC Index COM",
+            icon: BarChart3,
+            groupKey: "trends_index",
+          },
+          {
+            key: "com_trend_for_selected_month",
+            label: "Trend",
+            icon: TrendingUp,
+            groupKey: "trends_index",
+            type: "trend",
+          },
+
+          // Selecting Forecasting Method
+          {
+            key: "is_com_inventory_maintained",
+            label: "Inventory Maintained",
+            icon: Box,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+          {
+            key: "trend_index_difference",
+            label: "Trend Index Difference",
+            icon: BarChart3,
+            groupKey: "forecasting_method",
+          },
+          {
+            key: "is_red_box_item",
+            label: "Red Box Item",
+            icon: AlertTriangle,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+          {
+            key: "forecasting_method",
+            label: "Forecasting Method",
+            icon: Settings,
+            groupKey: "forecasting_method",
+          },
+
+          // Required Qty for Forecast Month
+          {
+            key: "forecast_month",
+            label: "Forecast Month",
+            icon: Calendar,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "minimum_required_oh_for_com",
+            label: "COM Average Maintain Value",
+            icon: Box,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "forecast_month_required_quantity",
+            label: "Forecast Month - Required Quantity",
+            icon: Target,
+            groupKey: "forecast_month_req",
+            clickable: true,
+            modalType: "required_quantity",
+          },
+
+          // Required Qty for Next Forecast Month
+          {
+            key: "next_forecast_month",
+            label: "Next Forecast Month",
+            icon: Calendar,
+            groupKey: "next_forecast_month_req",
+          },
+          {
+            key: "next_forecast_month_required_quantity",
+            label: "Next Forecast Month - Required Quantity",
+            icon: Target,
+            groupKey: "next_forecast_month_req",
+            clickable: true,
+            modalType: "required_quantity",
+            forecastMonth: "next",
+          },
+
+          // Planned Shipment
+          {
+            key: "forecast_month_planned_oh_before",
+            label: "Forecast Month - Planned OH (Before Added Qty)",
+            icon: Package,
+            groupKey: "planned_shipment",
+          },
+          {
+            key: "qty_added_to_maintain_oh_forecast_month",
+            label: "Forecast Month - Planned Shipment",
+            icon: Truck,
+            groupKey: "planned_shipment",
+          },
+
+          // Next Planned Shipment
+          {
+            key: "next_forecast_month_planned_oh_before",
+            label: "Next Forecast Month - Planned OH (Before Added Qty)",
+            icon: Package,
+            groupKey: "next_planned_shipment",
+          },
+          {
+            key: "qty_added_to_maintain_oh_next_forecast_month",
+            label: "Next Forecast Month - Planned Shipment",
+            icon: Truck,
+            groupKey: "next_planned_shipment",
+          },
+
+          // Macy's SOQ
+          {
+            key: "macys_proj_receipt_upto_forecast_month",
+            label: "Macys SOQ - Total",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+          {
+            key: "qty_given_to_macys",
+            label: "Macys SOQ - Actual Given",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+          {
+            key: "macy_soq_percentage",
+            label: "Macys SOQ - Percentage Required",
+            icon: Percent,
+            groupKey: "macys_soq",
+            type: "percentage",
+          },
+          {
+            key: "qty_added_to_balance_soq_forecast_month",
+            label: "Macys SOQ - Qty Added",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+
+          // Final Qty
+          {
+            key: "min_order",
+            label: "Min Order",
+            icon: Package,
+            groupKey: "final_qty",
+          },
+          {
+            key: "is_added_only_to_balance_macys_soq",
+            label: "Qty Added Only Macy Rule",
+            icon: Star,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_below_min_order",
+            label: "Below Min Order",
+            icon: AlertTriangle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_over_macys_soq",
+            label: "Over Macys SOQ",
+            icon: AlertCircle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_need_to_review_first",
+            label: "Needs Review (Below Planned OH)",
+            icon: AlertTriangle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "recommended_total_quantity",
+            label: "Total Added Qty",
+            icon: Calculator,
+            groupKey: "final_qty",
+          },
+        ];
+
+      case "omni":
+        return [
+          // Lead Time Calculation
+          {
+            key: "vendor_name",
+            label: "Vendor",
+            icon: Truck,
+            groupKey: "leadtime",
+          },
+          {
+            key: "country",
+            label: "Country",
+            icon: MapPin,
+            groupKey: "leadtime",
+          },
+          {
+            key: "lead_time",
+            label: "Lead Time",
+            icon: Clock,
+            groupKey: "leadtime",
+          },
+
+          // Trend and Index Calculation - Store
+          {
+            key: "selected_months",
+            label: "STD Months (Store)",
+            icon: Calendar,
+            groupKey: "trends_index",
+          },
+          {
+            key: "store_month_12_fc_index_original",
+            label: "12-Month FC Index (Store)",
+            icon: BarChart3,
+            groupKey: "trends_index",
+          },
+          {
+            key: "loss",
+            label: "Loss (%)",
+            icon: TrendingDown,
+            groupKey: "trends_index",
+            type: "percentage",
+          },
+          {
+            key: "store_month_12_fc_index_loss",
+            label: "12-Month FC Index (Loss %) (Store)",
+            icon: TrendingDown,
+            groupKey: "trends_index",
+          },
+          {
+            key: "store_trend",
+            label: "Trend (Store)",
+            icon: TrendingUp,
+            groupKey: "trends_index",
+            type: "trend",
+          },
+
+          // Trend and Index Calculation - COM
+          {
+            key: "com_month_12_fc_index",
+            label: "12-Month FC Index (COM)",
+            icon: BarChart3,
+            groupKey: "trends_index",
+          },
+          {
+            key: "com_trend_for_selected_month",
+            label: "Trend (COM)",
+            icon: TrendingUp,
+            groupKey: "trends_index",
+            type: "trend",
+          },
+
+          // Selecting Forecasting Method - Store
+          {
+            key: "is_store_inventory_maintained",
+            label: "Inventory Maintained (Store)",
+            icon: Box,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+          {
+            key: "trend_index_difference_store",
+            label: "Trend Index Difference (Store)",
+            icon: BarChart3,
+            groupKey: "forecasting_method",
+          },
+          {
+            key: "forecasting_method_for_store",
+            label: "Forecasting Method (Store)",
+            icon: Settings,
+            groupKey: "forecasting_method",
+          },
+
+          // Selecting Forecasting Method - COM
+          {
+            key: "is_com_inventory_maintained",
+            label: "Inventory Maintained (COM)",
+            icon: Box,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+          {
+            key: "trend_index_difference_com",
+            label: "Trend Index Difference (COM)",
+            icon: BarChart3,
+            groupKey: "forecasting_method",
+          },
+          {
+            key: "forecasting_method_for_com",
+            label: "Forecasting Method (COM)",
+            icon: Settings,
+            groupKey: "forecasting_method",
+          },
+          {
+            key: "is_red_box_item",
+            label: "Red Box Item",
+            icon: AlertTriangle,
+            groupKey: "forecasting_method",
+            type: "boolean",
+          },
+
+          // Required Qty for Forecast Month
+          {
+            key: "forecast_month",
+            label: "Forecast Month",
+            icon: Calendar,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "kpi_door_count",
+            label: "Door Count (Store)",
+            icon: Building2,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "store_fldc",
+            label: "FLDC (Store)",
+            icon: MapPin,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "birthstone",
+            label: "Birthstone",
+            icon: Gem,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "birthstone_month",
+            label: "Birthstone Month",
+            icon: Calendar,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "birthstone_status",
+            label: "Considered Birthstone",
+            icon: Gem,
+            groupKey: "forecast_month_req",
+            type: "boolean",
+          },
+          {
+            key: "required_quantity_store",
+            label: "Forecast Month - Required Quantity (Store)",
+            icon: Target,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "minimum_required_oh_for_com",
+            label: "COM Average Maintain Value",
+            icon: Box,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "com_fldc",
+            label: "FLDC (COM)",
+            icon: MapPin,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "forecast_month_required_quantity_com",
+            label: "Forecast Month - Required Quantity (COM)",
+            icon: Target,
+            groupKey: "forecast_month_req",
+          },
+          {
+            key: "forecast_month_required_quantity",
+            label: "Forecast Month - Required Quantity (Combined)",
+            icon: Target,
+            groupKey: "forecast_month_req",
+            clickable: true,
+            modalType: "required_quantity",
+          },
+
+          // Required Qty for Next Forecast Month
+          {
+            key: "next_forecast_month",
+            label: "Next Forecast Month",
+            icon: Calendar,
+            groupKey: "next_forecast_month_req",
+          },
+          {
+            key: "next_forecast_month_required_quantity_store",
+            label: "Next Forecast Month - Required Quantity (Store)",
+            icon: Target,
+            groupKey: "next_forecast_month_req",
+          },
+          {
+            key: "next_forecast_month_required_quantity_com",
+            label: "Next Forecast Month - Required Quantity (COM)",
+            icon: Target,
+            groupKey: "next_forecast_month_req",
+          },
+          {
+            key: "next_forecast_month_required_quantity",
+            label: "Next Forecast Month - Required Quantity (Combined)",
+            icon: Target,
+            groupKey: "next_forecast_month_req",
+            clickable: true,
+            modalType: "required_quantity",
+            forecastMonth: "next",
+          },
+
+          // Planned Shipment
+          {
+            key: "forecast_month_planned_oh_before",
+            label: "Forecast Month - Planned OH (Before Added Qty)",
+            icon: Package,
+            groupKey: "planned_shipment",
+          },
+          {
+            key: "qty_added_to_maintain_oh_forecast_month",
+            label: "Forecast Month - Planned Shipment",
+            icon: Truck,
+            groupKey: "planned_shipment",
+          },
+
+          // Next Planned Shipment
+          {
+            key: "next_forecast_month_planned_oh_before",
+            label: "Next Forecast Month - Planned OH (Before Added Qty)",
+            icon: Package,
+            groupKey: "next_planned_shipment",
+          },
+          {
+            key: "qty_added_to_maintain_oh_next_forecast_month",
+            label: "Next Forecast Month - Planned Shipment",
+            icon: Truck,
+            groupKey: "next_planned_shipment",
+          },
+
+          // Macy's SOQ
+          {
+            key: "macys_proj_receipt_upto_forecast_month",
+            label: "Macys SOQ - Total",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+          {
+            key: "qty_given_to_macys",
+            label: "Macys SOQ - Actual Given",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+          {
+            key: "macy_soq_percentage",
+            label: "Macys SOQ - Percentage Required",
+            icon: Percent,
+            groupKey: "macys_soq",
+            type: "percentage",
+          },
+          {
+            key: "qty_added_to_balance_soq_forecast_month",
+            label: "Macys SOQ - Qty Added",
+            icon: Star,
+            groupKey: "macys_soq",
+          },
+
+          // Final Qty
+          {
+            key: "min_order",
+            label: "Min Order",
+            icon: Package,
+            groupKey: "final_qty",
+          },
+          {
+            key: "is_added_only_to_balance_macys_soq",
+            label: "Qty Added Only Macy Rule",
+            icon: Star,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_below_min_order",
+            label: "Below Min Order",
+            icon: AlertTriangle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_over_macys_soq",
+            label: "Over Macys SOQ",
+            icon: AlertCircle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "is_need_to_review_first",
+            label: "Needs Review (Below Planned OH)",
+            icon: AlertTriangle,
+            groupKey: "final_qty",
+            type: "boolean",
+          },
+          {
+            key: "recommended_total_quantity",
+            label: "Total Added Qty",
+            icon: Calculator,
+            groupKey: "final_qty",
+          },
+        ];
+
+      default:
+        return [];
+    }
+  };
+
+  const variableConfigs = getVariableConfigByType(productType);
+
+  // Show all variables regardless of data availability
+  const availableVariables = variableConfigs;
+
+  if (availableVariables.length === 0) {
     return (
       <div className="text-center py-8 bg-gray-50 rounded-xl">
         <AlertCircle className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
         <p className="text-gray-600">
-          No forecast variables available for this product
+          No forecast variables defined for this {productType?.toUpperCase()}{" "}
+          product
         </p>
         <p className="text-gray-500 text-sm mt-2">
-          This product may not have been processed through the forecasting
-          system yet.
+          Product Type: {productType?.toUpperCase() || "Unknown"}
         </p>
       </div>
     );
   }
 
-  // Modal Component for Required Quantity Calculation
-  const RequiredQuantityModal = ({
-    isOpen,
-    onClose,
-    data,
-    type,
-    forecastMonth,
-  }) => {
-    if (!isOpen) return null;
-
-    const doorCount = data?.door_count || 0;
-    const averageComOh = data?.average_com_oh || 0;
-    const fldc = data?.fldc || 0;
-    const requiredQuantity = data?.forecast_month_required_quantity || 0;
-
-    // Next forecast month data
-    const nextForecastMonth = data?.next_forecast_month || "Unknown";
-    const nextRequiredQuantity =
-      data?.next_forecast_month_required_quantity || 0;
-    const currentForecastMonth = data?.forecast_month || "Unknown";
-
-    const displayMonth =
-      forecastMonth === "next" ? nextForecastMonth : currentForecastMonth;
-    const displayRequiredQuantity =
-      forecastMonth === "next" ? nextRequiredQuantity : requiredQuantity;
-
-    // Calculate the sum dynamically
-    const calculatedSum = doorCount + averageComOh + fldc;
-
-    const getTypeColor = () => {
-      switch (type) {
-        case "store":
-          return {
-            bg: "bg-blue-50",
-            text: "text-blue-600",
-            border: "border-blue-200",
-          };
-        case "com":
-          return {
-            bg: "bg-green-50",
-            text: "text-green-600",
-            border: "border-green-200",
-          };
-        case "omni":
-          return {
-            bg: "bg-purple-50",
-            text: "text-purple-600",
-            border: "border-purple-200",
-          };
-        default:
-          return {
-            bg: "bg-gray-50",
-            text: "text-gray-600",
-            border: "border-gray-200",
-          };
-      }
-    };
-
-    const colors = getTypeColor();
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Modal Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-                  <Calculator className="text-white" size={24} />
-                </div>
-                <h2 className="text-xl font-bold">
-                  Required EOH Quantity Calculation
-                </h2>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-              >
-                <X className="text-white" size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Modal Content */}
-          <div className="p-6 space-y-6">
-            {/* Forecast Info */}
-            <div
-              className={`${colors.bg} border ${colors.border} rounded-lg p-4`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                {type === "store" && (
-                  <Building2 className={colors.text} size={20} />
-                )}
-                {type === "com" && (
-                  <ShoppingCart className={colors.text} size={20} />
-                )}
-                {type === "omni" && (
-                  <Layers className={colors.text} size={20} />
-                )}
-                <h3 className="font-semibold text-gray-800">
-                  {type?.toUpperCase()} Forecast - {displayMonth}
-                </h3>
-              </div>
-              <p className="text-gray-600 text-sm">
-                Required EOH Quantity for Lead guideline month calculation
-              </p>
-            </div>
-
-            {/* Formula Section */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Calculator className="text-gray-600" size={20} />
-                <h4 className="font-semibold text-gray-800">
-                  Calculation Formula
-                </h4>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
-                Required EOH for {displayMonth} = KPI Door Count + Average COM
-                EOM OH + FLDC
-              </div>
-            </div>
-
-            {/* Variables Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* KPI Door Count */}
-              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="text-blue-600" size={16} />
-                  <span className="font-medium text-blue-700">
-                    KPI Door Count
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-blue-800">
-                  {doorCount.toLocaleString()}
-                </div>
-              </div>
-
-              {/* Average COM EOM OH */}
-              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingCart className="text-green-600" size={16} />
-                  <span className="font-medium text-green-700">
-                    Average COM EOM OH
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-green-800">
-                  {averageComOh.toLocaleString()}
-                </div>
-              </div>
-
-              {/* FLDC */}
-              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="text-purple-600" size={16} />
-                  <span className="font-medium text-purple-700">FLDC</span>
-                </div>
-                <div className="text-2xl font-bold text-purple-800">
-                  {fldc.toLocaleString()}
-                </div>
-              </div>
-            </div>
-
-            {/* Calculation Steps */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="text-gray-600" size={20} />
-                <h4 className="font-semibold text-gray-800">
-                  Calculation Steps
-                </h4>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">KPI Door Count:</span>
-                  <span className="font-medium">
-                    {doorCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">+ Average COM EOM OH:</span>
-                  <span className="font-medium">
-                    {averageComOh.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">+ FLDC:</span>
-                  <span className="font-medium">{fldc.toLocaleString()}</span>
-                </div>
-                <hr className="border-gray-300" />
-                <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
-                  <span className="font-semibold text-emerald-800">
-                    Required EOH for {displayMonth}:
-                  </span>
-                  <span className="text-xl font-bold text-emerald-800">
-                    {calculatedSum.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Validation Check */}
-            {calculatedSum !== displayRequiredQuantity &&
-              displayRequiredQuantity > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle
-                      className="text-yellow-600 mt-0.5"
-                      size={16}
-                    />
-                    <div>
-                      <h5 className="font-medium text-yellow-800 mb-1">
-                        Calculation Note
-                      </h5>
-                      <p className="text-yellow-700 text-sm">
-                        Calculated value ({calculatedSum.toLocaleString()})
-                        differs from stored value (
-                        {displayRequiredQuantity.toLocaleString()}). This may
-                        indicate additional factors in the actual calculation.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-            {/* Additional Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Info className="text-blue-600 mt-0.5" size={16} />
-                <div>
-                  <h5 className="font-medium text-blue-800 mb-1">
-                    About This Calculation
-                  </h5>
-                  <p className="text-blue-700 text-sm">
-                    The Required EOH (End of Hand) quantity represents the
-                    minimum inventory level needed at the end of the forecast
-                    month to maintain adequate stock levels across all
-                    locations.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Modal Footer */}
-          <div className="border-t border-gray-200 p-4 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const [modalState, setModalState] = useState({
-    isOpen: false,
-    type: null,
-    data: null,
-    forecastMonth: null,
-  });
-
-  // Handle opening modal for required quantity calculation
-  const openRequiredQuantityModal = (data, type, forecastMonth = "current") => {
-    setModalState({
-      isOpen: true,
-      type,
-      data,
-      forecastMonth,
-    });
-  };
-
-  const closeModal = () => {
-    setModalState({
-      isOpen: false,
-      type: null,
-      data: null,
-      forecastMonth: null,
-    });
-  };
-
-  const handleVariableClick = (variable, value, data, type) => {
-    if (variable.clickable && variable.modalType === "required_quantity") {
-      openRequiredQuantityModal(data, type, variable.forecastMonth);
-    }
-  };
-
-  // Define variable groups with their relationships
-  // Updated variable groups with Special Days section
+  // Define variable groups
   const variableGroups = {
     leadtime: {
       title: "Lead Time Calculation",
       icon: Clock,
       color: "blue",
-      keywords: ["vendor", "leadtime_holiday_adjustment", "lead_time"],
     },
-
     trends_index: {
       title: "Trend And Index Calculation",
       icon: BarChart3,
       color: "purple",
-      keywords: [
-        "selected_months",
-        "std_index",
-        "month_12_fc_index",
-        "loss",
-        "month_12_fc_index_loss",
-        "trend",
-      ],
     },
-
     forecasting_method: {
       title: "Selecting Forecasting Method",
       icon: Settings,
       color: "indigo",
-      keywords: [
-        "inventory_maintained",
-        "trend_index_difference",
-        "is_red_box_item",
-        "forecasting_method",
-      ],
     },
-
     forecast_month_req: {
       title: "Required Qty For Forecast Month",
       icon: Target,
       color: "green",
-      keywords: [
-        "forecast_month",
-        "door_count",
-        "minimum",
-        "average_com_oh",
-        "fldc",
-        "birthstone",
-        "birthstone_month",
-        "is_considered_birthstone",
-        "is_considered_birthstone_required_quantity",
-        "forecast_month_required_quantity_store",
-        "forecast_month_required_quantity",
-      ],
     },
-
     next_forecast_month_req: {
       title: "Required Qty For Next Forecast Month",
       icon: Calendar,
       color: "emerald",
-      keywords: [
-        "next_forecast_month",
-        "door_count",
-        "minimum_required_oh",
-        "average_com_oh",
-        "next_forecast_month_required_quantity",
-      ],
     },
-
     planned_shipment: {
       title: "Planned Shipment",
       icon: Truck,
       color: "cyan",
-      keywords: [
-        "forecast_month_planned_oh",
-        "forecast_month_planned_shipment",
-      ],
     },
-
     next_planned_shipment: {
       title: "Next Planned Shipment",
       icon: Package,
       color: "teal",
-      keywords: [
-        "next_forecast_month_planned_oh",
-        "next_forecast_month_planned_shipment",
-      ],
     },
-
     macys_soq: {
       title: "Macy's SOQ",
       icon: Star,
       color: "yellow",
-      keywords: [
-        "Macys_SOQ",
-        "Qty_given_to_macys",
-        "average_store_sale_thru",
-        "macys_owned_retail",
-        "macy_SOQ_percentage",
-        "qty_added_to_balance_SOQ_forecast_month",
-      ],
     },
-
     final_qty: {
       title: "Final Qty",
       icon: Calculator,
       color: "red",
-      keywords: [
-        "qty_added_to_maintain_OH_forecast_month",
-        "qty_added_to_maintain_OH_next_forecast_month",
-        "Min_order",
-        "Added_qty_using_macys_SOQ",
-        "is_below_min_order",
-        "is_over_macys_soq",
-        "is_need_to_review_first",
-        "recommended_total_quantity",
-        "vdf_added",
-        "vdf_status",
-      ],
-    },
-
-    // Add Special Days section for holiday-related variables
-    special_days: {
-      title: "Special Days",
-      icon: Calendar,
-      color: "gray",
-      keywords: [
-        "holiday",
-        "valentine",
-        "mothers_day",
-        "fathers_day",
-        "mens_day",
-        "womens_day",
-        "christmas",
-        "easter",
-        "thanksgiving",
-        "new_year",
-        "special_day",
-        "seasonal",
-      ],
     },
   };
 
@@ -543,334 +966,280 @@ const ForecastVariableCards = ({ productData }) => {
       text: "text-yellow-600",
       border: "border-yellow-200",
     },
-    red: {
-      bg: "bg-red-50",
-      text: "text-red-600",
-      border: "border-red-200",
-    },
-    rose: {
-      bg: "bg-rose-50",
-      text: "text-rose-600",
-      border: "border-rose-200",
-    },
-    orange: {
-      bg: "bg-orange-50",
-      text: "text-orange-600",
-      border: "border-orange-200",
-    },
-    pink: {
-      bg: "bg-pink-50",
-      text: "text-pink-600",
-      border: "border-pink-200",
-    },
-    violet: {
-      bg: "bg-violet-50",
-      text: "text-violet-600",
-      border: "border-violet-200",
-    },
-    amber: {
-      bg: "bg-amber-50",
-      text: "text-amber-600",
-      border: "border-amber-200",
-    },
-    // Add gray color scheme for "Other Variables" group
-    gray: {
-      bg: "bg-gray-50",
-      text: "text-gray-600",
-      border: "border-gray-200",
-    },
+    red: { bg: "bg-red-50", text: "text-red-600", border: "border-red-200" },
   };
 
-  // Dynamic variable configuration (from your original code)
-  const getDynamicVariableConfig = (data) => {
-    const excludeFields = ["id", "category", "pid"];
-    const allKeys = Object.keys(data).filter(
-      (key) =>
-        !excludeFields.includes(key) &&
-        data[key] !== null &&
-        data[key] !== undefined
-    );
+  // Modal Component for Required Quantity Calculation
+  const RequiredQuantityModal = ({
+    isOpen,
+    onClose,
+    data,
+    type,
+    forecastMonth,
+  }) => {
+    if (!isOpen) return null;
 
-    return allKeys.map((key) => {
-      const value = data[key];
-      const config = {
-        key,
-        label: formatFieldName(key),
-        icon: getIconForField(key, value),
-        type: getFieldType(value, key), // Pass key parameter
-        groupKey: determineGroupForField(key),
-      };
+    const doorCount = data?.kpi_door_count || 0;
+    const averageComOh = data?.average_com_oh || 0;
+    const fldc = data?.fldc || 0;
+    const requiredQuantity = data?.forecast_month_required_quantity || 0;
 
-      if (key === "forecast_month_required_quantity") {
-        config.clickable = true;
-        config.modalType = "required_quantity";
+    const nextForecastMonth = data?.next_forecast_month || "Unknown";
+    const nextRequiredQuantity =
+      data?.next_forecast_month_required_quantity || 0;
+    const currentForecastMonth = data?.forecast_month || "Unknown";
+
+    const displayMonth =
+      forecastMonth === "next" ? nextForecastMonth : currentForecastMonth;
+    const displayRequiredQuantity =
+      forecastMonth === "next" ? nextRequiredQuantity : requiredQuantity;
+
+    const calculatedSum = doorCount + averageComOh + fldc;
+
+    const getTypeColor = () => {
+      switch (type) {
+        case "store":
+          return {
+            bg: "bg-blue-50",
+            text: "text-blue-600",
+            border: "border-blue-200",
+          };
+        case "com":
+          return {
+            bg: "bg-green-50",
+            text: "text-green-600",
+            border: "border-green-200",
+          };
+        case "omni":
+          return {
+            bg: "bg-purple-50",
+            text: "text-purple-600",
+            border: "border-purple-200",
+          };
+        default:
+          return {
+            bg: "bg-gray-50",
+            text: "text-gray-600",
+            border: "border-gray-200",
+          };
       }
+    };
 
-      return config;
+    const colors = getTypeColor();
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+          <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+                  <Calculator className="text-white" size={24} />
+                </div>
+                <h2 className="text-xl font-bold">
+                  Required EOH Quantity Calculation
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+              >
+                <X className="text-white" size={20} />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div
+              className={`${colors.bg} border ${colors.border} rounded-lg p-4`}
+            >
+              <div className="flex items-center gap-3 mb-2">
+                {type === "store" && (
+                  <Building2 className={colors.text} size={20} />
+                )}
+                {type === "com" && (
+                  <ShoppingCart className={colors.text} size={20} />
+                )}
+                {type === "omni" && (
+                  <Layers className={colors.text} size={20} />
+                )}
+                <h3 className="font-semibold text-gray-800">
+                  {type?.toUpperCase()} Forecast - {displayMonth}
+                </h3>
+              </div>
+              <p className="text-gray-600 text-sm">
+                Required EOH Quantity for Lead guideline month calculation
+              </p>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator className="text-gray-600" size={20} />
+                <h4 className="font-semibold text-gray-800">
+                  Calculation Formula
+                </h4>
+              </div>
+              <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+                Required EOH for {displayMonth} = KPI Door Count + Average COM
+                EOM OH + FLDC
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="text-blue-600" size={16} />
+                  <span className="font-medium text-blue-700">
+                    KPI Door Count
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-blue-800">
+                  {doorCount.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingCart className="text-green-600" size={16} />
+                  <span className="font-medium text-green-700">
+                    Average COM EOM OH
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-green-800">
+                  {averageComOh.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="text-purple-600" size={16} />
+                  <span className="font-medium text-purple-700">FLDC</span>
+                </div>
+                <div className="text-2xl font-bold text-purple-800">
+                  {fldc.toLocaleString()}
+                </div>
+              </div>
+            </div>
+
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Activity className="text-gray-600" size={20} />
+                <h4 className="font-semibold text-gray-800">
+                  Calculation Steps
+                </h4>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-gray-700">KPI Door Count:</span>
+                  <span className="font-medium">
+                    {doorCount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-gray-700">+ Average COM EOM OH:</span>
+                  <span className="font-medium">
+                    {averageComOh.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-gray-700">+ FLDC:</span>
+                  <span className="font-medium">{fldc.toLocaleString()}</span>
+                </div>
+                <hr className="border-gray-300" />
+                <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                  <span className="font-semibold text-emerald-800">
+                    Required EOH for {displayMonth}:
+                  </span>
+                  <span className="text-xl font-bold text-emerald-800">
+                    {calculatedSum.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {calculatedSum !== displayRequiredQuantity &&
+              displayRequiredQuantity > 0 && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle
+                      className="text-yellow-600 mt-0.5"
+                      size={16}
+                    />
+                    <div>
+                      <h5 className="font-medium text-yellow-800 mb-1">
+                        Calculation Note
+                      </h5>
+                      <p className="text-yellow-700 text-sm">
+                        Calculated value ({calculatedSum.toLocaleString()})
+                        differs from stored value (
+                        {displayRequiredQuantity.toLocaleString()}). This may
+                        indicate additional factors in the actual calculation.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <Info className="text-blue-600 mt-0.5" size={16} />
+                <div>
+                  <h5 className="font-medium text-blue-800 mb-1">
+                    About This Calculation
+                  </h5>
+                  <p className="text-blue-700 text-sm">
+                    The Required EOH (End of Hand) quantity represents the
+                    minimum inventory level needed at the end of the forecast
+                    month to maintain adequate stock levels across all
+                    locations.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 p-4 flex justify-end">
+            <button
+              onClick={onClose}
+              className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    type: null,
+    data: null,
+    forecastMonth: null,
+  });
+
+  const openRequiredQuantityModal = (data, type, forecastMonth = "current") => {
+    setModalState({ isOpen: true, type, data, forecastMonth });
+  };
+
+  const closeModal = () => {
+    setModalState({
+      isOpen: false,
+      type: null,
+      data: null,
+      forecastMonth: null,
     });
   };
 
-  const formatFieldName = (key) => {
-    return key
-      .split("_")
-      .map((word) => {
-        // Handle common abbreviations that should stay together
-        const abbreviations = [
-          "SOQ",
-          "OH",
-          "STD",
-          "FC",
-          "VDF",
-          "QTY",
-          "MIN",
-          "MAX",
-          "AVG",
-          "COM",
-          "PID",
-          "ID",
-        ];
-        const upperWord = word.toUpperCase();
-
-        if (abbreviations.includes(upperWord)) {
-          return upperWord;
-        }
-
-        // For regular words, just capitalize first letter
-        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-      })
-      .join(" ");
-  };
-
-  const getFieldType = (value, key) => {
-    if (typeof value === "boolean") return "boolean";
-    if (Array.isArray(value)) return "array";
-
-    // Handle trend fields specifically
-    if (
-      key &&
-      (key === "trend" ||
-        key === "std_trend" ||
-        key === "com_trend" ||
-        key === "store_trend")
-    ) {
-      return "trend";
+  const handleVariableClick = (variable, value, data, type) => {
+    if (variable.clickable && variable.modalType === "required_quantity") {
+      openRequiredQuantityModal(data, type, variable.forecastMonth);
     }
-
-    if (typeof value === "number" && value >= 0 && value <= 1)
-      return "percentage";
-    return "default";
   };
-  const getIconForField = (key, value) => {
-    const keyLower = key.toLowerCase();
-
-    // Special days and holidays first
-    if (
-      keyLower.includes("holiday") ||
-      keyLower.includes("valentine") ||
-      keyLower.includes("mothers") ||
-      keyLower.includes("fathers") ||
-      keyLower.includes("mens_day") ||
-      keyLower.includes("womens_day") ||
-      keyLower.includes("christmas") ||
-      keyLower.includes("easter")
-    )
-      return Calendar;
-
-    if (keyLower.includes("time") || keyLower.includes("lead")) return Clock;
-    if (keyLower.includes("month") || keyLower.includes("date"))
-      return Calendar;
-    if (
-      keyLower.includes("qty") ||
-      keyLower.includes("quantity") ||
-      keyLower.includes("shipment") ||
-      keyLower.includes("order")
-    )
-      return Package;
-    if (keyLower.includes("oh") || keyLower.includes("inventory")) return Box;
-    if (
-      keyLower.includes("trend") ||
-      keyLower.includes("index") ||
-      keyLower.includes("fc")
-    )
-      return BarChart3;
-    if (keyLower.includes("loss") || keyLower.includes("diff"))
-      return TrendingDown;
-    if (
-      keyLower.includes("sale") ||
-      keyLower.includes("sell") ||
-      keyLower.includes("thru")
-    )
-      return TrendingUp;
-    if (keyLower.includes("macys") || keyLower.includes("soq")) return Star;
-    if (keyLower.includes("percentage") || keyLower.includes("percent"))
-      return Percent;
-    if (keyLower.includes("door") || keyLower.includes("count"))
-      return Building2;
-    if (keyLower.includes("fldc") || keyLower.includes("location"))
-      return MapPin;
-    if (keyLower.includes("birthstone") || keyLower.includes("gem")) return Gem;
-    if (keyLower.includes("forecast") || keyLower.includes("method"))
-      return Settings;
-    if (keyLower.includes("vendor") || keyLower.includes("supplier"))
-      return Truck;
-
-    if (typeof value === "boolean") {
-      if (keyLower.includes("review") || keyLower.includes("need"))
-        return AlertCircle;
-      if (
-        keyLower.includes("over") ||
-        keyLower.includes("below") ||
-        keyLower.includes("error")
-      )
-        return AlertTriangle;
-      if (
-        keyLower.includes("maintained") ||
-        keyLower.includes("status") ||
-        keyLower.includes("added")
-      )
-        return CheckCircle;
-      if (keyLower.includes("box") || keyLower.includes("item")) return Box;
-      return CheckCircle;
-    }
-
-    return Info;
-  };
-
-  // Determine which group a field belongs to
-  const determineGroupForField = (key) => {
-    const keyLower = key.toLowerCase();
-
-    // Exact matches first for better accuracy
-    const exactMatches = {
-      leadtime_holiday_adjustment: "leadtime",
-      lead_time: "leadtime",
-      selected_months: "trends_index",
-      month_12_fc_index: "trends_index",
-      loss: "trends_index",
-      month_12_fc_index_loss: "trends_index",
-      trend: "trends_index",
-      inventory_maintained: "forecasting_method",
-      trend_index_difference: "forecasting_method",
-      is_red_box_item: "forecasting_method",
-      forecasting_method: "forecasting_method",
-      forecast_month: "forecast_month_req",
-      door_count: "forecast_month_req",
-      average_com_oh: "forecast_month_req",
-      fldc: "forecast_month_req",
-      birthstone: "forecast_month_req",
-      birthstone_month: "forecast_month_req",
-      is_considered_birthstone: "forecast_month_req",
-      is_considered_birthstone_required_quantity: "forecast_month_req",
-      forecast_month_required_quantity: "forecast_month_req",
-      next_forecast_month: "next_forecast_month_req",
-      next_forecast_month_required_quantity: "next_forecast_month_req",
-      forecast_month_planned_oh: "planned_shipment",
-      forecast_month_planned_shipment: "planned_shipment",
-      next_forecast_month_planned_oh: "next_planned_shipment",
-      next_forecast_month_planned_shipment: "next_planned_shipment",
-      macys_soq: "macys_soq",
-      qty_given_to_macys: "macys_soq",
-      average_store_sale_thru: "macys_soq",
-      macys_owned_retail: "macys_soq",
-      macy_soq_percentage: "macys_soq",
-      macys_soq_qty_added: "macys_soq",
-      qty_added_to_balance_soq_forecast_month: "macys_soq",
-      qty_added_to_maintain_oh_forecast_month: "final_qty",
-      qty_added_to_maintain_oh_next_forecast_month: "final_qty",
-      min_order: "final_qty",
-      added_qty_using_macys_soq: "final_qty",
-      is_below_min_order: "final_qty",
-      is_over_macys_soq: "final_qty",
-      is_need_to_review_first: "final_qty",
-      recommended_total_quantity: "final_qty",
-    };
-
-    if (exactMatches[keyLower]) {
-      return exactMatches[keyLower];
-    }
-
-    // Fallback to keyword matching
-    for (const [groupKey, group] of Object.entries(variableGroups)) {
-      if (
-        group.keywords.some((keyword) =>
-          keyLower.includes(keyword.toLowerCase())
-        )
-      ) {
-        return groupKey;
-      }
-    }
-
-    return "other"; // Default group for unmatched fields
-  };
-
-  // const formatVariableValue = (value, config) => {
-  //   if (value === null || value === undefined) return "-";
-
-  //   switch (config.type) {
-  //     case "boolean":
-  //       return value ? "Yes" : "No";
-  //     case "array":
-  //       return Array.isArray(value) ? value.join(", ") : value;
-  //     case "percentage":
-  //       // Show percentage format for specific fields only
-  //       if (config.key === "loss" ||
-  //           config.key === "std_index_value" ||
-  //           config.key === "STD_index_value_original" ||
-  //           config.key === "trend_index_difference" ||
-  //           config.key === "average_store_sale_thru" ||
-  //           config.key === "macy_soq_percentag" ||
-  //           config.key === "macy_SOQ_percentage" ||
-  //           config.key === "macy_soq_percentage") {
-
-  //         // Special handling for loss field when value is 0
-  //         if (config.key === "loss" && value === 0) {
-  //           return "0%";
-  //         }
-
-  //         return typeof value === "number"
-  //           ? `${(value * 100).toFixed(2)}%`
-  //           : `${value}%`;
-  //       }
-  //       // For other percentage fields, show raw values
-  //       return typeof value === "number" ? value.toLocaleString() : value;
-  //     case "trend":
-  //       // Handle trend values - convert decimal to percentage
-  //       return typeof value === "number"
-  //         ? `${(value * 100).toFixed(1)}%`
-  //         : `${value}%`;
-  //     default:
-  //       const formattedValue =
-  //         typeof value === "number" ? value.toLocaleString() : value;
-
-  //       // Show percentage format for these specific fields
-  //       if (config.key === "loss" ||
-  //           config.key === "std_trend_original" ||
-  //           config.key === "std_index_value" ||
-  //           config.key === "std_index_value_original" ||
-  //           config.key === "trend_index_difference" ||
-  //           config.key === "average_store_sale_thru" ||
-  //           config.key === "macy_soq_percentag" ||
-  //           config.key === "macy_SOQ_percentage" ||
-  //           config.key === "macy_soq_percentage") {
-
-  //         // Special handling for loss field when value is 0
-  //         if (config.key === "loss" && value === 0) {
-  //           return "0%";
-  //         }
-
-  //         return typeof value === "number"
-  //           ? `${(value * 100).toFixed(2)}%`
-  //           : `${value}%`;
-  //       }
-
-  //       return config.suffix
-  //         ? `${formattedValue}${config.suffix}`
-  //         : formattedValue;
-  //   }
-  // };
 
   const formatVariableValue = (value, config) => {
-    if (value === null || value === undefined) return "-";
+    if (value === null || value === undefined) return "N/A";
 
     switch (config.type) {
       case "boolean":
@@ -878,30 +1247,11 @@ const ForecastVariableCards = ({ productData }) => {
       case "array":
         return Array.isArray(value) ? value.join(", ") : value;
       case "percentage":
-        // Show percentage format for specific fields only
-        if (
-          config.key === "loss" ||
-          config.key === "std_index_value" ||
-          config.key === "STD_index_value_original" ||
-          config.key === "average_store_sale_thru" ||
-          config.key === "trend_index_difference" ||
-          config.key === "macy_soq_percentag" ||
-          config.key === "macy_SOQ_percentage" ||
-          config.key === "macy_soq_percentage"
-        ) {
-          // Special handling for loss field when value is 0
-          if (config.key === "loss" && value === 0) {
-            return "0%";
-          }
-
-          return typeof value === "number"
-            ? `${(value * 100).toFixed(2)}%`
-            : `${value}%`;
-        }
-        // For other percentage fields, show raw values
-        return typeof value === "number" ? value.toLocaleString() : value;
+        if (config.key === "loss" && value === 0) return "0%";
+        return typeof value === "number"
+          ? `${(value * 100).toFixed(2)}%`
+          : `${value}%`;
       case "trend":
-        // Handle trend values - convert decimal to percentage
         return typeof value === "number"
           ? `${(value * 100).toFixed(1)}%`
           : `${value}%`;
@@ -909,29 +1259,10 @@ const ForecastVariableCards = ({ productData }) => {
         const formattedValue =
           typeof value === "number" ? value.toLocaleString() : value;
 
-        // Show percentage format for these specific fields (REMOVED trend_index_difference)
         if (
-          config.key === "loss" ||
-          config.key === "std_trend_original" ||
-          config.key === "std_index_value" ||
-          config.key === "std_index_value_original" ||
-          config.key === "average_store_sale_thru" ||
-          config.key === "macy_soq_percentag" ||
-          config.key === "trend_index_difference" ||
-          config.key === "macy_SOQ_percentage" ||
-          config.key === "macy_soq_percentage"
+          config.key === "macy_soq_percentage" ||
+          config.key === "average_store_sale_thru"
         ) {
-          // Special handling for loss field when value is 0
-          if (config.key === "loss" && value === 0) {
-            return "0%";
-          }
-
-          if (config.key === "trend_index_difference") {
-            return typeof value === "number"
-              ? `${value.toFixed(2)}%`
-              : `${value}%`;
-          }
-
           return typeof value === "number"
             ? `${(value * 100).toFixed(2)}%`
             : `${value}%`;
@@ -943,19 +1274,15 @@ const ForecastVariableCards = ({ productData }) => {
     }
   };
 
-  // Get all variables from data (dynamic approach)
-  const getAllVariablesFromData = (data) => {
-    return getDynamicVariableConfig(data);
-  };
-
   // Filter variables based on search
-  const getFilteredVariables = (variables, data) => {
+  const getFilteredVariables = (variables) => {
     return variables.filter((variable) => {
+      const value = allData[variable.key];
       const matchesSearch =
         !searchQuery ||
         variable.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
         variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(data[variable.key] || "")
+        String(value !== null && value !== undefined ? value : "N/A")
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
 
@@ -976,6 +1303,7 @@ const ForecastVariableCards = ({ productData }) => {
     type
   ) => {
     const IconComponent = variable.icon || Info;
+    const isDataMissing = value === null || value === undefined;
 
     return (
       <div
@@ -984,7 +1312,7 @@ const ForecastVariableCards = ({ productData }) => {
           variable.clickable
             ? "cursor-pointer hover:border-blue-300 hover:scale-105"
             : ""
-        }`}
+        } ${isDataMissing ? "opacity-75" : ""}`}
         onClick={() => handleVariableClick(variable, value, data, type)}
       >
         <div className="p-4">
@@ -996,7 +1324,7 @@ const ForecastVariableCards = ({ productData }) => {
               <span className="text-xs font-medium text-gray-600 leading-tight block">
                 {variable.label}
               </span>
-              {viewMode === "flat" && variable.groupKey !== "other" && (
+              {viewMode === "flat" && variable.groupKey && (
                 <span className="text-xs text-gray-400 mt-1 block">
                   {variableGroups[variable.groupKey]?.title || "Other"}
                 </span>
@@ -1008,12 +1336,23 @@ const ForecastVariableCards = ({ productData }) => {
               </div>
             )}
           </div>
-          <div className="text-sm font-bold text-gray-900 break-words">
+
+          <div
+            className={`text-sm font-bold break-words ${
+              isDataMissing ? "text-gray-400" : "text-gray-900"
+            }`}
+          >
             {formatVariableValue(value, variable)}
           </div>
 
-          {/* Value indicator for booleans */}
-          {variable.type === "boolean" && (
+          {/* Visual indicators */}
+          {isDataMissing && (
+            <div className="mt-2 flex justify-end">
+              <AlertCircle className="text-gray-400" size={16} />
+            </div>
+          )}
+
+          {variable.type === "boolean" && !isDataMissing && (
             <div className="mt-2 flex justify-end">
               {value ? (
                 <CheckCircle className="text-green-500" size={16} />
@@ -1027,213 +1366,36 @@ const ForecastVariableCards = ({ productData }) => {
     );
   };
 
-  // Render grouped view
-  const renderGroupedView = (forecastData, type, title, groupBgColor) => {
-    if (!forecastData || !forecastData[0]) return null;
+  const filteredVariables = getFilteredVariables(availableVariables);
 
-    const data = forecastData[0];
-    const allVariables = getAllVariablesFromData(data);
-    const filteredVariables = getFilteredVariables(allVariables, data);
-
-    // Group variables by their determined group
-    const groupedVariables = {};
-    filteredVariables.forEach((variable) => {
-      const groupKey = variable.groupKey || "other";
-      if (!groupedVariables[groupKey]) {
-        groupedVariables[groupKey] = [];
-      }
-      groupedVariables[groupKey].push(variable);
-    });
-
-    // Only show groups that have variables
-    const visibleGroups = Object.keys(groupedVariables).filter(
-      (groupKey) => groupedVariables[groupKey].length > 0
-    );
-
-    if (visibleGroups.length === 0) {
-      return (
-        <div className="text-center py-8 bg-gray-50 rounded-xl">
-          <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">
-            No variables match your search criteria
-          </p>
-        </div>
-      );
+  // Group variables by their group key
+  const groupedVariables = {};
+  filteredVariables.forEach((variable) => {
+    const groupKey = variable.groupKey || "other";
+    if (!groupedVariables[groupKey]) {
+      groupedVariables[groupKey] = [];
     }
+    groupedVariables[groupKey].push(variable);
+  });
 
+  const visibleGroups = Object.keys(groupedVariables).filter(
+    (groupKey) => groupedVariables[groupKey].length > 0
+  );
+
+  if (visibleGroups.length === 0) {
     return (
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-6">
-          <div className={`p-3 ${groupBgColor} rounded-xl`}>
-            {type === "store" && (
-              <Building2 className="text-blue-600" size={24} />
-            )}
-            {type === "com" && (
-              <ShoppingCart className="text-green-600" size={24} />
-            )}
-            {type === "omni" && (
-              <Layers className="text-purple-600" size={24} />
-            )}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-            <p className="text-gray-600">
-              {filteredVariables.length} variables found
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-8">
-          {visibleGroups.map((groupKey) => {
-            const group = variableGroups[groupKey] || {
-              title: "Other Variables", // Changed from "Special Days"
-              icon: Info,
-              color: "gray",
-            };
-            const groupVariables = groupedVariables[groupKey];
-            const colorScheme = colorSchemes[group.color] || colorSchemes.blue;
-            const IconComponent = group.icon;
-
-            return (
-              <div
-                key={groupKey}
-                className={`border-2 ${colorScheme.border} rounded-xl overflow-hidden`}
-              >
-                {/* Group Header */}
-                <div
-                  className={`${colorScheme.bg} px-6 py-4 border-b ${colorScheme.border}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 bg-white rounded-lg shadow-sm`}>
-                      <IconComponent className={colorScheme.text} size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">
-                        {group.title}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {groupVariables.length} variables
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Group Variables */}
-                <div className="p-6 bg-white">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {groupVariables.map((variable) => {
-                      const value = data[variable.key];
-                      return renderVariableCard(
-                        variable,
-                        value,
-                        data,
-                        colorScheme.bg,
-                        colorScheme.text,
-                        type
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      <div className="text-center py-8 bg-gray-50 rounded-xl">
+        <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600">No variables match your search criteria</p>
       </div>
     );
-  };
+  }
 
-  // Render flat view
-  const renderFlatView = (forecastData, type, title, groupBgColor) => {
-    if (!forecastData || !forecastData[0]) return null;
-
-    const data = forecastData[0];
-    const allVariables = getAllVariablesFromData(data);
-    const filteredVariables = getFilteredVariables(allVariables, data);
-
-    if (filteredVariables.length === 0) {
-      return (
-        <div className="text-center py-8 bg-gray-50 rounded-xl">
-          <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">
-            No variables match your search criteria
-          </p>
-        </div>
-      );
-    }
-
-    const bgColor =
-      type === "store"
-        ? "bg-blue-50"
-        : type === "com"
-        ? "bg-green-50"
-        : "bg-purple-50";
-    const iconColor =
-      type === "store"
-        ? "text-blue-600"
-        : type === "com"
-        ? "text-green-600"
-        : "text-purple-600";
-
-    return (
-      <div className="mb-12">
-        <div className="flex items-center gap-3 mb-6">
-          <div className={`p-3 ${groupBgColor} rounded-xl`}>
-            {type === "store" && (
-              <Building2 className="text-blue-600" size={24} />
-            )}
-            {type === "com" && (
-              <ShoppingCart className="text-green-600" size={24} />
-            )}
-            {type === "omni" && (
-              <Layers className="text-purple-600" size={24} />
-            )}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-            <p className="text-gray-600">
-              {filteredVariables.length} variables found
-            </p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredVariables.map((variable) => {
-            const value = data[variable.key];
-            return renderVariableCard(
-              variable,
-              value,
-              data,
-              bgColor,
-              iconColor
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
-  // Get available forecast types for filter
-  const availableForecastTypes = [
-    ...(hasStoreData ? [{ value: "store", label: "Store" }] : []),
-    ...(hasComData ? [{ value: "com", label: "COM" }] : []),
-    ...(hasOmniData ? [{ value: "omni", label: "Omni" }] : []),
-  ];
-
-  // Get unique groups that actually exist in data
+  // Get available groups for filter
   const getAvailableGroups = () => {
-    const allGroups = new Set();
-
-    [store_forecast, com_forecast, omni_forecast].forEach((forecast) => {
-      if (forecast && forecast[0]) {
-        const variables = getAllVariablesFromData(forecast[0]);
-        variables.forEach((variable) => {
-          if (variable.groupKey && variable.groupKey !== "other") {
-            allGroups.add(variable.groupKey);
-          }
-        });
-      }
-    });
-
+    const allGroups = new Set(
+      availableVariables.map((v) => v.groupKey).filter(Boolean)
+    );
     return [
       { value: "all", label: "All Groups" },
       ...Array.from(allGroups).map((groupKey) => ({
@@ -1245,9 +1407,49 @@ const ForecastVariableCards = ({ productData }) => {
 
   const availableGroups = getAvailableGroups();
 
+  // Get title and color based on product type
+  const getTypeInfo = () => {
+    switch (productType) {
+      case "store":
+        return {
+          title: "Store Forecast Variables",
+          color: "blue",
+          icon: Building2,
+          bgColor: "bg-blue-50",
+          iconColor: "text-blue-600",
+        };
+      case "com":
+        return {
+          title: "COM Forecast Variables",
+          color: "green",
+          icon: ShoppingCart,
+          bgColor: "bg-green-50",
+          iconColor: "text-green-600",
+        };
+      case "omni":
+        return {
+          title: "Omni Forecast Variables",
+          color: "purple",
+          icon: Layers,
+          bgColor: "bg-purple-50",
+          iconColor: "text-purple-600",
+        };
+      default:
+        return {
+          title: "Forecast Variables",
+          color: "gray",
+          icon: BarChart3,
+          bgColor: "bg-gray-50",
+          iconColor: "text-gray-600",
+        };
+    }
+  };
+
+  const typeInfo = getTypeInfo();
+  const TypeIcon = typeInfo.icon;
+
   return (
     <div className="space-y-8">
-      {/* Required Quantity Modal */}
       <RequiredQuantityModal
         isOpen={modalState.isOpen}
         onClose={closeModal}
@@ -1255,24 +1457,26 @@ const ForecastVariableCards = ({ productData }) => {
         type={modalState.type}
         forecastMonth={modalState.forecastMonth}
       />
+
       {/* Header with Controls */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          {/* Title and Description */}
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-full">
               <BarChart3 className="text-blue-600" size={32} />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">
-                Forecast Algorithm Variables
+                {typeInfo.title}
               </h1>
+              <p className="text-gray-600">
+                Product Type: {productType?.toUpperCase() || "Unknown"} •{" "}
+                {filteredVariables.length} variables
+              </p>
             </div>
           </div>
 
-          {/* Controls */}
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Search */}
             <div className="relative">
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -1283,7 +1487,7 @@ const ForecastVariableCards = ({ productData }) => {
                 placeholder="Search variables..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[250px]"
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-64"
               />
               {searchQuery && (
                 <button
@@ -1295,7 +1499,6 @@ const ForecastVariableCards = ({ productData }) => {
               )}
             </div>
 
-            {/* View Mode Toggle */}
             <div className="flex bg-white rounded-lg border border-gray-300 p-1">
               <button
                 onClick={() => setViewMode("grouped")}
@@ -1321,20 +1524,6 @@ const ForecastVariableCards = ({ productData }) => {
               </button>
             </div>
 
-            {/* Forecast Type Filter */}
-            <select
-              value={selectedForecastType}
-              onChange={(e) => setSelectedForecastType(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-            >
-              {availableForecastTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-
-            {/* Group Filter */}
             {availableGroups.length > 1 && (
               <select
                 value={selectedGroup}
@@ -1353,53 +1542,92 @@ const ForecastVariableCards = ({ productData }) => {
       </div>
 
       {/* Content */}
-      {(selectedForecastType === "all" || selectedForecastType === "store") &&
-        hasStoreData &&
-        (viewMode === "grouped"
-          ? renderGroupedView(
-              store_forecast,
-              "store",
-              "Store Forecast Variables",
-              "bg-blue-50"
-            )
-          : renderFlatView(
-              store_forecast,
-              "store",
-              "Store Forecast Variables",
-              "bg-blue-50"
-            ))}
+      <div className="mb-12">
+        <div className="flex items-center gap-3 mb-6">
+          <div className={`p-3 ${typeInfo.bgColor} rounded-xl`}>
+            <TypeIcon className={typeInfo.iconColor} size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {typeInfo.title}
+            </h2>
+            <p className="text-gray-600">
+              {filteredVariables.length} variables found
+            </p>
+          </div>
+        </div>
 
-      {(selectedForecastType === "all" || selectedForecastType === "com") &&
-        hasComData &&
-        (viewMode === "grouped"
-          ? renderGroupedView(
-              com_forecast,
-              "com",
-              "COM Forecast Variables",
-              "bg-green-50"
-            )
-          : renderFlatView(
-              com_forecast,
-              "com",
-              "COM Forecast Variables",
-              "bg-green-50"
-            ))}
+        {viewMode === "grouped" ? (
+          <div className="space-y-8">
+            {visibleGroups.map((groupKey) => {
+              const group = variableGroups[groupKey] || {
+                title: "Other Variables",
+                icon: Info,
+                color: "gray",
+              };
+              const groupVariables = groupedVariables[groupKey];
+              const colorScheme =
+                colorSchemes[group.color] || colorSchemes.blue;
+              const IconComponent = group.icon;
 
-      {(selectedForecastType === "all" || selectedForecastType === "omni") &&
-        hasOmniData &&
-        (viewMode === "grouped"
-          ? renderGroupedView(
-              omni_forecast,
-              "omni",
-              "Omni Forecast Variables",
-              "bg-purple-50"
-            )
-          : renderFlatView(
-              omni_forecast,
-              "omni",
-              "Omni Forecast Variables",
-              "bg-purple-50"
-            ))}
+              return (
+                <div
+                  key={groupKey}
+                  className={`border-2 ${colorScheme.border} rounded-xl overflow-hidden`}
+                >
+                  <div
+                    className={`${colorScheme.bg} px-6 py-4 border-b ${colorScheme.border}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 bg-white rounded-lg shadow-sm`}>
+                        <IconComponent className={colorScheme.text} size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          {group.title}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {groupVariables.length} variables
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-white">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                      {groupVariables.map((variable) => {
+                        const value = allData[variable.key];
+                        return renderVariableCard(
+                          variable,
+                          value,
+                          allData,
+                          colorScheme.bg,
+                          colorScheme.text,
+                          productType
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredVariables.map((variable) => {
+              const value = allData[variable.key];
+              return renderVariableCard(
+                variable,
+                value,
+                allData,
+                typeInfo.bgColor,
+                typeInfo.iconColor,
+                productType
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
