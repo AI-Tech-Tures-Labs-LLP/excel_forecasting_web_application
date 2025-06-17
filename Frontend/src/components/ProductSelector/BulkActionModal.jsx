@@ -52,36 +52,36 @@ const BulkActionModal = ({
 
     try {
       const productsToUpdate = processedProducts.filter((p) =>
-        selectedProductIds.includes(p.pid)
+        selectedProductIds.includes(p.product_id)
       );
 
       console.log(
         `Updating ${productsToUpdate.length} products:`,
-        productsToUpdate.map((p) => p.pid)
+        productsToUpdate.map((p) => p.product_id)
       );
 
       const updatePromises = productsToUpdate.map(async (product) => {
-        // Calculate the new user_added_quantity based on external factor percentage
-        const originalQty = product.user_added_quantity || 0;
+        // Calculate the new user_updated_final_quantity based on external factor percentage
+        const originalQty = product.user_updated_final_quantity || 0;
         const newUserAddedQty = Math.round(
           originalQty * (1 + parseFloat(bulkFactor) / 100)
         );
 
         const response = await axios.put(
-          `${import.meta.env.VITE_API_BASE_URL}/forecast/api/product/${
-            product.pid
+          `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${
+            product.product_id
           }/`,
           {
             product_details: {
               external_factor_percentage: parseFloat(bulkFactor),
-              user_added_quantity: newUserAddedQty,
+              user_updated_final_quantity: newUserAddedQty,
               external_factor: bulkFactorNote,
             },
           }
         );
 
         return {
-          pid: product.pid,
+          product_id: product.product_id,
           category: product.category,
           originalQty: originalQty,
           newQty: newUserAddedQty,

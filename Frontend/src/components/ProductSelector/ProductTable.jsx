@@ -226,7 +226,7 @@ const ProductTable = ({
   };
 
   const getAddedQty = (product) => {
-    return product.total_added_qty || 0;
+    return product.recommended_total_quantity || 0;
   };
 
   if (loading) {
@@ -1261,12 +1261,14 @@ const ProductTable = ({
               <td className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900">
                 {(() => {
                   if (
-                    product.user_added_quantity !== null &&
-                    product.user_added_quantity !== undefined
+                    product.user_updated_final_quantity !== null &&
+                    product.user_updated_final_quantity !== undefined
                   ) {
                     return (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {parseInt(product.user_added_quantity).toLocaleString()}
+                        {parseInt(
+                          product.user_updated_final_quantity
+                        ).toLocaleString()}
                       </span>
                     );
                   } else if (
@@ -1274,7 +1276,7 @@ const ProductTable = ({
                     product.external_factor_percentage !== undefined
                   ) {
                     const calculatedQty = Math.round(
-                      product.user_added_quantity *
+                      product.user_updated_final_quantity *
                         (1 + product.external_factor_percentage / 100)
                     );
                     return (
@@ -1289,7 +1291,9 @@ const ProductTable = ({
                   } else {
                     return (
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                        {(product.user_added_quantity || 0).toLocaleString()}
+                        {(
+                          product.user_updated_final_quantity || 0
+                        ).toLocaleString()}
                         <span className="ml-1 text-xs bg-gray-200 text-gray-600 px-1 rounded">
                           Default
                         </span>

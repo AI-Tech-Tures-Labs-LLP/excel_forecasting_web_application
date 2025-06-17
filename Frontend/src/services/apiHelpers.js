@@ -12,7 +12,7 @@ export const buildFilterParams = (filters, productType) => {
   const multiSelectFilters = {
     category: filters.category || [],
     birthstone: filters.birthstone || [],
-    red_box_item: filters.red_box_item || [],
+    is_red_box_item: filters.is_red_box_item || [],
     vdf_status: filters.vdf_status || [],
   };
 
@@ -21,7 +21,7 @@ export const buildFilterParams = (filters, productType) => {
     if (Array.isArray(values) && values.length > 0) {
       values.forEach((value) => {
         // Convert UI values to API format
-        if (key === "red_box_item") {
+        if (key === "is_red_box_item") {
           const apiValue =
             value === "Yes" ? "true" : value === "No" ? "false" : value;
           params.append(key, apiValue);
@@ -42,12 +42,12 @@ export const buildFilterParams = (filters, productType) => {
 
   // Single-select boolean filters
   const booleanFilters = [
-    "considered_birthstone",
-    "added_qty_macys_soq",
-    "below_min_order",
-    "over_macys_soq",
-    "added_only_to_balance_soq",
-    "need_to_review_first",
+    "is_considered_birthstone",
+    "is_added_quantity_using_macys_soq",
+    "is_below_min_order",
+    "is_over_macys_soq",
+    "is_added_only_to_balance_macys_soq",
+    "is_need_to_review_first",
     "valentine_day",
     "mothers_day",
     "fathers_day",
@@ -139,7 +139,7 @@ export const fetchAvailableFilters = async () => {
       data: {
         categories,
         birthstones,
-        red_box_items: redBoxItems,
+        is_red_box_items: redBoxItems,
         vdf_statuses: vdfStatuses,
         // Holiday filters are boolean, so they don't need options from API
         holidays: [
@@ -159,7 +159,7 @@ export const fetchAvailableFilters = async () => {
       data: {
         categories: [],
         birthstones: [],
-        red_box_items: [],
+        is_red_box_items: [],
         vdf_statuses: [],
         holidays: [],
       },
@@ -168,10 +168,10 @@ export const fetchAvailableFilters = async () => {
 };
 
 // Fetch product details
-export const fetchProductDetails = async (productId) => {
+export const fetchProductDetails = async (productId, sheetId) => {
   try {
     const response = await axios.get(
-      `${API_BASE_URL}/forecast/api/product/${productId}/`
+      `${API_BASE_URL}/forecast/api/product/${productId}/?sheet_id=${sheetId}`
     );
 
     return {
@@ -276,7 +276,7 @@ export const deleteProductNote = async (noteId) => {
 // Utility function to format filter values for display
 export const formatFilterValueForDisplay = (filterKey, value) => {
   switch (filterKey) {
-    case "red_box_item":
+    case "is_red_box_item":
       return value === "true" ? "Yes" : value === "false" ? "No" : value;
     case "vdf_status":
       return value === "true"
@@ -284,12 +284,12 @@ export const formatFilterValueForDisplay = (filterKey, value) => {
         : value === "false"
         ? "Inactive"
         : value;
-    case "considered_birthstone":
-    case "added_qty_macys_soq":
-    case "below_min_order":
-    case "over_macys_soq":
-    case "added_only_to_balance_soq":
-    case "need_to_review_first":
+    case "is_considered_birthstone":
+    case "is_added_quantity_using_macys_soq":
+    case "is_below_min_order":
+    case "is_over_macys_soq":
+    case "is_added_only_to_balance_macys_soq":
+    case "is_need_to_review_first":
     case "valentine_day":
     case "mothers_day":
     case "fathers_day":
@@ -306,14 +306,14 @@ export const getFilterDisplayName = (filterKey) => {
   const displayNames = {
     category: "Category",
     birthstone: "Birthstone",
-    red_box_item: "Red Box Item",
+    is_red_box_item: "Red Box Item",
     vdf_status: "VDF Status",
-    considered_birthstone: "Considered Birthstone",
-    added_qty_macys_soq: "Added Qty Macy's SOQ",
-    below_min_order: "Below Min Order",
-    over_macys_soq: "Over Macy's SOQ",
-    added_only_to_balance_soq: "Added Only to Balance SOQ",
-    need_to_review_first: "Need to Review First",
+    is_considered_birthstone: "Considered Birthstone",
+    is_added_quantity_using_macys_soq: "Added Qty Macy's SOQ",
+    is_below_min_order: "Below Min Order",
+    is_over_macys_soq: "Over Macy's SOQ",
+    is_added_only_to_balance_macys_soq: "Added Only to Balance SOQ",
+    is_need_to_review_first: "Need to Review First",
     valentine_day: "Valentine's Day",
     mothers_day: "Mother's Day",
     fathers_day: "Father's Day",
@@ -332,7 +332,12 @@ export const validateFilters = (filters) => {
   const errors = {};
 
   // Validate array filters
-  const arrayFilters = ["category", "birthstone", "red_box_item", "vdf_status"];
+  const arrayFilters = [
+    "category",
+    "birthstone",
+    "is_red_box_item",
+    "vdf_status",
+  ];
   arrayFilters.forEach((key) => {
     if (filters[key] && !Array.isArray(filters[key])) {
       errors[key] = `${key} must be an array`;
@@ -341,12 +346,12 @@ export const validateFilters = (filters) => {
 
   // Validate boolean filters
   const booleanFilters = [
-    "considered_birthstone",
-    "added_qty_macys_soq",
-    "below_min_order",
-    "over_macys_soq",
-    "added_only_to_balance_soq",
-    "need_to_review_first",
+    "is_considered_birthstone",
+    "is_added_quantity_using_macys_soq",
+    "is_below_min_order",
+    "is_over_macys_soq",
+    "is_added_only_to_balance_macys_soq",
+    "is_need_to_review_first",
     "valentine_day",
     "mothers_day",
     "fathers_day",

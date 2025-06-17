@@ -21,6 +21,7 @@ import LoadingOverlay from "./components/LoadingOverlay";
 // Redux imports
 import { setCurrentView } from "./redux/uiSlice";
 import { setCurrentSession } from "./redux/forecastSlice";
+import ProductDetailsView from "./components/product-details/ProductDetailsView";
 
 // Simple auth check function
 const isAuthenticated = () => {
@@ -192,6 +193,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ProductSelector />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/products/:sheetId/:productId"
+              element={
+                <ProtectedRoute>
+                  <ProductDetailsView />
                 </ProtectedRoute>
               }
             />

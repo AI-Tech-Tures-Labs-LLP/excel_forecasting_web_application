@@ -9,7 +9,7 @@ const filtersSlice = createSlice({
     availableFilters: {
       categories: [],
       birthstones: [],
-      red_box_items: [],
+      is_red_box_items: [],
       vdf_statuses: [],
     },
 
@@ -17,7 +17,7 @@ const filtersSlice = createSlice({
     selectedFilters: {
       category: [],
       birthstone: [],
-      red_box_item: [],
+      is_red_box_item: [],
       vdf_status: [],
     },
 
@@ -68,7 +68,7 @@ const filtersSlice = createSlice({
       state.selectedFilters = {
         category: [],
         birthstone: [],
-        red_box_item: [],
+        is_red_box_item: [],
         vdf_status: [],
       };
     },
@@ -104,7 +104,7 @@ const filtersSlice = createSlice({
       state.selectedFilters = {
         category: [],
         birthstone: [],
-        red_box_item: [],
+        is_red_box_item: [],
         vdf_status: [],
       };
       state.searchQuery = "";

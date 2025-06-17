@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 const ProductHeader = ({
   productId,
@@ -23,7 +24,7 @@ const ProductHeader = ({
   recentSearches,
   showRecentSearches,
   setShowRecentSearches,
-  onNavigateToProduct,
+  handleNavigateToProduct,
   canNavigatePrevious,
   canNavigateNext,
   previousProduct,
@@ -38,10 +39,13 @@ const ProductHeader = ({
   clearRecentSearches,
   removeFromRecentSearches,
 }) => {
+  const { sheetId } = useParams();
   const handleProductLinkClick = async () => {
     try {
       const response = await axios.get(
-        `http://127.0.0.1:8000/forecast/api/product/${productId}/`
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/product/${productId}/?sheet_id=${sheetId}`
       );
       const externalLink = response.data?.product_details?.website;
 
@@ -60,13 +64,13 @@ const ProductHeader = ({
 
   const handlePreviousProduct = () => {
     if (canNavigatePrevious && previousProduct) {
-      onNavigateToProduct(previousProduct.pid);
+      handleNavigateToProduct(previousProduct.pid);
     }
   };
 
   const handleNextProduct = () => {
     if (canNavigateNext && nextProduct) {
-      onNavigateToProduct(nextProduct.pid);
+      handleNavigateToProduct(nextProduct.pid);
     }
   };
 
@@ -330,7 +334,7 @@ ProductHeader.propTypes = {
   recentSearches: PropTypes.array.isRequired,
   showRecentSearches: PropTypes.bool.isRequired,
   setShowRecentSearches: PropTypes.func.isRequired,
-  onNavigateToProduct: PropTypes.func.isRequired,
+  handleNavigateToProduct: PropTypes.func.isRequired,
   canNavigatePrevious: PropTypes.bool.isRequired,
   canNavigateNext: PropTypes.bool.isRequired,
   previousProduct: PropTypes.object,

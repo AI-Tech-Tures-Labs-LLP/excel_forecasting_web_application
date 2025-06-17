@@ -40,34 +40,34 @@ const FilterPanel = ({
   // Additional boolean filters configuration - UPDATED FIELD NAMES
   const additionalBooleanFilters = [
     {
-      key: "considered_birthstone",
+      key: "is_considered_birthstone",
       label: "Considered Birthstone",
       showFor: ["store", "omni"],
       priority: true,
     },
     {
-      key: "added_qty_macys_soq",
+      key: "is_added_quantity_using_macys_soq",
       label: "Added Qty Macy's SOQ",
       showFor: ["store", "com", "omni"],
     },
     {
-      key: "below_min_order", // Changed from below_Min_order
+      key: "is_below_min_order", // Changed from is_below_min_order
       label: "Below Min Order",
       showFor: ["store", "com", "omni"],
     },
     {
-      key: "over_macys_soq", // Changed from over_macy_SOQ
+      key: "is_over_macys_soq", // Changed from over_macy_SOQ
       label: "Over Macy's SOQ",
       showFor: ["store", "com", "omni"],
       priority: true,
     },
     {
-      key: "added_only_to_balance_soq",
+      key: "is_added_only_to_balance_macys_soq",
       label: "Added Only to Balance SOQ",
       showFor: ["store", "com", "omni"],
     },
     {
-      key: "need_to_review_first",
+      key: "is_need_to_review_first",
       label: "Need to Review First",
       showFor: ["store", "com", "omni"],
       priority: true,
@@ -343,15 +343,15 @@ const FilterPanel = ({
                       Special red box category
                     </p>
                   </div>
-                  {selectedFilters.red_box_item?.length > 0 && (
+                  {selectedFilters.is_red_box_item?.length > 0 && (
                     <span className="px-2.5 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-300">
-                      {selectedFilters.red_box_item.length}
+                      {selectedFilters.is_red_box_item.length}
                     </span>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  {availableFilters.red_box_items?.map((item) => (
+                  {availableFilters.is_red_box_items?.map((item) => (
                     <label
                       key={item}
                       className="flex items-center gap-3 p-3 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer transition-all duration-200 hover:border-red-300 bg-red-50/30"
@@ -359,11 +359,12 @@ const FilterPanel = ({
                       <input
                         type="checkbox"
                         checked={
-                          selectedFilters.red_box_item?.includes(item) || false
+                          selectedFilters.is_red_box_item?.includes(item) ||
+                          false
                         }
                         onChange={(e) =>
                           handleMultiSelectFilterChange(
-                            "red_box_item",
+                            "is_red_box_item",
                             item,
                             e.target.checked
                           )
@@ -400,9 +401,9 @@ const FilterPanel = ({
                       (filter) =>
                         filter.showFor.includes(selectedProductType) &&
                         ![
-                          "below_min_order", // Updated field name
-                          "over_macys_soq", // Updated field name
-                          "need_to_review_first",
+                          "is_below_min_order", // Updated field name
+                          "is_over_macys_soq", // Updated field name
+                          "is_need_to_review_first",
                         ].includes(filter.key)
                     )
                     .slice(0, 3)
@@ -461,10 +462,10 @@ const FilterPanel = ({
                     </label>
                   </div>
                   <select
-                    value={selectedFilters.below_min_order || ""} // Updated field name
+                    value={selectedFilters.is_below_min_order || ""} // Updated field name
                     onChange={(e) =>
                       handleSingleSelectFilterChange(
-                        "below_min_order", // Updated field name
+                        "is_below_min_order", // Updated field name
                         e.target.value
                       )
                     }
@@ -490,10 +491,10 @@ const FilterPanel = ({
                     </label>
                   </div>
                   <select
-                    value={selectedFilters.over_macys_soq || ""} // Updated field name
+                    value={selectedFilters.is_over_macys_soq || ""} // Updated field name
                     onChange={(e) =>
                       handleSingleSelectFilterChange(
-                        "over_macys_soq", // Updated field name
+                        "is_over_macys_soq", // Updated field name
                         e.target.value
                       )
                     }
@@ -519,10 +520,10 @@ const FilterPanel = ({
                     </label>
                   </div>
                   <select
-                    value={selectedFilters.need_to_review_first || ""}
+                    value={selectedFilters.is_need_to_review_first || ""}
                     onChange={(e) =>
                       handleSingleSelectFilterChange(
-                        "need_to_review_first",
+                        "is_need_to_review_first",
                         e.target.value
                       )
                     }

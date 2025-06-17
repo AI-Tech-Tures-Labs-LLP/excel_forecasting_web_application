@@ -74,7 +74,7 @@ const CriticalAdjustments = ({
     try {
       const payload = {
         product_details: {
-          user_added_quantity: userAddedQuantity
+          user_updated_final_quantity: userAddedQuantity
             ? parseFloat(userAddedQuantity)
             : null,
           external_factor_percentage: externalFactorPercentage
@@ -89,7 +89,7 @@ const CriticalAdjustments = ({
       const response = await axios.put(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/${productId}/`,
+        }/forecast/product/${productId}/sheet_id=${sheetId}`,
         payload
       );
 
@@ -98,7 +98,7 @@ const CriticalAdjustments = ({
       if (response.status === 200 || response.status === 201) {
         if (response.data.product_details) {
           setUserAddedQuantity(
-            response.data.product_details.user_added_quantity?.toString() ||
+            response.data.product_details.user_updated_final_quantity?.toString() ||
               userAddedQuantity
           );
           setExternalFactorPercentage(

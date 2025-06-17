@@ -22,10 +22,21 @@ import {
   selectCurrentProducts,
   selectSelectedProductType,
 } from "../../redux/productSlice";
+import { useNavigate, useParams } from "react-router-dom";
 
-const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
+const ProductDetailsView = () => {
   const dispatch = useDispatch();
+  const { sheetId, productId } = useParams();
+  const navigate = useNavigate();
 
+  const handleNavigateToProduct = (productId) => {
+    const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
+    const targetProduct = allProducts.find((p) => p.product_id === productId);
+    if (targetProduct) {
+      // dispatch(setSelectedProduct(targetProduct));
+      navigate(`/products/${targetProduct.sheet}/${targetProduct.product_id}`);
+    }
+  };
   // BASIC STATE
   const [initialControlValues, setInitialControlValues] = useState(null);
   const [hasInitialChanges, setHasInitialChanges] = useState(false);
@@ -89,7 +100,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 
   // NAVIGATION CALCULATIONS
   const currentProductIndex = useMemo(() => {
-    return allProducts.findIndex((product) => product.pid === productId);
+    return allProducts.findIndex((product) => product.product_id === productId);
   }, [allProducts, productId]);
 
   const canNavigatePrevious = currentProductIndex > 0;
@@ -108,7 +119,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return allProducts
       .filter(
         (product) =>
-          product.pid?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          product.product_id
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
           product.category?.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .slice(0, 10);
@@ -122,14 +135,15 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       const response = await axios.get(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/${productId}/`
+        }/forecast/product/${productId}/?sheet_id=${sheetId}` // Ensure sheetId is included in the request
       );
       console.log("Product details fetched:", response.data);
       setProductData(response.data);
 
       // Pre-fetch and set the critical adjustment values
       if (response.data.product_details) {
-        const userQty = response.data.product_details.user_added_quantity;
+        const userQty =
+          response.data.product_details.user_updated_final_quantity;
         setUserAddedQuantity(
           userQty !== null && userQty !== undefined ? userQty.toString() : ""
         );
@@ -207,7 +221,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       const res = await axios.get(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/api/product/${productId}/`
+        }/forecast/product/${productId}/?sheet_id=${sheetId}` // Ensure sheetId is included in the request
       );
       const rolling = res.data.product_details.rolling_method;
       const trend = res.data.product_details.std_trend;
@@ -250,16 +264,16 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   const handleSearchResultClick = (product) => {
-    if (onNavigateToProduct) {
-      onNavigateToProduct(product.pid);
+    if (handleNavigateToProduct) {
+      handleNavigateToProduct(product.product_id);
     }
     setSearchQuery("");
     setShowSearchDropdown(false);
   };
 
   const handleRecentSearchClick = (recentSearch) => {
-    if (onNavigateToProduct) {
-      onNavigateToProduct(recentSearch.pid);
+    if (handleNavigateToProduct) {
+      handleNavigateToProduct(recentSearch.product_id);
     }
     setSearchQuery("");
     setShowSearchDropdown(false);
@@ -277,7 +291,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   const addToRecentSearches = (product) => {
-    if (!product || !product.pid) return;
+    if (!product || !product.product_id) return;
 
     let currentSearches = [];
     try {
@@ -289,17 +303,22 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       currentSearches = [];
     }
 
-    if (currentSearches.length > 0 && currentSearches[0].pid === product.pid) {
+    if (
+      currentSearches.length > 0 &&
+      currentSearches[0].product_id === product.product_id
+    ) {
       return;
     }
 
     const newSearch = {
-      pid: product.pid,
+      product_id: product.product_id,
       category: product.category || "Unknown Category",
       timestamp: Date.now(),
     };
 
-    const existing = currentSearches.filter((item) => item.pid !== product.pid);
+    const existing = currentSearches.filter(
+      (item) => item.product_id !== product.product_id
+    );
     const updated = [newSearch, ...existing].slice(0, 10);
 
     saveRecentSearches(updated);
@@ -310,7 +329,9 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   };
 
   const removeFromRecentSearches = (pidToRemove) => {
-    const updated = recentSearches.filter((item) => item.pid !== pidToRemove);
+    const updated = recentSearches.filter(
+      (item) => item.product_id !== pidToRemove
+    );
     saveRecentSearches(updated);
   };
 
@@ -442,7 +463,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         "N/A",
       productId: product_details?.product_id || productId,
       trend: forecastData?.trend || 0,
-      addedQty: forecastData?.total_added_qty || 0,
+      addedQty: forecastData?.recommended_total_quantity || 0,
       macysSOQ: forecastData?.Macys_SOQ || 0,
       stdTrend: forecastData?.std_trend || product_details?.std_trend || 0,
       monthFCIndex:
@@ -465,8 +486,8 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         product_details?.birthstone_month ||
         "N/A",
       totalAddedQty:
-        forecastData?.total_added_qty ||
-        product_details?.total_added_qty ||
+        forecastData?.recommended_total_quantity ||
+        product_details?.recommended_total_quantity ||
         forecastData?.addedQty ||
         0,
     };
@@ -477,13 +498,13 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
   // NAVIGATION HANDLERS
   const handleNavigatePrevious = () => {
     if (canNavigatePrevious && previousProduct) {
-      onNavigateToProduct(previousProduct.pid);
+      handleNavigateToProduct(previousProduct.product_id);
     }
   };
 
   const handleNavigateNext = () => {
     if (canNavigateNext && nextProduct) {
-      onNavigateToProduct(nextProduct.pid);
+      handleNavigateToProduct(nextProduct.product_id);
     }
   };
 
@@ -583,7 +604,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         changed_variable: lastChangedField || "TREND",
         new_value: getChangedFieldValue(),
         context_data: contextData,
-        pid: productId,
+        product_id: productId,
       };
 
       const response = await axios.post(
@@ -727,7 +748,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
         changed_variable: changedVariable,
         new_value: newValue,
         context_data: contextData,
-        pid: productId,
+        product_id: productId,
       };
 
       const response = await axios.post(
@@ -865,7 +886,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       const payload = {
         updated_context: updated_context,
         file_path: file_path,
-        pid: productId,
+        product_id: productId,
       };
 
       const response = await axios.post(
@@ -986,14 +1007,17 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
       fetchProductDetails();
       getData();
     }
-  }, [productId]);
+  }, [productId, sheetId]);
 
   useEffect(() => {
     if (productId && allProducts.length > 0) {
-      const currentProduct = allProducts.find((p) => p.pid === productId);
+      const currentProduct = allProducts.find(
+        (p) => p.product_id === productId
+      );
       if (currentProduct) {
         const isAlreadyMostRecent =
-          recentSearches.length > 0 && recentSearches[0].pid === productId;
+          recentSearches.length > 0 &&
+          recentSearches[0].product_id === productId;
         if (!isAlreadyMostRecent) {
           addToRecentSearches(currentProduct);
         }
@@ -1215,6 +1239,10 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
     return <LoadingScreen />;
   }
 
+  const onBack = () => {
+    navigate(`/products/${sheetId}`);
+  };
+
   if (error) {
     return (
       <ErrorScreen
@@ -1256,7 +1284,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
           recentSearches={recentSearches}
           showRecentSearches={showRecentSearches}
           setShowRecentSearches={setShowRecentSearches}
-          onNavigateToProduct={onNavigateToProduct}
+          handleNavigateToProduct={handleNavigateToProduct}
           canNavigatePrevious={canNavigatePrevious}
           canNavigateNext={canNavigateNext}
           previousProduct={previousProduct}
@@ -1377,7 +1405,7 @@ const ProductDetailsView = ({ productId, onBack, onNavigateToProduct }) => {
 ProductDetailsView.propTypes = {
   productId: PropTypes.string.isRequired,
   onBack: PropTypes.func.isRequired,
-  onNavigateToProduct: PropTypes.func.isRequired,
+  handleNavigateToProduct: PropTypes.func.isRequired,
 };
 
 export default ProductDetailsView;

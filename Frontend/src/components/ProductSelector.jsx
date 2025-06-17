@@ -54,15 +54,15 @@ function ProductSelector() {
   const [selectedFilters, setSelectedFilters] = useState({
     category: [],
     birthstone: [],
-    red_box_item: [],
+    is_red_box_item: [],
     vdf_status: [],
     tagged_to: [],
-    considered_birthstone: null,
-    added_qty_macys_soq: null,
-    below_min_order: null,
-    over_macys_soq: null,
-    added_only_to_balance_soq: null,
-    need_to_review_first: null,
+    is_considered_birthstone: null,
+    is_added_quantity_using_macys_soq: null,
+    is_below_min_order: null,
+    is_over_macys_soq: null,
+    is_added_only_to_balance_macys_soq: null,
+    is_need_to_review_first: null,
     notes_sort: null,
     forecast_month: [],
     added_qty_sort: null,
@@ -96,7 +96,7 @@ function ProductSelector() {
   const [availableFilters, setAvailableFilters] = useState({
     categories: [],
     birthstones: [],
-    red_box_items: [],
+    is_red_box_items: [],
     vdf_statuses: [],
     forecast_months: [],
     statuses: [],
@@ -231,7 +231,7 @@ function ProductSelector() {
         tagged_to: taggedToUsers,
         forecast_months: forecastMonths,
         statuses: statuses,
-        red_box_items: redBoxItems,
+        is_red_box_items: redBoxItems,
         vdf_statuses: vdfStatuses,
       });
 
@@ -420,8 +420,8 @@ function ProductSelector() {
 
     if (selectedFilters.added_qty_sort) {
       filteredProducts.sort((a, b) => {
-        const aQty = a.total_added_qty || 0;
-        const bQty = b.total_added_qty || 0;
+        const aQty = a.recommended_total_quantity || 0;
+        const bQty = b.recommended_total_quantity || 0;
 
         if (selectedFilters.added_qty_sort === "asc") {
           return aQty - bQty;
@@ -537,23 +537,23 @@ function ProductSelector() {
   };
 
   // Show details view if in details mode
-  if (currentView === "details") {
-    const handleNavigateToProduct = (productId) => {
-      const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
-      const targetProduct = allProducts.find((p) => p.product_id === productId);
-      if (targetProduct) {
-        dispatch(setSelectedProduct(targetProduct));
-      }
-    };
+  // if (currentView === "details") {
+  //   const handleNavigateToProduct = (productId) => {
+  //     const allProducts = [...storeProducts, ...comProducts, ...omniProducts];
+  //     const targetProduct = allProducts.find((p) => p.product_id === productId);
+  //     if (targetProduct) {
+  //       dispatch(setSelectedProduct(targetProduct));
+  //     }
+  //   };
 
-    return (
-      <ProductDetailsView
-        productId={selectedProduct?.product_id}
-        onBack={handleBackToSelector}
-        onNavigateToProduct={handleNavigateToProduct}
-      />
-    );
-  }
+  //   return (
+  //     <ProductDetailsView
+  //       productId={selectedProduct?.product_id}
+  //       onBack={handleBackToSelector}
+  //       onNavigateToProduct={handleNavigateToProduct}
+  //     />
+  //   );
+  // }
 
   return (
     <>
@@ -669,15 +669,15 @@ function ProductSelector() {
               setSelectedFilters({
                 category: [],
                 birthstone: [],
-                red_box_item: [],
+                is_red_box_item: [],
                 vdf_status: [],
                 tagged_to: [],
-                considered_birthstone: null,
-                added_qty_macys_soq: null,
-                below_min_order: null,
-                over_macys_soq: null,
-                added_only_to_balance_soq: null,
-                need_to_review_first: null,
+                is_considered_birthstone: null,
+                is_added_quantity_using_macys_soq: null,
+                is_below_min_order: null,
+                is_over_macys_soq: null,
+                is_added_only_to_balance_macys_soq: null,
+                is_need_to_review_first: null,
                 valentine_day: null,
                 mothers_day: null,
                 fathers_day: null,
@@ -765,8 +765,9 @@ function ProductSelector() {
               setSelectedProductIds={setSelectedProductIds}
               processedProducts={processedProducts}
               onViewDetails={(product) => {
-                dispatch(setSelectedProduct(product));
-                dispatch(setCurrentView("details"));
+                // dispatch(setSelectedProduct(product));
+                // dispatch(setCurrentView("details"));
+                navigate(`/products/${product.sheet}/${product.product_id}`);
               }}
               onOpenNotes={handleOpenNotes}
               searchQuery={searchQuery}
