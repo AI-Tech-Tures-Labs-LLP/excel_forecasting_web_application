@@ -651,6 +651,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
             "forecast_date_old": forecast_date_old,
             "lead_time": lead_time,
             "forecast_date": forecast_date,
+            "forecast_month_week":week_of_forecast_month,
             "is_lead_guideline_in_holiday": is_lead_guideline_in_holiday,
             "is_added_quantity_using_macys_soq": is_added_quantity_using_macys_soq,
             "is_below_min_order": is_below_min_order,
