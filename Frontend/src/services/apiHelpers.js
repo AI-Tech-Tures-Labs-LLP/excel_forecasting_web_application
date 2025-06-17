@@ -80,10 +80,10 @@ export const fetchProductsWithFilters = async (productType, filters) => {
   try {
     const params = buildFilterParams(filters, productType);
 
-    //console.log(
-      "API Request:",
-      `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
-    );
+    // //console.log(
+    //   "API Request:",
+    //   `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
+    // );
 
     const response = await axios.get(
       `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
