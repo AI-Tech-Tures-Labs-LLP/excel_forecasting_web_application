@@ -2,16 +2,16 @@
 import React from "react";
 import { Package, CheckCircle, AlertCircle, Clock } from "lucide-react";
 
-const SummaryCards = ({ totalProducts, productNotesData }) => {
-  const reviewedCount = Object.values(productNotesData).filter(
+const SummaryCards = ({ totalProducts, processedProducts }) => {
+  const reviewedCount = Object.values(processedProducts).filter(
     (data) => data.status === "reviewed"
   ).length;
 
-  const notReviewedCount = Object.values(productNotesData).filter(
+  const notReviewedCount = Object.values(processedProducts).filter(
     (data) => data.status === "not_reviewed"
   ).length;
 
-  const pendingCount = Object.values(productNotesData).filter(
+  const pendingCount = Object.values(processedProducts).filter(
     (data) => data.status === "pending"
   ).length;
 
@@ -41,7 +41,9 @@ const SummaryCards = ({ totalProducts, productNotesData }) => {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-red-800">Not Reviewed</p>
-            <p className="text-2xl font-bold text-red-900">{notReviewedCount}</p>
+            <p className="text-2xl font-bold text-red-900">
+              {notReviewedCount}
+            </p>
           </div>
           <AlertCircle className="text-red-600" size={24} />
         </div>

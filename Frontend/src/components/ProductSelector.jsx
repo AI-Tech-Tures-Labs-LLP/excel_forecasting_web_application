@@ -609,8 +609,8 @@ function ProductSelector() {
     // Apply status filter
     if (selectedFilters.status && selectedFilters.status.length > 0) {
       filteredProducts = filteredProducts.filter((product) => {
-        const note = productNotesData[product.product_id]?.latestNote;
-        const status = note?.status;
+        // const note = productNotesData[product.product_id]?.latestNote;
+        const status = product?.status;
 
         let productStatus = "Not Reviewed";
         if (status === "reviewed") {
@@ -705,6 +705,7 @@ function ProductSelector() {
     selectedFilters.last_reviewed_sort,
     selectedFilters.final_qty_sort,
     productNotesData,
+    // products.status,
   ]);
 
   // Pagination calculations
@@ -1003,7 +1004,8 @@ function ProductSelector() {
           {/* Summary Cards */}
           <SummaryCards
             totalProducts={processedProducts.length}
-            productNotesData={productNotesData}
+            // productNotesData={productNotesData}
+            processedProducts={processedProducts}
           />
 
           {/* Search and Products Display */}

@@ -927,6 +927,7 @@ const ForecastVariableCards = ({ productData }) => {
             label: "Trend Index Difference",
             icon: BarChart3,
             groupKey: "forecasting_method",
+            type: "raw_percentage",
           },
           {
             key: "is_red_box_item",
@@ -1196,6 +1197,7 @@ const ForecastVariableCards = ({ productData }) => {
             label: "Trend Index Difference",
             icon: BarChart3,
             groupKey: "forecasting_method",
+            type: "raw_percentage",
           },
           {
             key: "is_red_box_item",
@@ -1474,6 +1476,7 @@ const ForecastVariableCards = ({ productData }) => {
             label: "Trend Index Difference (Store)",
             icon: BarChart3,
             groupKey: "forecasting_method",
+            type: "raw_percentage",
           },
           {
             key: "forecasting_method_for_store",
@@ -1495,6 +1498,7 @@ const ForecastVariableCards = ({ productData }) => {
             label: "Trend Index Difference (COM)",
             icon: BarChart3,
             groupKey: "forecasting_method",
+            type: "raw_percentage",
           },
           {
             key: "forecasting_method_for_com",
@@ -2144,6 +2148,8 @@ const ForecastVariableCards = ({ productData }) => {
         return typeof value === "number"
           ? `${(value * 100).toFixed(1)}%`
           : `${value}%`;
+      case "raw_percentage":
+        return typeof value === "number" ? `${value.toFixed(2)}%` : `${value}%`;
       default:
         const formattedValue =
           typeof value === "number" ? value.toLocaleString() : value;
