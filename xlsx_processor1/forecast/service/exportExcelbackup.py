@@ -60,49 +60,6 @@ def save_workbook_to_s3(workbook, s3_path):
         print(f"Error saving workbook to S3: {e}")
         raise
 
-    
-def save_to_db_fast(product_objs, store_objs, com_objs, omni_objs, monthly_forecasts, rolling_forecasts, sheet_object):
-    """Simple & fast database save - CORRECTED for productdetail field"""
-    
-    with transaction.atomic():
-        # Step 1: Save products first
-        ProductDetail.objects.bulk_create(product_objs, batch_size=1000, ignore_conflicts=True)
-        
-        # Step 2: Get product mapping in one query
-        product_ids = [p.product_id for p in product_objs]
-        products = ProductDetail.objects.filter(sheet=sheet_object, product_id__in=product_ids)
-        product_map = {p.product_id: p for p in products}
-        
-        # Step 3: Update foreign keys for forecast objects (they use 'product' field)
-        for obj in store_objs:
-            obj.product = product_map[obj.product_id]
-        for obj in com_objs:
-            obj.product = product_map[obj.product_id]
-        for obj in omni_objs:
-            obj.product = product_map[obj.product_id]
-        
-        # Step 4: Update foreign keys for MonthlyForecast (they use 'productdetail' field)
-        for obj in monthly_forecasts:
-            if hasattr(obj.productdetail, 'product_id'):
-                obj.productdetail = product_map[obj.productdetail.product_id]
-        
-        for obj in rolling_forecasts:
-            if hasattr(obj.productdetail, 'product_id'):
-                obj.productdetail = product_map[obj.productdetail.product_id]
-        
-        # Step 5: Bulk save everything
-        if store_objs:
-            StoreForecast.objects.bulk_create(store_objs, batch_size=500, ignore_conflicts=True)
-        if com_objs:
-            ComForecast.objects.bulk_create(com_objs, batch_size=500, ignore_conflicts=True)
-        if omni_objs:
-            OmniForecast.objects.bulk_create(omni_objs, batch_size=500, ignore_conflicts=True)
-        if monthly_forecasts:
-            MonthlyForecast.objects.bulk_create(monthly_forecasts, batch_size=1000, ignore_conflicts=True)
-        if rolling_forecasts:
-            MonthlyForecast.objects.bulk_create(rolling_forecasts, batch_size=1000, ignore_conflicts=True)
-
-
 def process_data(input_path, file_path, month_from, month_to, percentage, input_tuple,  sheet_object, current_date,category_assigned_to_dict):
     current_date = datetime(2025,5,8)
     logging.info(f"Input path: {input_path}, File path: {file_path}, Month from: {month_from}, Month to: {month_to}, Percentage: {percentage}, Input tuple: {input_tuple}, Current date: {current_date}")
@@ -224,11 +181,16 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     for product in products:
         common = {
             "pid": product.product_id,
+            "product_type": product.product_type,
+            "rolling_method": product.rolling_method,
             "std_trend_original": product.std_trend_original,
             "forecasting_method": product.forecasting_method,
             "std_index_value_original": product.std_index_value_original,
             "current_fc_index": product.current_fc_index,
             "month_12_fc_index_original": product.month_12_fc_index_original,
+            "external_factor_note": product.external_factor_note,
+            "external_factor_percentage": product.external_factor_percentage,
+            "user_updated_final_quantity": product.user_updated_final_quantity,
             "recommended_total_quantity": product.recommended_total_quantity,
             "category": product.category,
             "country": product.country,
@@ -240,6 +202,8 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             "forecast_month": product.forecast_month,
             "next_forecast_month": product.next_forecast_month,
             "current_date": product.current_date,
+            "lead_time_old": product.lead_time_old,
+            "forecast_date_old": product.forecast_date_old,
             "lead_time": product.lead_time,
             "forecast_date": product.forecast_date,
             "is_lead_guideline_in_holiday": product.is_lead_guideline_in_holiday,
@@ -267,6 +231,8 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             "qty_added_to_maintain_oh_next_forecast_month": product.qty_added_to_maintain_oh_next_forecast_month,
             "qty_added_to_balance_soq_forecast_month": product.qty_added_to_balance_soq_forecast_month,
             "kpi_door_count": product.kpi_door_count,
+            "safe_non_safe": product.safe_non_safe,
+            "item_code": product.item_code,
             "rlj": product.rlj
         }
 
@@ -276,6 +242,10 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 store_data.append({
                     **common,
                     "std_index_value": store_product.std_index_value,
+                    "std_ty_unit_sales": store_product.std_ty_unit_sales,
+                    "ty_unit_sales_new_trend": store_product.ty_unit_sales_new_trend,
+                    "ly_unit_sales_new_trend": store_product.ly_unit_sales_new_trend,
+                    "loss": store_product.loss,
                     "loss_updated": store_product.loss_updated,
                     "is_reduced_loss": store_product.is_reduced_loss,
                     "average_eoh_oh": store_product.average_eoh_oh,
@@ -296,9 +266,12 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 com_data.append({
                     **common,
                     "new_month_12_fc_index": com_product.new_month_12_fc_index,
+                    "com_trend_for_selected_month": com_product.com_trend_for_selected_month,
                     "is_handle_large_trend": com_product.is_handle_large_trend,
                     "final_com_trend": com_product.final_com_trend,
                     "is_com_inventory_maintained": com_product.is_com_inventory_maintained,
+                    "ty_com_sales_unit_selected_month_sum": com_product.ty_com_sales_unit_selected_month_sum,
+                    "ly_com_sales_unit_selected_month_sum": com_product.ly_com_sales_unit_selected_month_sum,
                     "std_index_value": com_product.std_index_value,
                     "trend_index_difference": com_product.trend_index_difference,
                     "forecasting_method": com_product.forecasting_method,
@@ -313,6 +286,8 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                 omni_data.append({
                     **common,
                     "std_index_value": omni_product.std_index_value,
+                    "ty_com_sales_unit_selected_month_sum": omni_product.ty_com_sales_unit_selected_month_sum,
+                    "ly_com_sales_unit_selected_month_sum": omni_product.ly_com_sales_unit_selected_month_sum,
                     "com_month_12_fc_index": omni_product.com_month_12_fc_index,
                     "com_trend_for_selected_month": omni_product.com_trend_for_selected_month,
                     "is_handle_large_trend_com": omni_product.is_handle_large_trend_com,
@@ -325,6 +300,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                     "forecast_month_required_quantity_com": omni_product.forecast_month_required_quantity_com,
                     "next_forecast_month_required_quantity_com": omni_product.next_forecast_month_required_quantity_com,
                     "store_month_12_fc_index_original": omni_product.store_month_12_fc_index_original,
+                    "loss": omni_product.loss,
                     "average_eoh_oh": omni_product.average_eoh_oh,
                     "loss_updated": omni_product.loss_updated,
                     "is_reduced_loss": omni_product.is_reduced_loss,
@@ -336,7 +312,9 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
                     "store_fldc": omni_product.store_fldc,
                     "is_handle_large_trend_store": omni_product.is_handle_large_trend_store,
                     "forecast_month_required_quantity_store": omni_product.forecast_month_required_quantity_store,
-                    "next_forecast_month_required_quantity_store": omni_product.next_forecast_month_required_quantity_store
+                    "next_forecast_month_required_quantity_store": omni_product.next_forecast_month_required_quantity_store,
+                    "ty_store_sales_unit_selected_month_sum": omni_product.ty_store_sales_unit_selected_month_sum,
+                    "ly_store_sales_unit_selected_month_sum": omni_product.ly_store_sales_unit_selected_month_sum
                 })
 
     # Convert to DataFrames
@@ -812,223 +790,241 @@ def process_category(args):
        
         with transaction.atomic():
             if pid_type!='not_forecast':
-                productmain = ProductDetail(
-                        product_id=loader.product_id,
-                        sheet=sheet_object,
-                        product_description=safe_str(loader.product_description),
-                        product_type=common_variable_dict['pid_type'],
-                        safe_non_safe=safe_str(loader.safe_non_safe),
-                        item_code=safe_str(loader.item_code),
-                        rlj=safe_str(loader.rlj),
-                        mkst=safe_str(loader.mkst),
-                        current_door_count=safe_int(loader.current_door_count),
-                        last_store_count=safe_int(loader.last_store_count),
-                        door_count_updated=parse_date(loader.door_count_updated),
-                        store_model=safe_int(loader.store_model),
-                        com_model=safe_int(loader.com_model),
-                        holiday_build_fc=safe_int(loader.holiday_build_fc),
-                        macys_onhand=safe_int(loader.macys_onhand),
-                        oo_units=safe_int(loader.oo_units),
-                        in_transit=safe_int(loader.nav_oo),
-                        month_to_date_shipment=safe_int(loader.month_to_date_shipment),
-                        last_week_shipment=safe_int(loader.last_week_shipment),
-                        planned_weeks_of_stock=safe_int(loader.planned_weeks_of_stock),
-                        weeks_of_projection=safe_int(loader.weeks_of_projection),
-                        last_4_weeks_shipment=safe_int(loader.last_4_weeks_shipment),
-                        vendor_name=safe_str(loader.vendor_name),
-                        min_order=safe_int(loader.min_order),
-                        rl_total=safe_int(loader.rl_total),
-                        net_projection=safe_int(loader.net_projection),
-                        unalloc_order=safe_int(loader.unalloc_order),
-                        ma_bin=safe_int(loader.ma_bin),
-                        fldc=safe_int(loader.fldc),
-                        wip_quantity=safe_int(loader.wip_quantity),
-                        md_status=safe_str(loader.md_status),
-                        replenishment_flag=safe_str(loader.replenishment_flag),
-                        mcom_replenishment=safe_str(loader.mcom_replenishment),
-                        pool_stock=safe_int(loader.pool_stock),
-                        first_receipt_date=parse_date(loader.first_receipt_date),
-                        last_receipt_date=parse_date(loader.last_receipt_date),
-                        item_age=safe_int(loader.item_age),
-                        first_live_date=parse_date(loader.first_live_date),
-                        this_year_last_cost=safe_float(loader.this_year_last_cost),
-                        macys_owned_retail=safe_float(loader.macys_owned_retail),
-                        awr_first_ticket_retail=safe_float(loader.awr_first_ticket_retail),
-                        metal_lock=safe_float(loader.metal_lock),
-                        mfg_policy=safe_str(loader.mfg_policy),
-                        kpi_data_updated=safe_str(loader.kpi_data_updated),
-                        kpi_door_count=safe_int(loader.kpi_door_count),
-                        out_of_stock_location=safe_int(loader.out_of_stock_location),
-                        suspended_location_count=safe_int(loader.suspended_location_count),
-                        live_site=safe_str(loader.live_site),
-                        masterstyle_description=safe_float(loader.masterstyle_description),
-                        masterstyle_id=safe_str(loader.masterstyle_id),
-                        department_id=safe_int(loader.department_id),
-                        department_description=safe_str(loader.department_description),
-                        subclass_id=safe_int(loader.subclass_id),
-                        subclass_description=safe_str(loader.subclass_description),
-                        webid_description=safe_str(loader.webid_description),
-                        v2c=safe_str(loader.v2c),
-                        marketing_id=safe_str(loader.marketing_id),
-                        std_store_return=safe_float(loader.std_store_return),
-                        last_projection_review_date=parse_date(loader.last_projection_review_date),
-                        macy_spring_projection_note=safe_str(loader.macy_spring_projection_note),
-                        planner_response=safe_str(loader.planner_response),
-                        website=website_link,
-                        rolling_method=rolling_method,
-                        std_trend_original=common_variable_dict['std_trend_original'],
-                        forecasting_method=common_variable_dict['forecasting_method'],
-                        std_index_value_original=common_variable_dict['std_index_value_original'],
-                        current_fc_index=safe_str(loader.current_fc_index),
-                        month_12_fc_index_original=common_variable_dict['month_12_fc_index_original'],
-                        recommended_total_quantity=0 if common_variable_dict['recommended_total_quantity'] < 0 else common_variable_dict['recommended_total_quantity'],
-                        category=f"{category}{code}",
-                        country=common_variable_dict["country"],
-                        valentine_day=safe_bool(common_variable_dict["valentine_day"]),
-                        mothers_day=safe_bool(common_variable_dict["mothers_day"]),
-                        fathers_day=safe_bool(common_variable_dict["fathers_day"]),
-                        womens_day=safe_bool(common_variable_dict["womens_day"]),
-                        forecast_month=common_variable_dict["forecast_month"],
-                        next_forecast_month=common_variable_dict["next_forecast_month"],
-                        current_date=common_variable_dict["current_date"],
-                        lead_time_old=common_variable_dict["lead_time_old"],
-                        forecast_date_old=common_variable_dict["forecast_date_old"],
-                        lead_time=common_variable_dict["lead_time"],
-                        forecast_date=common_variable_dict["forecast_date"],
-                        is_lead_guideline_in_holiday=common_variable_dict["is_lead_guideline_in_holiday"],
-                        is_added_quantity_using_macys_soq=common_variable_dict["is_added_quantity_using_macys_soq"],
-                        is_below_min_order=common_variable_dict["is_below_min_order"],
-                        is_over_macys_soq=common_variable_dict["is_over_macys_soq"],
-                        is_added_only_to_balance_macys_soq=common_variable_dict["is_added_only_to_balance_macys_soq"],
-                        is_need_to_review_first=common_variable_dict["is_need_to_review_first"],
-                        is_red_box_item=common_variable_dict["is_red_box_item"],
-                        is_vdf_item=common_variable_dict["is_vdf_item"],
-                        average_store_sale_thru=common_variable_dict["average_store_sale_thru"],
-                        macys_proj_receipt_upto_forecast_month=common_variable_dict["macys_proj_receipt_upto_forecast_month"],
-                        macy_soq_percentage=common_variable_dict["macy_soq_percentage"],
-                        qty_given_to_macys=common_variable_dict["qty_given_to_macys"],
-                        birthstone=common_variable_dict["birthstone"],
-                        birthstone_month=common_variable_dict["birthstone_month"],
-                        is_considered_birthstone=common_variable_dict["is_considered_birthstone"],
-                        forecast_month_required_quantity=common_variable_dict["forecast_month_required_quantity"],
-                        next_forecast_month_required_quantity=common_variable_dict["next_forecast_month_required_quantity"],
-                        forecast_month_planned_oh_before=common_variable_dict["forecast_month_planned_oh_before"],
-                        next_forecast_month_planned_oh_before=common_variable_dict["next_forecast_month_planned_oh_before"],
-                        forecast_month_planned_shipment=common_variable_dict["forecast_month_planned_shipment"],
-                        next_forecast_month_planned_shipment=common_variable_dict["next_forecast_month_planned_shipment"],
-                        qty_added_to_maintain_oh_forecast_month=common_variable_dict["qty_added_to_maintain_oh_forecast_month"],
-                        qty_added_to_maintain_oh_next_forecast_month=common_variable_dict["qty_added_to_maintain_oh_next_forecast_month"],
-                        qty_added_to_balance_soq_forecast_month=common_variable_dict["qty_added_to_balance_soq_forecast_month"],
-                        assigned_to=user_instance,
-                        user_updated_final_quantity=0 if common_variable_dict['recommended_total_quantity'] < 0 else common_variable_dict['recommended_total_quantity'],
-                    )
-                product_objs.append(productmain)
+                ProductDetail.objects.update_or_create(
+                    sheet=sheet_object,
+                    product_id=loader.product_id,
+                    defaults={
+                        "product_description": safe_str(loader.product_description),
+                        "product_type": common_variable_dict['pid_type'],
+                        "safe_non_safe": safe_str(loader.safe_non_safe),
+                        "item_code": safe_str(loader.item_code),
+                        "rlj": safe_str(loader.rlj),
+                        "mkst": safe_str(loader.mkst),
+                        "current_door_count": safe_int(loader.current_door_count),
+                        "last_store_count": safe_int(loader.last_store_count),
+                        "door_count_updated": parse_date(loader.door_count_updated),
+                        "store_model": safe_int(loader.store_model),
+                        "com_model": safe_int(loader.com_model),
+                        "holiday_build_fc": safe_int(loader.holiday_build_fc),
+                        "macys_onhand": safe_int(loader.macys_onhand),
+                        "oo_units": safe_int(loader.oo_units),
+                        "in_transit": safe_int(loader.nav_oo),
+                        "month_to_date_shipment": safe_int(loader.month_to_date_shipment),
+                        "last_week_shipment": safe_int(loader.last_week_shipment),
+                        "planned_weeks_of_stock": safe_int(loader.planned_weeks_of_stock),
+                        "weeks_of_projection": safe_int(loader.weeks_of_projection),
+                        "last_4_weeks_shipment": safe_int(loader.last_4_weeks_shipment),
+                        "vendor_name": safe_str(loader.vendor_name),
+                        "min_order": safe_int(loader.min_order),
+                        "rl_total": safe_int(loader.rl_total),
+                        "net_projection": safe_int(loader.net_projection),
+                        "unalloc_order": safe_int(loader.unalloc_order),
+                        "ma_bin": safe_int(loader.ma_bin),
+                        "fldc": safe_int(loader.fldc),
+                        "wip_quantity": safe_int(loader.wip_quantity),
+                        "md_status": safe_str(loader.md_status),
+                        "replenishment_flag": safe_str(loader.replenishment_flag),
+                        "mcom_replenishment": safe_str(loader.mcom_replenishment),
+                        "pool_stock": safe_int(loader.pool_stock),
+                        "first_receipt_date": parse_date(loader.first_receipt_date),
+                        "last_receipt_date": parse_date(loader.last_receipt_date),
+                        "item_age": safe_int(loader.item_age),
+                        "first_live_date": parse_date(loader.first_live_date),
+                        "this_year_last_cost": safe_float(loader.this_year_last_cost),
+                        "macys_owned_retail": safe_float(loader.macys_owned_retail),
+                        "awr_first_ticket_retail": safe_float(loader.awr_first_ticket_retail),
+                        "metal_lock": safe_float(loader.metal_lock),
+                        "mfg_policy": safe_str(loader.mfg_policy),
+                        "kpi_data_updated": safe_str(loader.kpi_data_updated),
+                        "kpi_door_count": safe_int(loader.kpi_door_count),
+                        "out_of_stock_location": safe_int(loader.out_of_stock_location),
+                        "suspended_location_count": safe_int(loader.suspended_location_count),
+                        "live_site": safe_str(loader.live_site),
+                        "masterstyle_description": safe_float(loader.masterstyle_description),
+                        "masterstyle_id": safe_str(loader.masterstyle_id),
+                        "department_id": safe_int(loader.department_id),
+                        "department_description": safe_str(loader.department_description),
+                        "subclass_id": safe_int(loader.subclass_id),
+                        "subclass_description": safe_str(loader.subclass_description),
+                        "webid_description": safe_str(loader.webid_description),
+                        "v2c": safe_str(loader.v2c),
+                        "marketing_id": safe_str(loader.marketing_id),
+                        "std_store_return": safe_float(loader.std_store_return),
+                        "last_projection_review_date": parse_date(loader.last_projection_review_date),
+                        "macy_spring_projection_note": safe_str(loader.macy_spring_projection_note),
+                        "planner_response": safe_str(loader.planner_response),
+                        "website": website_link,
+                        "rolling_method" : rolling_method,
+                        "std_trend_original" : common_variable_dict['std_trend_original'],
+                        "forecasting_method" : common_variable_dict['forecasting_method'],
+                        "std_index_value_original" : common_variable_dict['std_index_value_original'],
+                        "current_fc_index" : safe_str(loader.current_fc_index),
+                        "month_12_fc_index_original": common_variable_dict['month_12_fc_index_original'],
+                        "recommended_total_quantity" : common_variable_dict['recommended_total_quantity'],
+                        "category" : f"{category}{code}",
+                        
+                        
+                        "country": common_variable_dict["country"],
+                        "valentine_day": safe_bool(common_variable_dict["valentine_day"]),
+                        "mothers_day": safe_bool(common_variable_dict["mothers_day"]),
+                        "fathers_day": safe_bool(common_variable_dict["fathers_day"]),
+                        "womens_day": safe_bool(common_variable_dict["womens_day"]),
+                        "forecast_month": common_variable_dict["forecast_month"],
+                        "next_forecast_month": common_variable_dict["next_forecast_month"],
+                        "current_date": common_variable_dict["current_date"],
+                        "lead_time_old": common_variable_dict["lead_time_old"],
+                        "forecast_date_old": common_variable_dict["forecast_date_old"],
+                        "lead_time": common_variable_dict["lead_time"],
+                        "forecast_date": common_variable_dict["forecast_date"],
+                        "is_lead_guideline_in_holiday": common_variable_dict["is_lead_guideline_in_holiday"],
+                        "is_added_quantity_using_macys_soq": common_variable_dict["is_added_quantity_using_macys_soq"],
+                        "is_below_min_order": common_variable_dict["is_below_min_order"],
+                        "is_over_macys_soq": common_variable_dict["is_over_macys_soq"],
+                        "is_added_only_to_balance_macys_soq": common_variable_dict["is_added_only_to_balance_macys_soq"],
+                        "is_need_to_review_first": common_variable_dict["is_need_to_review_first"],
+                        "is_red_box_item": common_variable_dict["is_red_box_item"],
+                        "is_vdf_item": common_variable_dict["is_vdf_item"],
+                        "average_store_sale_thru": common_variable_dict["average_store_sale_thru"],
+                        "macys_proj_receipt_upto_forecast_month": common_variable_dict["macys_proj_receipt_upto_forecast_month"],
+                        "macy_soq_percentage": common_variable_dict["macy_soq_percentage"],
+                        "qty_given_to_macys": common_variable_dict["qty_given_to_macys"],
+                        "birthstone": common_variable_dict["birthstone"],
+                        "birthstone_month": common_variable_dict["birthstone_month"],
+                        "is_considered_birthstone": common_variable_dict["is_considered_birthstone"],
+                        "forecast_month_required_quantity": common_variable_dict["forecast_month_required_quantity"],
+                        "next_forecast_month_required_quantity": common_variable_dict["next_forecast_month_required_quantity"],
+                        "forecast_month_planned_oh_before": common_variable_dict["forecast_month_planned_oh_before"],
+                        "next_forecast_month_planned_oh_before": common_variable_dict["next_forecast_month_planned_oh_before"],
+                        "forecast_month_planned_shipment": common_variable_dict["forecast_month_planned_shipment"],
+                        "next_forecast_month_planned_shipment": common_variable_dict["next_forecast_month_planned_shipment"],
+                        "qty_added_to_maintain_oh_forecast_month": common_variable_dict["qty_added_to_maintain_oh_forecast_month"],
+                        "qty_added_to_maintain_oh_next_forecast_month": common_variable_dict["qty_added_to_maintain_oh_next_forecast_month"],
+                        "qty_added_to_balance_soq_forecast_month": common_variable_dict["qty_added_to_balance_soq_forecast_month"],
+                        "assigned_to":user_instance
+                    }
+                )
+
                 print("Starting StoreForecast data save/update...")
                 if pid_type=='store':
-                    store_obj = StoreForecast(
+                    StoreForecast.objects.update_or_create(
                         sheet=sheet_object,
                         product_id=loader.product_id,
-                        std_index_value=std_index_value,
-                        std_ty_unit_sales=store_dict['std_ty_unit_sales'],
-                        ty_unit_sales_new_trend=store_dict['ty_unit_sales_new_trend'],
-                        ly_unit_sales_new_trend=store_dict['ly_unit_sales_new_trend'],
-                        loss=store_dict['loss'],
-                        loss_updated=store_dict['loss_updated'],
-                        is_reduced_loss=store_dict['is_reduced_loss'],
-                        average_eoh_oh=store_dict['average_eoh_oh'],
-                        is_handle_large_trend=store_dict['is_handle_large_trend'],
-                        new_month_12_fc_index=store_dict['new_month_12_fc_index'],
-                        std_trend=store_dict['std_trend'],
-                        is_inventory_maintained=store_dict['is_inventory_maintained'],
-                        trend_index_difference=store_dict['trend_index_difference'],
-                        average_com_oh=store_dict['average_com_oh'],
-                        fldc=store_dict['fldc'],
-                        forecasting_method=store_dict['forecasting_method']
+                        defaults={
+                            
+                            "std_index_value": std_index_value,
+                            "std_ty_unit_sales": store_dict['std_ty_unit_sales'],
+                            "ty_unit_sales_new_trend": store_dict['ty_unit_sales_new_trend'],
+                            "ly_unit_sales_new_trend": store_dict['ly_unit_sales_new_trend'],
+                            "loss": store_dict['loss'],
+                            "loss_updated": store_dict['loss_updated'],
+                            "is_reduced_loss": store_dict['is_reduced_loss'],
+                            "average_eoh_oh": store_dict['average_eoh_oh'],
+                            "is_handle_large_trend": store_dict['is_handle_large_trend'],
+                            "new_month_12_fc_index": store_dict['new_month_12_fc_index'],          
+                            "std_trend": store_dict['std_trend'],
+                            "is_inventory_maintained": store_dict['is_inventory_maintained'],
+                            "trend_index_difference": store_dict['trend_index_difference'],
+                            "average_com_oh": store_dict['average_com_oh'],
+                            "fldc": store_dict['fldc'],
+                            "forecasting_method": store_dict['forecasting_method'],
+                        }
                     )
-                    store_objs.append(store_obj)
                 print("StoreForecast data saved/updated successfully.")
 
 
                 # For ComForecast
                 print("Starting ComForecast data save/update...")
                 if pid_type=='com':
-                    com_obj = ComForecast(
-                        sheet=sheet_object,
+                    ComForecast.objects.update_or_create(
+                        sheet = sheet_object,
                         product_id=loader.product_id,
-                        ty_com_sales_unit_selected_month_sum=com_dict['ty_com_sales_unit_selected_month_sum'],
-                        std_index_value=com_dict['std_index_value'],
-                        new_month_12_fc_index=com_dict['new_month_12_fc_index'],
-                        com_trend_for_selected_month=com_dict['com_trend_for_selected_month'],
-                        is_handle_large_trend=com_dict['is_handle_large_trend'],
-                        final_com_trend=com_dict['final_com_trend'],
-                        is_com_inventory_maintained=com_dict['is_com_inventory_maintained'],
-                        trend_index_difference=com_dict['trend_index_difference'],
-                        forecasting_method=com_dict['forecasting_method'],
-                        minimum_required_oh_for_com=com_dict['minimum_required_oh_for_com'],
-                        fldc=com_dict['fldc'],
-                        vdf_added_quantity=com_dict['vdf_added_quantity']
+                        defaults={
+                            "ty_com_sales_unit_selected_month_sum": com_dict['ty_com_sales_unit_selected_month_sum'],
+                            "ty_com_sales_unit_selected_month_sum": com_dict['ty_com_sales_unit_selected_month_sum'],
+                            "std_index_value": com_dict['std_index_value'],
+                            "new_month_12_fc_index": com_dict['new_month_12_fc_index'],
+                            "com_trend_for_selected_month": com_dict['com_trend_for_selected_month'],
+                            "is_handle_large_trend": com_dict['is_handle_large_trend'],
+                            "final_com_trend": com_dict['final_com_trend'],
+                            "is_com_inventory_maintained": com_dict['is_com_inventory_maintained'],
+                            "trend_index_difference": com_dict['trend_index_difference'],
+                            "forecasting_method": com_dict['forecasting_method'],
+                            "minimum_required_oh_for_com": com_dict['minimum_required_oh_for_com'],
+                            "fldc": com_dict['fldc'],
+                            "vdf_added_quantity": com_dict['vdf_added_quantity'],
+                        }
                     )
-                    com_objs.append(com_obj)
                 print("ComForecast data saved/updated successfully.")
 
 
                 # For OmniForecast - Updated with all the fields matching the model definition
                 print("Starting OmniForecast data save/update...")
                 if pid_type=='omni':
-                    omni_obj = OmniForecast(
+                    OmniForecast.objects.update_or_create(
                         sheet=sheet_object,
                         product_id=loader.product_id,
-                        std_index_value=omni_dict["std_index_value"],
-                        ty_store_sales_unit_selected_month_sum=omni_dict["ty_store_sales_unit_selected_month_sum"],
-                        ly_store_sales_unit_selected_month_sum=omni_dict["ly_store_sales_unit_selected_month_sum"],
-                        store_month_12_fc_index_original=omni_dict["store_month_12_fc_index_original"],
-                        average_eoh_oh=omni_dict["average_eoh_oh"],
-                        loss=omni_dict["loss"],
-                        store_month_12_fc_index_loss=omni_dict["store_month_12_fc_index_loss"],
-                        loss_updated=omni_dict["loss_updated"],
-                        is_reduced_loss=omni_dict["is_reduced_loss"],
-                        is_handle_large_trend_store=omni_dict["is_handle_large_trend_store"],
-                        store_trend=omni_dict["store_trend"],
-                        is_store_inventory_maintained=omni_dict["is_store_inventory_maintained"],
-                        trend_index_difference_store=omni_dict["trend_index_difference_store"],
-                        store_fldc=omni_dict["store_fldc"],
-                        forecasting_method_for_store=omni_dict["forecasting_method_for_store"],
-                        forecast_month_required_quantity_store=omni_dict["forecast_month_required_quantity_store"],
-                        next_forecast_month_required_quantity_store=omni_dict["next_forecast_month_required_quantity_store"],
-                        ty_com_sales_unit_selected_month_sum=omni_dict["ty_com_sales_unit_selected_month_sum"],
-                        ly_com_sales_unit_selected_month_sum=omni_dict["ly_com_sales_unit_selected_month_sum"],
-                        com_month_12_fc_index=omni_dict["com_month_12_fc_index"],
-                        com_trend_for_selected_month=omni_dict["com_trend_for_selected_month"],
-                        is_handle_large_trend_com=omni_dict["is_handle_large_trend_com"],
-                        final_com_trend=omni_dict["final_com_trend"],
-                        is_com_inventory_maintained=omni_dict["is_com_inventory_maintained"],
-                        trend_index_difference_com=omni_dict["trend_index_difference_com"],
-                        forecasting_method_for_com=omni_dict["forecasting_method_for_com"],
-                        minimum_required_oh_for_com=omni_dict["minimum_required_oh_for_com"],
-                        com_fldc=omni_dict["com_fldc"],
-                        forecast_month_required_quantity_com=omni_dict["forecast_month_required_quantity_com"],
-                        next_forecast_month_required_quantity_com=omni_dict["next_forecast_month_required_quantity_com"]
+                        defaults={
+
+                                "std_index_value": omni_dict["std_index_value"],
+                                "ty_store_sales_unit_selected_month_sum": omni_dict["ty_store_sales_unit_selected_month_sum"],
+                                "ly_store_sales_unit_selected_month_sum": omni_dict["ly_store_sales_unit_selected_month_sum"],
+                                "store_month_12_fc_index_original": omni_dict["store_month_12_fc_index_original"],
+                                "average_eoh_oh": omni_dict["average_eoh_oh"],
+                                "loss": omni_dict["loss"],
+                                "store_month_12_fc_index_loss": omni_dict["store_month_12_fc_index_loss"],
+                                "loss_updated": omni_dict["loss_updated"],
+                                "is_reduced_loss": omni_dict["is_reduced_loss"],
+                                "is_handle_large_trend_store": omni_dict["is_handle_large_trend_store"],
+                                "store_trend": omni_dict["store_trend"],
+                                "is_store_inventory_maintained": omni_dict["is_store_inventory_maintained"],
+                                "trend_index_difference_store": omni_dict["trend_index_difference_store"],
+                                "store_fldc": omni_dict["store_fldc"],
+                                "forecasting_method_for_store": omni_dict["forecasting_method_for_store"],
+                                "forecast_month_required_quantity_store": omni_dict["forecast_month_required_quantity_store"],
+                                "next_forecast_month_required_quantity_store": omni_dict["next_forecast_month_required_quantity_store"],
+                                "ty_com_sales_unit_selected_month_sum": omni_dict["ty_com_sales_unit_selected_month_sum"],
+                                "ly_com_sales_unit_selected_month_sum": omni_dict["ly_com_sales_unit_selected_month_sum"],
+                                "com_month_12_fc_index": omni_dict["com_month_12_fc_index"],
+                                "com_trend_for_selected_month": omni_dict["com_trend_for_selected_month"],
+                                "is_handle_large_trend_com": omni_dict["is_handle_large_trend_com"],
+                                "final_com_trend": omni_dict["final_com_trend"],
+                                "is_com_inventory_maintained": omni_dict["is_com_inventory_maintained"],
+                                "trend_index_difference_com": omni_dict["trend_index_difference_com"],
+                                "forecasting_method_for_com": omni_dict["forecasting_method_for_com"],
+                                "minimum_required_oh_for_com": omni_dict["minimum_required_oh_for_com"],
+                                "com_fldc": omni_dict["com_fldc"],
+                                "forecast_month_required_quantity_com": omni_dict["forecast_month_required_quantity_com"],
+                                "next_forecast_month_required_quantity_com": omni_dict["next_forecast_month_required_quantity_com"],
+
+                        
+                        }
                     )
-                    omni_objs.append(omni_obj)
                 print("OmniForecast data saved/updated successfully.")
 
 
 
-                macys_proj_receipts.append(save_macys_projection_receipts(productmain, loader.matched_row, current_year, sheet_object))
-                monthly_forecasts.extend(save_monthly_forecasts(productmain, sheet_object, current_year, months, loader.ty_total_sales_units, loader.ly_total_sales_units, loader.ly_total_eom_oh, loader.ty_total_eom_oh, loader.ty_omni_receipts, loader.ly_omni_receipts, loader.ty_com_sales_units, loader.ly_com_sales_units, loader.ty_com_eom_oh, loader.ly_com_eom_oh, loader.ty_store_sales_units, loader.ly_store_sales_units, loader.ty_store_eom_oh, loader.ly_store_eom_oh, loader.ly_com_to_ttl_sales_pct, loader.ly_com_to_ttl_eoh_pct, loader.ly_omni_sell_thru_pct, loader.ly_store_sell_thru_pct, loader.ly_omni_turn, loader.ly_store_turn, loader.ly_omni_aur_diff_own, loader.ty_com_to_ttl_sales_pct, loader.ty_com_to_ttl_eoh_pct, loader.ty_omni_aur_diff_own, loader.ty_omni_sell_thru_pct, loader.ty_store_sell_thru_pct, loader.ty_omni_turn, loader.ty_store_turn, loader.ty_store_sales_vs_ly, loader.ty_com_sales_vs_ly, loader.ty_store_eoh_vs_ly, loader.ty_omni_oo_units, loader.ty_com_oo_units, loader.ty_omni_sales_usd, loader.ly_omni_sales_usd, loader.ty_com_sales_usd, loader.ly_com_sales_usd))
-                forecast_data = {
-                    'index': loader.index_value,
-                    'fc_by_index': fc_by_index,
+                productmain = ProductDetail.objects.get(product_id=str(loader.product_id),sheet=sheet_object)
+
+                
+                save_macys_projection_receipts(productmain, loader.matched_row, current_year, sheet_object)
+                print(f"Macys projection receipts saved for product {loader.product_id}")
+                
+                save_monthly_forecasts(productmain, sheet_object, current_year, months, loader.ty_total_sales_units, loader.ly_total_sales_units, loader.ly_total_eom_oh, loader.ty_total_eom_oh, loader.ty_omni_receipts, loader.ly_omni_receipts, loader.ty_com_sales_units, loader.ly_com_sales_units, loader.ty_com_eom_oh, loader.ly_com_eom_oh, loader.ty_omni_sales_usd, loader.ly_omni_sales_usd, loader.ty_com_sales_usd, loader.ly_com_sales_usd, loader.ty_omni_oo_units, loader.ty_com_oo_units, loader.ly_store_sales_units, loader.ly_store_eom_oh, loader.ly_com_to_ttl_sales_pct, loader.ly_com_to_ttl_eoh_pct, loader.ly_omni_sell_thru_pct, loader.ly_store_sell_thru_pct, loader.ly_omni_turn, loader.ly_store_turn, loader.ly_omni_aur_diff_own, loader.ty_store_sales_units, loader.ty_store_eom_oh, loader.ty_com_to_ttl_sales_pct, loader.ty_com_to_ttl_eoh_pct, loader.ty_omni_aur_diff_own, loader.ty_omni_sell_thru_pct, loader.ty_store_sell_thru_pct, loader.ty_omni_turn, loader.ty_store_turn, loader.ty_store_sales_vs_ly, loader.ty_com_sales_vs_ly, loader.ty_store_eoh_vs_ly)
+                print(f"Monthly forecasts saved for product {loader.product_id}")
+                forecast_data = { 
+                    'index':loader.index_value,
+                    'fc_by_index':fc_by_index,
                     'fc_by_trend': fc_by_trend,
                     'recommended_fc': recommended_fc,
                     'planned_fc': planned_fc,
                     'planned_shipments': planned_shp,
                     'planned_eoh_cal': planned_oh,
-                    'gross_projection_nav': loader.gross_projection_nav,
-                    'macys_proj_receipts': loader.macys_proj_receipts,
+                    'gross_projection_nav' : loader.gross_projection_nav,
+                    'macys_proj_receipts':loader.macys_proj_receipts,
                     'planned_sell_thru_pct': planned_sell_thru
                 }
-                rolling_forecasts.extend(save_rolling_forecasts(productmain, sheet_object, current_year, forecast_data))
+                save_rolling_forecasts(productmain, sheet_object, current_year, forecast_data)
+                print(f"Product {loader.product_id} saved successfully")
 
                 print(current_month)
                 current_month = str(current_month).upper()
@@ -2549,16 +2545,6 @@ def process_category(args):
 
         
     ws.column_dimensions.group("A", "A", outline_level=1, hidden=True)
-
-    # Final bulk inserts
-    # ProductDetail.objects.bulk_create(product_objs, ignore_conflicts=True)
-    # StoreForecast.objects.bulk_create(store_objs, ignore_conflicts=True)
-    # ComForecast.objects.bulk_create(com_objs, ignore_conflicts=True)
-    # OmniForecast.objects.bulk_create(omni_objs, ignore_conflicts=True)
-    # MonthlyForecast.objects.bulk_create(monthly_forecasts, batch_size=500)
-    # MonthlyForecast.objects.bulk_create(rolling_forecasts, batch_size=500)
-    save_to_db_fast(product_objs, store_objs, com_objs, omni_objs, monthly_forecasts, rolling_forecasts, sheet_object)
-
 
     save_workbook_to_s3(wb, s3_path)  # Save the workbook to S3
     print(f"Workbook '{output_file_name}' saved successfully to S3.")

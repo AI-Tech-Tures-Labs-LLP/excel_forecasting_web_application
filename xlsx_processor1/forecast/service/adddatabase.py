@@ -33,23 +33,18 @@ def save_macys_projection_receipts(product, matching_row, year, sheet ):
         'nov': matching_row['NOV RECPT'].iloc[0],
         'dec': matching_row['DEC RECPT'].iloc[0],
     }
-    
-    # Convert values to integers if possible, else set to None
-    for month in receipts_data:
+    for k, v in receipts_data.items():
         try:
-            receipts_data[month] = int(receipts_data[month]) if pd.notna(receipts_data[month]) else None
-        except (ValueError, TypeError):
-            receipts_data[month] = None
-    
-    # Update or create the forecast entry for the entire year
-    with transaction.atomic():
-        MonthlyForecast.objects.update_or_create(
-            sheet=sheet,
-            productdetail=product,
-            variable_name='macys_proj_receipts',
-            year=year,
-            defaults=receipts_data  # Updates all month fields at once
-        )
+            receipts_data[k] = int(v) if pd.notna(v) else None
+        except Exception:
+            receipts_data[k] = None
+    return MonthlyForecast(
+        sheet=sheet,
+        productdetail=product,
+        variable_name='macys_proj_receipts',
+        year=year,
+        **receipts_data
+    )
 
 # MonthlyForecast model Operations 2
 def save_monthly_forecasts(
@@ -163,34 +158,28 @@ def save_monthly_forecasts(
         'ly_com_sales_usd': current_year - 1,
     }
 
-
+    forecasts = []
     for variable_name, data_dict in variable_map.items():
-        year = year_mapping[variable_name]
+        year = year_mapping.get(variable_name, current_year)
         monthly_values = {month_field: None for month_field in month_mapping.values()}
-
         for month_name in months:
             month_field = month_mapping.get(month_name.upper())
-            if month_field is None:
+            if not month_field:
                 continue
             value = data_dict.get(month_name)
-            if pd.isna(value):
+            try:
+                value = None if pd.isna(value) else round(float(value), 2)
+            except:
                 value = None
-            else:
-                try:
-                    value = round(float(value), 2)
-                except (ValueError, TypeError):
-                    value = None
             monthly_values[month_field] = value
-
-        with transaction.atomic():
-            MonthlyForecast.objects.update_or_create(
-                sheet=sheet,
-                productdetail=product,
-                variable_name=variable_name,
-                year=year,
-                defaults=monthly_values
-            )
-
+        forecasts.append(MonthlyForecast(
+            sheet=sheet,
+            productdetail=product,
+            variable_name=variable_name,
+            year=year,
+            **monthly_values
+        ))
+    return forecasts
 # MonthlyForecast model Operations 3
 def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
     """
@@ -211,6 +200,7 @@ def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
         'SEP': 'sep', 'OCT': 'oct', 'NOV': 'nov', 'DEC': 'dec',
     }
 
+    forecasts = []
     for variable_name, monthly_data in forecast_data_dict.items():
         defaults = {}
         for month_abbr, value in monthly_data.items():
@@ -218,23 +208,20 @@ def save_rolling_forecasts(product, sheet, year, forecast_data_dict):
             if not month_field:
                 continue
             try:
-                # Convert to float; skip if value is not a number
                 if value in (None, '', '-', '--'):
                     continue
                 defaults[month_field] = float(value)
-            except (ValueError, TypeError):
+            except:
                 continue
-
-        # Only create/update if there's at least one valid month value
         if defaults:
-            with transaction.atomic():
-                MonthlyForecast.objects.update_or_create(
-                    sheet=sheet,
-                    productdetail=product,
-                    variable_name=variable_name,
-                    year=year,
-                    defaults=defaults
-                )
+            forecasts.append(MonthlyForecast(
+                sheet=sheet,
+                productdetail=product,
+                variable_name=variable_name,
+                year=year,
+                **defaults
+            ))
+    return forecasts
 
 # MonthlyForecast & ProductDetail model Operations
 def save_forecast_data(pid, updated_context, sheet_object):
