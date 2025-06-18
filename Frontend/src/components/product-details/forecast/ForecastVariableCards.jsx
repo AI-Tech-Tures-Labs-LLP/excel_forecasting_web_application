@@ -91,6 +91,7 @@ const ForecastVariableCards = ({ productData }) => {
             key: "lead_time",
             label: "Lead Time",
             icon: Clock,
+
             groupKey: "leadtime",
           },
 
@@ -102,7 +103,7 @@ const ForecastVariableCards = ({ productData }) => {
             groupKey: "trends_index",
           },
           {
-            key: "month_12_fc_index",
+            key: "new_month_12_fc_index",
             label: "12-Month FC Index",
             icon: BarChart3,
             groupKey: "trends_index",

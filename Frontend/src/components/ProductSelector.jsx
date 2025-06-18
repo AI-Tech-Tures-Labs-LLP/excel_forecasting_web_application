@@ -798,6 +798,67 @@ function ProductSelector() {
   //     />
   //   );
   // }
+
+  const handleDownloadSummary = async () => {
+    try {
+      // Show loading state (optional)
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/export-summary/?sheet_id=${sheetId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Check if the response contains a download_url
+      if (data.download_url) {
+        // Create a temporary anchor element to trigger download
+        const link = document.createElement("a");
+        link.href = data.download_url;
+        link.download = "forecast_summary.xlsx"; // Set the filename
+        link.target = "_blank"; // Open in new tab as fallback
+
+        // Append to body, click, and remove
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Optional: Show success toast
+        dispatch(
+          addToast({
+            type: "success",
+            message: "Download started successfully",
+            duration: 3000,
+          })
+        );
+      } else {
+        throw new Error("No download URL provided in response");
+      }
+    } catch (error) {
+      console.error("Download failed:", error);
+
+      // Show error toast
+      dispatch(
+        addToast({
+          type: "error",
+          message: "Failed to download summary. Please try again.",
+          duration: 5000,
+        })
+      );
+    }
+  };
+
   console.log("productnotedata", productNotesData);
   return (
     <>
@@ -824,17 +885,14 @@ function ProductSelector() {
             </div>
 
             <div className="flex items-center gap-3">
-              <a
-                href={`${
-                  import.meta.env.VITE_API_BASE_URL
-                }/forecast/export-summary/?sheet_id=${sheetId}`}
+              <button
+                onClick={handleDownloadSummary}
+                className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20"
               >
-                <button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition-all duration-200 hover:scale-105 border border-white/20">
-                  <FileDown size={18} />
-                  <span className="hidden sm:inline">Download Summary</span>
-                  <span className="sm:hidden">Download</span>
-                </button>
-              </a>
+                <FileDown size={18} />
+                <span className="hidden sm:inline">Download Summary</span>
+                <span className="sm:hidden">Download</span>
+              </button>
 
               <button
                 onClick={handleOpenCategoryDownload}
