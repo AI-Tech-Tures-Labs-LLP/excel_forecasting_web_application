@@ -544,11 +544,22 @@ class ForecastNoteViewSet(viewsets.ModelViewSet):
         queryset = super().get_queryset()
         pid = self.request.query_params.get("pid")
         sheet_id = self.request.query_params.get("sheet_id")
-        if not sheet_id:
-            return Response({"detail": "sheet_id is required."}, status=400)
-        if pid:
-            queryset = queryset.filter(productdetail__product_id=pid)
-        return queryset.filter(sheet_id=sheet_id)
+
+        # Only enforce this in list or custom actions
+        if self.action in ["list", "bulk_delete"]:
+            if not sheet_id:
+                raise ValidationError({"sheet_id": "This query parameter is required."})
+            if pid:
+                queryset = queryset.filter(productdetail__product_id=pid)
+            queryset = queryset.filter(sheet_id=sheet_id)
+        
+        return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({"detail": "Forecast note deleted."}, status=status.HTTP_204_NO_CONTENT)
+
  
     # def get_queryset(self):
     #     user = self.request.user

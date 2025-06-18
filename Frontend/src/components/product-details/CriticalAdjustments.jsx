@@ -70,7 +70,81 @@ const CriticalAdjustments = ({
     }
   };
 
+  // const handleSaveCriticalInputs = async () => {
+  //   try {
+  //     const payload = {
+  //       sheet_id: sheetId,
+  //       product_details: {
+  //         user_updated_final_quantity: userAddedQuantity
+  //           ? parseFloat(userAddedQuantity)
+  //           : null,
+  //         external_factor_percentage: externalFactorPercentage
+  //           ? parseFloat(externalFactorPercentage)
+  //           : null,
+  //         external_factor: externalFactor || null,
+  //         external_factor_note: externalFactor.trim() || null,
+  //       },
+  //       tagged_to: [],
+  //     };
+
+  //     console.log("Saving critical inputs:", payload);
+
+  //     const response = await axios.patch(
+  //       `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${productId}/`,
+  //       payload
+  //     );
+
+  //     console.log("Save response:", response.data);
+
+  //     if (response.status === 200 || response.status === 201) {
+  //       if (response.data.product_details) {
+  //         setUserAddedQuantity(
+  //           response.data.product_details.user_updated_final_quantity?.toString() ||
+  //             userAddedQuantity
+  //         );
+  //         setExternalFactorPercentage(
+  //           response.data.product_details.external_factor_percentage?.toString() ||
+  //             externalFactorPercentage
+  //         );
+  //         setExternalFactor(
+  //           response.data.product_details.external_factor || externalFactor
+  //         );
+  //       }
+
+  //       // Save note if there's content in externalFactor
+  //       // if (externalFactor && externalFactor.trim()) {
+  //       //   await handleSaveProductNote();
+  //       // }
+
+  //       // Call the onSave callback if provided
+  //       if (onSave) {
+  //         onSave();
+  //       }
+  //       dispatch(
+  //         fetchProducts({
+  //           productType: selectedProductType,
+  //           filters: selectedFilters,
+  //           sheetId: sheetId,
+  //         })
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving critical inputs:", error);
+  //     console.error("Error response:", error.response?.data);
+  //     alert(
+  //       `Failed to save critical inputs: ${
+  //         error.response?.data?.message || error.message
+  //       }`
+  //     );
+  //   }
+  // };
   const handleSaveCriticalInputs = async () => {
+    // ✳️ Validate that if quantity is entered, note is mandatory
+    if (userAddedQuantity && (!externalFactor || !externalFactor.trim())) {
+      alert("Please enter a note when adding a quantity.");
+      return;
+    }
+
     try {
       const payload = {
         sheet_id: sheetId,
@@ -111,15 +185,8 @@ const CriticalAdjustments = ({
           );
         }
 
-        // Save note if there's content in externalFactor
-        // if (externalFactor && externalFactor.trim()) {
-        //   await handleSaveProductNote();
-        // }
+        if (onSave) onSave();
 
-        // Call the onSave callback if provided
-        if (onSave) {
-          onSave();
-        }
         dispatch(
           fetchProducts({
             productType: selectedProductType,

@@ -16,5 +16,5 @@ urlpatterns = [
     path('upload/', UploadXlsxAPIView.as_view(), name='upload_xlsx'),
     path('export-summary/', DownloadForecastSummaryExcel.as_view(), name="export-summary"),
     path('download-category/', FileCategoryDownloadAPIView.as_view(), name='download_category_sheet'),
-    path('final-quantity-report/', DownloadFinalQuantityReport.as_view(), name="download-product-forecast"),
+    path('final-quantity-report/', DownloadFinalQuantityReport.as_view(), name="download-product-forecast"),    
 ]
