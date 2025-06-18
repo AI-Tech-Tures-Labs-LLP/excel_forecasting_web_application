@@ -401,14 +401,21 @@ const LoginPage = () => {
   const testBackend = async () => {
     try {
       console.log("Testing backend connectivity...");
-      const response = await fetch("http://127.0.0.1:8000/api/v1/auth/login/", {
+
+      // Import the environment variable
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+      const response = await fetch(`${API_BASE_URL}/auth/login/`, {
         method: "OPTIONS",
       });
+
       console.log(
         "Backend test response:",
         response.status,
         response.statusText
       );
+      console.log("Testing URL:", `${API_BASE_URL}/auth/login/`);
+
       return response.status !== 404;
     } catch (error) {
       console.error("Backend connectivity test failed:", error);
