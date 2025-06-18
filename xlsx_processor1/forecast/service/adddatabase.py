@@ -45,29 +45,8 @@ def save_macys_projection_receipts(product, matching_row, year, sheet ):
         year=year,
         **receipts_data
     )
-
 # MonthlyForecast model Operations 2
-def save_monthly_forecasts(
-    product, sheet, current_year, months,
-    ty_total_sales_units, ly_total_sales_units,
-    ly_total_eom_oh, ty_total_eom_oh,
-    ty_omni_receipts, ly_omni_receipts,
-    ty_com_sales_units, ly_com_sales_units,
-    ty_com_eom_oh, ly_com_eom_oh,
-    ly_store_sales_units, ly_store_eom_oh,
-    ly_com_to_ttl_sales_pct, ly_com_to_ttl_eoh_pct,
-    ly_omni_sell_thru_pct, ly_store_sell_thru_pct,
-    ly_omni_turn, ly_store_turn,
-    ly_omni_aur_diff_own,
-    ty_store_sales_units, ty_store_eom_oh,
-    ty_com_to_ttl_sales_pct, ty_com_to_ttl_eoh_pct,
-    ty_omni_aur_diff_own, ty_omni_sell_thru_pct,
-    ty_store_sell_thru_pct, ty_omni_turn, ty_store_turn,
-    ty_store_sales_vs_ly, ty_com_sales_vs_ly, ty_store_eoh_vs_ly,
-    ty_omni_oo_units, ty_com_oo_units,
-    ty_omni_sales_usd, ly_omni_sales_usd,
-    ty_com_sales_usd, ly_com_sales_usd
-):
+def save_monthly_forecasts(product, sheet, current_year, months, **forecast_kwargs):
     """
     Saves forecast data for all variables in MonthlyForecast, 
     updating fields: jan, feb, mar, ..., dec instead of a single month field.
@@ -78,45 +57,7 @@ def save_monthly_forecasts(
         'JUL': 'jul', 'AUG': 'aug', 'SEP': 'sep', 'OCT': 'oct', 'NOV': 'nov', 'DEC': 'dec'
     }
 
-    variable_map = {
-        'ty_total_sales_units': ty_total_sales_units,
-        'ly_total_sales_units': ly_total_sales_units,
-        'ly_total_eom_oh': ly_total_eom_oh,
-        'ty_total_eom_oh': ty_total_eom_oh,
-        'ty_omni_receipts': ty_omni_receipts,
-        'ly_omni_receipts': ly_omni_receipts,
-        'ty_com_sales_units': ty_com_sales_units,
-        'ly_com_sales_units': ly_com_sales_units,
-        'ty_com_eom_oh': ty_com_eom_oh,
-        'ly_com_eom_oh': ly_com_eom_oh,
-        'ly_store_sales_units': ly_store_sales_units,
-        'ly_store_eom_oh': ly_store_eom_oh,
-        'ly_com_to_ttl_sales_pct': ly_com_to_ttl_sales_pct,
-        'ly_com_to_ttl_eoh_pct': ly_com_to_ttl_eoh_pct,
-        'ly_omni_sell_thru_pct': ly_omni_sell_thru_pct,
-        'ly_store_sell_thru_pct': ly_store_sell_thru_pct,
-        'ly_omni_turn': ly_omni_turn,
-        'ly_store_turn': ly_store_turn,
-        'ly_omni_aur_diff_own': ly_omni_aur_diff_own,
-        'ty_store_sales_units': ty_store_sales_units,
-        'ty_store_eom_oh': ty_store_eom_oh,
-        'ty_com_to_ttl_sales_pct': ty_com_to_ttl_sales_pct,
-        'ty_com_to_ttl_eoh_pct': ty_com_to_ttl_eoh_pct,
-        'ty_omni_aur_diff_own': ty_omni_aur_diff_own,
-        'ty_omni_sell_thru_pct': ty_omni_sell_thru_pct,
-        'ty_store_sell_thru_pct': ty_store_sell_thru_pct,
-        'ty_omni_turn': ty_omni_turn,
-        'ty_store_turn': ty_store_turn,
-        'ty_store_sales_vs_ly': ty_store_sales_vs_ly,
-        'ty_com_sales_vs_ly': ty_com_sales_vs_ly,
-        'ty_store_eoh_vs_ly': ty_store_eoh_vs_ly,
-        'ty_omni_oo_units': ty_omni_oo_units,
-        'ty_com_oo_units': ty_com_oo_units,
-        'ty_omni_sales_usd': ty_omni_sales_usd,
-        'ly_omni_sales_usd': ly_omni_sales_usd,
-        'ty_com_sales_usd': ty_com_sales_usd,
-        'ly_com_sales_usd': ly_com_sales_usd,
-    }
+    variable_map = forecast_kwargs
 
     year_mapping = {
         'ty_total_sales_units': current_year,
@@ -160,6 +101,10 @@ def save_monthly_forecasts(
 
     forecasts = []
     for variable_name, data_dict in variable_map.items():
+        if variable_name == "ty_store_eom_oh":
+            print("DEBUG ty_store_eom_oh data_dict:", data_dict)
+            print("Saving month FEB value =", data_dict.get("FEB"))
+        data_dict = {k.upper(): v for k, v in data_dict.items()}
         year = year_mapping.get(variable_name, current_year)
         monthly_values = {month_field: None for month_field in month_mapping.values()}
         for month_name in months:

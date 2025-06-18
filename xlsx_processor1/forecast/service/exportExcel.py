@@ -345,6 +345,7 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     df_omni = pd.DataFrame(omni_data)
 
 
+
     # df_store_renamed = df_store.rename(columns=STORE_RENAME_MAP)
     # df_coms_renamed = df_com.rename(columns=COM_RENAME_MAP)
     # df_omni_renamed = df_omni.rename(columns=OMNI_RENAME_MAP)
@@ -1011,11 +1012,52 @@ def process_category(args):
                     )
                     omni_objs.append(omni_obj)
                 print("OmniForecast data saved/updated successfully.")
+                print("PID :",product_id)
 
+                print(" loader.ty_store_eom_oh", loader.ty_store_eom_oh)
 
+                forecast_kwargs = {
+                    'ty_total_sales_units': loader.ty_total_sales_units,
+                    'ly_total_sales_units': loader.ly_total_sales_units,
+                    'ly_total_eom_oh': loader.ly_total_eom_oh,
+                    'ty_total_eom_oh': loader.ty_total_eom_oh,
+                    'ty_omni_receipts': loader.ty_omni_receipts,
+                    'ly_omni_receipts': loader.ly_omni_receipts,
+                    'ty_com_sales_units': loader.ty_com_sales_units,
+                    'ly_com_sales_units': loader.ly_com_sales_units,
+                    'ty_com_eom_oh': loader.ty_com_eom_oh,
+                    'ly_com_eom_oh': loader.ly_com_eom_oh,
+                    'ly_store_sales_units': loader.ly_store_sales_units,
+                    'ly_store_eom_oh': loader.ly_store_eom_oh,
+                    'ly_com_to_ttl_sales_pct': loader.ly_com_to_ttl_sales_pct,
+                    'ly_com_to_ttl_eoh_pct': loader.ly_com_to_ttl_eoh_pct,
+                    'ly_omni_sell_thru_pct': loader.ly_omni_sell_thru_pct,
+                    'ly_store_sell_thru_pct': loader.ly_store_sell_thru_pct,
+                    'ly_omni_turn': loader.ly_omni_turn,
+                    'ly_store_turn': loader.ly_store_turn,
+                    'ly_omni_aur_diff_own': loader.ly_omni_aur_diff_own,
+                    'ty_store_sales_units': loader.ty_store_sales_units,
+                    'ty_store_eom_oh': loader.ty_store_eom_oh,
+                    'ty_com_to_ttl_sales_pct': loader.ty_com_to_ttl_sales_pct,
+                    'ty_com_to_ttl_eoh_pct': loader.ty_com_to_ttl_eoh_pct,
+                    'ty_omni_aur_diff_own': loader.ty_omni_aur_diff_own,
+                    'ty_omni_sell_thru_pct': loader.ty_omni_sell_thru_pct,
+                    'ty_store_sell_thru_pct': loader.ty_store_sell_thru_pct,
+                    'ty_omni_turn': loader.ty_omni_turn,
+                    'ty_store_turn': loader.ty_store_turn,
+                    'ty_store_sales_vs_ly': loader.ty_store_sales_vs_ly,
+                    'ty_com_sales_vs_ly': loader.ty_com_sales_vs_ly,
+                    'ty_store_eoh_vs_ly': loader.ty_store_eoh_vs_ly,
+                    'ty_omni_oo_units': loader.ty_omni_oo_units,
+                    'ty_com_oo_units': loader.ty_com_oo_units,
+                    'ty_omni_sales_usd': loader.ty_omni_sales_usd,
+                    'ly_omni_sales_usd': loader.ly_omni_sales_usd,
+                    'ty_com_sales_usd': loader.ty_com_sales_usd,
+                    'ly_com_sales_usd': loader.ly_com_sales_usd,
+                }
 
                 macys_proj_receipts.append(save_macys_projection_receipts(productmain, loader.matched_row, current_year, sheet_object))
-                monthly_forecasts.extend(save_monthly_forecasts(productmain, sheet_object, current_year, months, loader.ty_total_sales_units, loader.ly_total_sales_units, loader.ly_total_eom_oh, loader.ty_total_eom_oh, loader.ty_omni_receipts, loader.ly_omni_receipts, loader.ty_com_sales_units, loader.ly_com_sales_units, loader.ty_com_eom_oh, loader.ly_com_eom_oh, loader.ty_store_sales_units, loader.ly_store_sales_units, loader.ty_store_eom_oh, loader.ly_store_eom_oh, loader.ly_com_to_ttl_sales_pct, loader.ly_com_to_ttl_eoh_pct, loader.ly_omni_sell_thru_pct, loader.ly_store_sell_thru_pct, loader.ly_omni_turn, loader.ly_store_turn, loader.ly_omni_aur_diff_own, loader.ty_com_to_ttl_sales_pct, loader.ty_com_to_ttl_eoh_pct, loader.ty_omni_aur_diff_own, loader.ty_omni_sell_thru_pct, loader.ty_store_sell_thru_pct, loader.ty_omni_turn, loader.ty_store_turn, loader.ty_store_sales_vs_ly, loader.ty_com_sales_vs_ly, loader.ty_store_eoh_vs_ly, loader.ty_omni_oo_units, loader.ty_com_oo_units, loader.ty_omni_sales_usd, loader.ly_omni_sales_usd, loader.ty_com_sales_usd, loader.ly_com_sales_usd))
+                monthly_forecasts.extend(save_monthly_forecasts(productmain, sheet_object, current_year, months,**forecast_kwargs))
                 forecast_data = {
                     'index': loader.index_value,
                     'fc_by_index': fc_by_index,

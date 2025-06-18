@@ -16,6 +16,12 @@ class SheetUpload(models.Model):
 
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["user"]),            # If filtering by uploaded_by user
+            models.Index(fields=["uploaded_at"]),     # For ordering/filtering recent uploads
+        ]
+
     def __str__(self):
         return f"{self.name} ({self.user.username})"
 
@@ -163,6 +169,30 @@ class ProductDetail(models.Model):
     qty_added_to_maintain_oh_forecast_month = models.FloatField(null=True, blank=True)
     qty_added_to_maintain_oh_next_forecast_month = models.FloatField(null=True, blank=True)
     qty_added_to_balance_soq_forecast_month = models.FloatField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["sheet"]),                  # For sheet_id filtering
+            models.Index(fields=["product_type"]),           # Filtering by product_type
+            models.Index(fields=["category"]),               # Filtering by category
+            models.Index(fields=["birthstone"]),             # Filtering by birthstone
+            models.Index(fields=["assigned_to"]),            # Filtering by assigned_to
+            models.Index(fields=["product_id"]),             # Used in joins or filters
+            models.Index(fields=["status"]),                 # If you're filtering by status often
+            models.Index(fields=["forecast_month"]),         # If forecast_month used in filters
+            models.Index(fields=["is_red_box_item"]),        # Add boolean indexes only if filtered often
+            models.Index(fields=["is_considered_birthstone"]),
+            models.Index(fields=["is_added_quantity_using_macys_soq"]),
+            models.Index(fields=["is_added_only_to_balance_macys_soq"]),
+            models.Index(fields=["is_below_min_order"]),
+            models.Index(fields=["is_over_macys_soq"]),
+            models.Index(fields=["is_need_to_review_first"]),
+            models.Index(fields=["valentine_day"]),
+            models.Index(fields=["mothers_day"]),
+            models.Index(fields=["fathers_day"]),
+            models.Index(fields=["mens_day"]),
+            models.Index(fields=["womens_day"]),
+        ]
 
 
     def __str__(self):
@@ -330,6 +360,12 @@ class MonthlyForecast(models.Model):
     nov = models.FloatField(null=True, blank=True, verbose_name="November")
     dec = models.FloatField(null=True, blank=True, verbose_name="December")
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["productdetail"]),   # Joins/filters by product
+            models.Index(fields=["sheet"]),           # Filters by sheet
+            models.Index(fields=["variable_name", "year"]),  # Optimized combo for time series
+        ]
 
 
     def __str__(self):
@@ -344,7 +380,13 @@ class ForecastNote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True,null=True, blank=True)
 
-  
+    class Meta:
+        indexes = [
+            models.Index(fields=["productdetail"]),   # ForeignKey index for joining with ProductDetail
+            models.Index(fields=["sheet"]),           # If you filter by sheet
+            models.Index(fields=["created_at"]),      # Useful for date sorting or filtering
+        ]
+ 
 
     def __str__(self):
         return f"{self.product} - {self.note[:50]}..."  # Display first 50 characters of the note
