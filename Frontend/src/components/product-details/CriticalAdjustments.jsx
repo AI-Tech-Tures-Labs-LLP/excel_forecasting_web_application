@@ -82,6 +82,7 @@ const CriticalAdjustments = ({
             ? parseFloat(externalFactorPercentage)
             : null,
           external_factor: externalFactor || null,
+          external_factor_note: externalFactor.trim() || null,
         },
         tagged_to: [],
       };
@@ -111,9 +112,9 @@ const CriticalAdjustments = ({
         }
 
         // Save note if there's content in externalFactor
-        if (externalFactor && externalFactor.trim()) {
-          await handleSaveProductNote();
-        }
+        // if (externalFactor && externalFactor.trim()) {
+        //   await handleSaveProductNote();
+        // }
 
         // Call the onSave callback if provided
         if (onSave) {

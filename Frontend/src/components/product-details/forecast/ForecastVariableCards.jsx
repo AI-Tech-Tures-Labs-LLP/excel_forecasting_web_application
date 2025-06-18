@@ -96,7 +96,7 @@ const ForecastVariableCards = ({ productData }) => {
 
           // Trend and Index Calculation
           {
-            key: "selected_months",
+            key: "std_trend",
             label: "STD Months",
             icon: Calendar,
             groupKey: "trends_index",
@@ -1460,7 +1460,7 @@ const ForecastVariableCards = ({ productData }) => {
 
       {/* Header with Controls */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-git4">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-full">
               <BarChart3 className="text-blue-600" size={32} />

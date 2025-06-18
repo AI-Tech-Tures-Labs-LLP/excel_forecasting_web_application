@@ -75,6 +75,8 @@ function ProductSelector() {
     womens_day: null,
     status: [],
     last_reviewed_sort: null,
+    assigned_to: [],
+    final_qty_sort: null,
   });
 
   // Modal states
@@ -337,7 +339,171 @@ function ProductSelector() {
     }
   };
 
+  const getFinalQty = (product) => {
+    if (
+      product.user_updated_final_quantity !== null &&
+      product.user_updated_final_quantity !== undefined
+    ) {
+      return parseInt(product.user_updated_final_quantity);
+    } else if (
+      product.external_factor_percentage !== null &&
+      product.external_factor_percentage !== undefined
+    ) {
+      const baseQty =
+        product.user_updated_final_quantity != null &&
+        product.user_updated_final_quantity !== 0
+          ? product.user_updated_final_quantity
+          : product.recommended_total_quantity || 0;
+
+      return Math.round(
+        baseQty * (1 + product.external_factor_percentage / 100)
+      );
+    } else {
+      return product.recommended_total_quantity || 0;
+    }
+  };
+
   // Memoized filtered and sorted products
+  // const processedProducts = useMemo(() => {
+  //   let filteredProducts = [...products];
+
+  //   // Apply search filter
+  //   if (searchQuery) {
+  //     filteredProducts = filteredProducts.filter(
+  //       (product) =>
+  //         product.product_id
+  //           ?.toLowerCase()
+  //           .includes(searchQuery.toLowerCase()) ||
+  //         product.category?.toLowerCase().includes(searchQuery.toLowerCase())
+  //     );
+  //   }
+
+  //   // Apply tagged_to filter
+  //   if (selectedFilters.tagged_to && selectedFilters.tagged_to.length > 0) {
+  //     filteredProducts = filteredProducts.filter((product) => {
+  //       const assignedTo =
+  //         productNotesData[product.product_id]?.assignedTo || "Unassigned";
+  //       return selectedFilters.tagged_to.includes(assignedTo);
+  //     });
+  //   }
+
+  //   // Apply forecast_month filter
+  //   if (
+  //     selectedFilters.forecast_month &&
+  //     selectedFilters.forecast_month.length > 0
+  //   ) {
+  //     const monthMap = {
+  //       JANUARY: "JAN",
+  //       FEBRUARY: "FEB",
+  //       MARCH: "MAR",
+  //       APRIL: "APR",
+  //       MAY: "MAY",
+  //       JUNE: "JUN",
+  //       JULY: "JUL",
+  //       AUGUST: "AUG",
+  //       SEPTEMBER: "SEP",
+  //       OCTOBER: "OCT",
+  //       NOVEMBER: "NOV",
+  //       DECEMBER: "DEC",
+  //     };
+
+  //     const selectedShortMonths = selectedFilters.forecast_month.map(
+  //       (m) => monthMap[m.toUpperCase()]
+  //     );
+
+  //     filteredProducts = filteredProducts.filter((product) =>
+  //       selectedShortMonths.includes(product.forecast_month)
+  //     );
+  //   }
+
+  //   // Apply status filter
+  //   if (selectedFilters.status && selectedFilters.status.length > 0) {
+  //     filteredProducts = filteredProducts.filter((product) => {
+  //       const note = productNotesData[product.product_id]?.latestNote;
+  //       const status = note?.status;
+
+  //       let productStatus = "Not Reviewed";
+  //       if (status === "reviewed") {
+  //         productStatus = "Reviewed";
+  //       } else if (status === "pending") {
+  //         productStatus = "Pending";
+  //       } else if (status === "not_reviewed") {
+  //         productStatus = "Not Reviewed";
+  //       }
+
+  //       return selectedFilters.status.includes(productStatus);
+  //     });
+  //   }
+
+  //   // Apply sorting
+  //   if (selectedFilters.notes_sort) {
+  //     filteredProducts.sort((a, b) => {
+  //       const aNotesData = productNotesData[a.product_id];
+  //       const bNotesData = productNotesData[b.product_id];
+
+  //       const aDate = aNotesData?.latestNote?.created_at
+  //         ? new Date(aNotesData.latestNote.created_at)
+  //         : new Date(0);
+  //       const bDate = bNotesData?.latestNote?.created_at
+  //         ? new Date(bNotesData.latestNote.created_at)
+  //         : new Date(0);
+
+  //       if (selectedFilters.notes_sort === "latest") {
+  //         return bDate - aDate;
+  //       } else {
+  //         return aDate - bDate;
+  //       }
+  //     });
+  //   }
+
+  //   if (selectedFilters.added_qty_sort) {
+  //     filteredProducts.sort((a, b) => {
+  //       const aQty = a.recommended_total_quantity || 0;
+  //       const bQty = b.recommended_total_quantity || 0;
+
+  //       if (selectedFilters.added_qty_sort === "asc") {
+  //         return aQty - bQty;
+  //       } else {
+  //         return bQty - aQty;
+  //       }
+  //     });
+  //   }
+
+  //   if (selectedFilters.last_reviewed_sort) {
+  //     filteredProducts.sort((a, b) => {
+  //       const aNotesData = productNotesData[a.product_id];
+  //       const bNotesData = productNotesData[b.product_id];
+
+  //       const aDate = aNotesData?.latestNote?.updated_at
+  //         ? new Date(aNotesData.latestNote.updated_at)
+  //         : new Date(0);
+  //       const bDate = bNotesData?.latestNote?.updated_at
+  //         ? new Date(bNotesData.latestNote.updated_at)
+  //         : new Date(0);
+
+  //       if (selectedFilters.last_reviewed_sort === "newest") {
+  //         return bDate - aDate;
+  //       } else {
+  //         return aDate - bDate;
+  //       }
+  //     });
+  //   }
+
+  //   return filteredProducts;
+  // }, [
+  //   products,
+  //   searchQuery,
+  //   selectedFilters.tagged_to,
+  //   selectedFilters.forecast_month,
+  //   selectedFilters.notes_sort,
+  //   selectedFilters.added_qty_sort,
+  //   selectedFilters.status,
+  //   selectedFilters.last_reviewed_sort,
+  //   productNotesData,
+  // ]);
+
+  // In ProductSelector.jsx, replace the processedProducts useMemo with this updated version:
+
   const processedProducts = useMemo(() => {
     let filteredProducts = [...products];
 
@@ -352,7 +518,56 @@ function ProductSelector() {
       );
     }
 
-    // Apply tagged_to filter
+    // Apply assigned_to filter - UPDATED LOGIC
+    if (selectedFilters.assigned_to && selectedFilters.assigned_to.length > 0) {
+      filteredProducts = filteredProducts.filter((product) => {
+        // Check if product has direct assigned_to property
+        if (product.assigned_to) {
+          // Handle case where assigned_to is a user ID (number)
+          if (typeof product.assigned_to === "number") {
+            return selectedFilters.assigned_to.includes(product.assigned_to);
+          }
+          // Handle other assigned_to formats if needed
+          if (
+            typeof product.assigned_to === "string" ||
+            typeof product.assigned_to === "object"
+          ) {
+            return selectedFilters.assigned_to.includes(product.assigned_to);
+          }
+        }
+
+        // Fallback to productNotesData for assignment info
+        const assignedTo =
+          productNotesData[product.product_id]?.assignedTo || "Unassigned";
+
+        // Handle "unassigned" filter selection
+        if (selectedFilters.assigned_to.includes("unassigned")) {
+          if (assignedTo === "Unassigned" || !product.assigned_to) {
+            return true;
+          }
+        }
+
+        // Handle user ID selections
+        const userIdSelections = selectedFilters.assigned_to.filter(
+          (id) => typeof id === "number"
+        );
+        if (userIdSelections.length > 0 && product.assigned_to) {
+          return userIdSelections.includes(product.assigned_to);
+        }
+
+        // Handle username/string selections
+        const usernameSelections = selectedFilters.assigned_to.filter(
+          (id) => typeof id === "string" && id !== "unassigned"
+        );
+        if (usernameSelections.length > 0) {
+          return usernameSelections.includes(assignedTo);
+        }
+
+        return false;
+      });
+    }
+
+    // Apply tagged_to filter (keeping existing logic for compatibility)
     if (selectedFilters.tagged_to && selectedFilters.tagged_to.length > 0) {
       filteredProducts = filteredProducts.filter((product) => {
         const assignedTo =
@@ -443,6 +658,19 @@ function ProductSelector() {
       });
     }
 
+    if (selectedFilters.final_qty_sort) {
+      filteredProducts.sort((a, b) => {
+        const aQty = getFinalQty(a);
+        const bQty = getFinalQty(b);
+
+        if (selectedFilters.final_qty_sort === "asc") {
+          return aQty - bQty;
+        } else {
+          return bQty - aQty;
+        }
+      });
+    }
+
     if (selectedFilters.last_reviewed_sort) {
       filteredProducts.sort((a, b) => {
         const aNotesData = productNotesData[a.product_id];
@@ -467,12 +695,14 @@ function ProductSelector() {
   }, [
     products,
     searchQuery,
+    selectedFilters.assigned_to, // Add this dependency
     selectedFilters.tagged_to,
     selectedFilters.forecast_month,
     selectedFilters.notes_sort,
     selectedFilters.added_qty_sort,
     selectedFilters.status,
     selectedFilters.last_reviewed_sort,
+    selectedFilters.final_qty_sort,
     productNotesData,
   ]);
 
@@ -700,9 +930,11 @@ function ProductSelector() {
                 womens_day: null,
                 notes_sort: null,
                 added_qty_sort: null,
+                final_qty_sort: null, // Add this line
                 status: [],
                 last_reviewed_sort: null,
                 forecast_month: [],
+                assigned_to: [],
               });
               setSearchQuery("");
               setCurrentPage(1);
@@ -737,7 +969,7 @@ function ProductSelector() {
                 />
 
                 <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-                  <button
+                  {/* <button
                     onClick={() => setShowBulkModal(true)}
                     className={`
                       group relative inline-flex items-center gap-2 px-4 lg:px-6 py-2.5 font-medium text-sm rounded-lg
@@ -754,7 +986,7 @@ function ProductSelector() {
                       Set External Factor %
                     </span>
                     <span className="sm:hidden">Set Factor</span>
-                  </button>
+                  </button> */}
 
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500 hidden sm:inline">

@@ -243,7 +243,13 @@
 
 // src/App.jsx - UPDATED WITH ANALYST MANAGEMENT
 import React, { useEffect, useState } from "react";
-import { useLocation, Routes, Route, useNavigate } from "react-router-dom";
+import {
+  useLocation,
+  Routes,
+  Route,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { AppContextProvider } from "./context/AppContext";
 
@@ -265,8 +271,9 @@ import AdminDashboard from "./components/AdminDashboard";
 
 // Redux imports
 import { setCurrentView } from "./redux/uiSlice";
-import { setCurrentSession } from "./redux/forecastSlice";
+import { setCurrentSession, setFiles } from "./redux/forecastSlice";
 import ProductDetailsView from "./components/product-details/ProductDetailsView";
+import { getAllFiles } from "./services/forecast.service";
 
 // Simple auth check function
 const isAuthenticated = () => {
@@ -380,13 +387,13 @@ function App() {
   const dispatch = useDispatch();
   const location = useLocation();
   const [authChecked, setAuthChecked] = useState(false);
-
+  const files = useSelector((state) => state.forecast.files);
   const isHomePage = location.pathname === "/";
   const isLoginPage = location.pathname === "/login";
   const isRegisterPage = location.pathname === "/register";
   const isAuthPage = isLoginPage || isRegisterPage;
   const authenticated = isAuthenticated();
-
+  const { sheetId } = useParams();
   // Global state
   const globalLoading = useSelector(
     (state) => state.ui?.globalLoading || false
@@ -394,23 +401,54 @@ function App() {
   const toasts = useSelector((state) => state.ui?.toasts || []);
   const theme = useSelector((state) => state.ui?.theme || "light");
 
+  const getFiles = async () => {
+    try {
+      const res = await getAllFiles();
+      console.log("Fetched files:", res.data);
+      dispatch(setFiles(res.data));
+    } catch (err) {
+      console.error("Error fetching files:", err);
+      return [];
+    }
+  };
+
   // Simple auth check on mount
   useEffect(() => {
     setAuthChecked(true);
+    getFiles();
   }, []);
 
   // Initialize app state for authenticated users
   useEffect(() => {
     if (authenticated && authChecked) {
       // Load forecast data from localStorage if available
-      const storedForecastData = localStorage.getItem("forecastData");
-      if (storedForecastData) {
-        try {
-          const parsedData = JSON.parse(storedForecastData);
-          dispatch(setCurrentSession(parsedData));
-        } catch (error) {
-          console.error("Failed to parse stored forecast data:", error);
-          localStorage.removeItem("forecastData");
+      // const storedForecastData = localStorage.getItem("forecastData");
+      // if (storedForecastData) {
+      //   try {
+      //     const parsedData = JSON.parse(storedForecastData);
+      //     dispatch(setCurrentSession(parsedData));
+      //   } catch (error) {
+      //     console.error("Failed to parse stored forecast data:", error);
+      //     localStorage.removeItem("forecastData");
+      //   }
+      // }
+
+      if (sheetId) {
+        const file = files?.find((f) => f.id === sheetId);
+        if (file) {
+          const fileData = {
+            id: file.id,
+            name: file.name,
+            file_url: file.file,
+            summary_url: file.summary,
+            month_from: file.month_from,
+            month_to: file.month_to,
+            categories: JSON.parse(file.categories || "[]"),
+            output_folder: file.output_folder,
+            uploaded_at: file.uploaded_at,
+            percentage: file.percentage,
+          };
+          dispatch(setCurrentSession(fileData));
         }
       }
 
@@ -429,7 +467,7 @@ function App() {
       const currentView = viewMap[location.pathname] || "landing";
       dispatch(setCurrentView(currentView));
     }
-  }, [dispatch, location.pathname, authenticated, authChecked]);
+  }, [dispatch, location.pathname, authenticated, authChecked, sheetId]);
 
   // Apply theme to document
   useEffect(() => {
@@ -630,7 +668,7 @@ function App() {
         </div>
 
         {/* Debug Information - Remove in production */}
-        {process.env.NODE_ENV === "development" && (
+        {/* {process.env.NODE_ENV === "development" && (
           <div className="fixed bottom-4 left-4 bg-black bg-opacity-75 text-white p-2 rounded text-xs">
             <div>Route: {location.pathname}</div>
             <div>Auth: {authenticated ? "Yes" : "No"}</div>
@@ -646,7 +684,7 @@ function App() {
               })()}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </AppContextProvider>
   );
