@@ -702,17 +702,6 @@ const LoginPage = () => {
             </p>
           </div>
         )}
-
-        {/* Debug info */}
-        <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-          <p className="text-xs text-gray-600">
-            <strong>Debug Info:</strong>
-            <br />
-            API URL: http://127.0.0.1:8000/api/v1/auth/login/
-            <br />
-            Navigation Status: {hasNavigated.current ? "Navigated" : "Ready"}
-          </p>
-        </div>
       </div>
     </div>
   );
