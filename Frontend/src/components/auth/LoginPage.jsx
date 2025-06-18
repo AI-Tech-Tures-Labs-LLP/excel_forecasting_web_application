@@ -338,6 +338,377 @@
 
 // export default LoginPage;
 
+// import React, { useState, useEffect, useRef } from "react";
+// import { useNavigate, Link, useLocation } from "react-router-dom";
+// import {
+//   Eye,
+//   EyeOff,
+//   Lock,
+//   User,
+//   LogIn,
+//   AlertCircle,
+//   UserPlus,
+// } from "lucide-react";
+
+// const LoginPage = () => {
+//   const navigate = useNavigate();
+//   const location = useLocation();
+//   const hasNavigated = useRef(false); // Prevent multiple navigation attempts
+
+//   const [formData, setFormData] = useState({
+//     username: "",
+//     password: "",
+//   });
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState(null);
+//   const [debugInfo, setDebugInfo] = useState(null);
+
+//   // Check if already authenticated - ONLY RUN ONCE
+//   useEffect(() => {
+//     // Prevent multiple executions
+//     if (hasNavigated.current) return;
+
+//     const token = localStorage.getItem("access_token");
+//     const user = localStorage.getItem("user");
+
+//     console.log("Auth check:", { token: !!token, user: !!user });
+
+//     if (token && user) {
+//       hasNavigated.current = true;
+//       const from = location.state?.from?.pathname || "/file-upload";
+//       console.log("Already authenticated, redirecting to:", from);
+
+//       // Use a timeout to prevent rapid navigation
+//       setTimeout(() => {
+//         navigate(from, { replace: true });
+//       }, 200);
+//     }
+//   }, []); // Empty dependency array - run only once
+
+//   const handleChange = (e) => {
+//     const { name, value } = e.target;
+//     setFormData((prev) => ({
+//       ...prev,
+//       [name]: value,
+//     }));
+
+//     // Clear error when user starts typing
+//     if (error) setError(null);
+//     if (debugInfo) setDebugInfo(null);
+//   };
+
+//   const testBackend = async () => {
+//     try {
+//       console.log("Testing backend connectivity...");
+
+//       // Import the environment variable
+//       const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+//       const response = await fetch(`${API_BASE_URL}/auth/login/`, {
+//         method: "OPTIONS",
+//       });
+
+//       console.log(
+//         "Backend test response:",
+//         response.status,
+//         response.statusText
+//       );
+//       console.log("Testing URL:", `${API_BASE_URL}/auth/login/`);
+
+//       return response.status !== 404;
+//     } catch (error) {
+//       console.error("Backend connectivity test failed:", error);
+//       return false;
+//     }
+//   };
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+
+//     // Prevent multiple submissions
+//     if (loading || hasNavigated.current) return;
+
+//     // Basic validation
+//     if (!formData.username.trim()) {
+//       setError("Username is required");
+//       return;
+//     }
+
+//     if (!formData.password) {
+//       setError("Password is required");
+//       return;
+//     }
+
+//     setLoading(true);
+//     setError(null);
+//     setDebugInfo(null);
+
+//     try {
+//       console.log("Starting login process...");
+
+//       // Test backend first
+//       const backendOk = await testBackend();
+//       if (!backendOk) {
+//         setError(
+//           "Cannot connect to authentication server. Please check if backend is running."
+//         );
+//         setLoading(false);
+//         return;
+//       }
+
+//       const loginUrl = `${import.meta.env.VITE_API_BASE_URL}/auth/login/`;
+//       console.log("Making request to:", loginUrl);
+
+//       const response = await fetch(loginUrl, {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify(formData),
+//       });
+
+//       console.log("Response status:", response.status);
+
+//       let data;
+//       try {
+//         data = await response.json();
+//         console.log("Response data:", data);
+//       } catch (jsonError) {
+//         console.error("Failed to parse JSON response:", jsonError);
+//         const textResponse = await response.text();
+//         console.log("Raw response:", textResponse);
+//         setError("Invalid response from server. Check Django logs.");
+//         setDebugInfo({
+//           status: response.status,
+//           statusText: response.statusText,
+//           responseText: textResponse.substring(0, 200) + "...",
+//         });
+//         setLoading(false);
+//         return;
+//       }
+
+//       if (response.ok) {
+//         // Success case
+//         if (data.access && data.user) {
+//           console.log("Login successful!");
+
+//           // Store tokens and user data
+//           localStorage.setItem("access_token", data.access);
+//           localStorage.setItem("refresh_token", data.refresh);
+//           localStorage.setItem("user", JSON.stringify(data.user));
+
+//           console.log("Stored in localStorage:", {
+//             access_token: "present",
+//             refresh_token: "present",
+//             user: data.user,
+//           });
+
+//           // Mark as navigated to prevent loops
+//           hasNavigated.current = true;
+
+//           // Navigate after a short delay
+//           const from = location.state?.from?.pathname || "/file-upload";
+//           console.log("Redirecting to:", from);
+
+//           setTimeout(() => {
+//             navigate(from, { replace: true });
+//           }, 300);
+//         } else {
+//           console.error("Login response missing required fields:", data);
+//           setError("Invalid login response format");
+//           setDebugInfo({
+//             status: response.status,
+//             hasAccess: !!data.access,
+//             hasUser: !!data.user,
+//             data: data,
+//           });
+//         }
+//       } else {
+//         // Error case
+//         console.error("Login failed with status:", response.status);
+//         console.error("Error data:", data);
+
+//         let errorMessage = "Login failed";
+
+//         if (response.status === 401) {
+//           errorMessage = data.detail || "Invalid username or password";
+//         } else if (response.status === 400) {
+//           errorMessage = data.detail || data.error || "Invalid request data";
+//         } else if (response.status === 500) {
+//           errorMessage = "Server error. Please check Django logs.";
+//         } else {
+//           errorMessage =
+//             data.detail || data.error || `HTTP ${response.status} error`;
+//         }
+
+//         setError(errorMessage);
+//         setDebugInfo({
+//           status: response.status,
+//           statusText: response.statusText,
+//           errorData: data,
+//         });
+//       }
+//     } catch (networkError) {
+//       console.error("Network error during login:", networkError);
+//       setError(
+//         "Network error. Please check if the Django server is running on port 8000."
+//       );
+//       setDebugInfo({
+//         errorType: "NetworkError",
+//         message: networkError.message,
+//         stack: networkError.stack,
+//       });
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   // Get current user to check if admin
+//   const getCurrentUser = () => {
+//     try {
+//       const userData = localStorage.getItem("user");
+//       return userData ? JSON.parse(userData) : null;
+//     } catch {
+//       return null;
+//     }
+//   };
+
+//   const currentUser = getCurrentUser();
+//   const isAdmin = currentUser?.role === "admin";
+
+//   return (
+//     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+//       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+//         <div className="text-center mb-8">
+//           <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+//             <LogIn className="w-8 h-8 text-white" />
+//           </div>
+//           <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
+//           <p className="text-gray-600 mt-2">Sign in to your account</p>
+//         </div>
+
+//         <form onSubmit={handleSubmit} className="space-y-6">
+//           {/* Success message from registration */}
+//           {location.state?.message && (
+//             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+//               <p className="text-green-600 text-sm">{location.state.message}</p>
+//             </div>
+//           )}
+
+//           {/* Error message */}
+//           {error && (
+//             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+//               <div className="flex items-center mb-2">
+//                 <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+//                 <p className="text-red-600 text-sm font-medium">{error}</p>
+//               </div>
+
+//               {/* Debug info */}
+//               {debugInfo && (
+//                 <details className="mt-2">
+//                   <summary className="text-xs text-red-500 cursor-pointer">
+//                     Debug Info (click to expand)
+//                   </summary>
+//                   <pre className="text-xs text-red-400 mt-1 bg-red-100 p-2 rounded overflow-auto max-h-32">
+//                     {JSON.stringify(debugInfo, null, 2)}
+//                   </pre>
+//                 </details>
+//               )}
+//             </div>
+//           )}
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Username
+//             </label>
+//             <div className="relative">
+//               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+//               <input
+//                 type="text"
+//                 name="username"
+//                 value={formData.username}
+//                 onChange={handleChange}
+//                 disabled={loading}
+//                 className="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+//                 placeholder="Enter your username"
+//                 autoComplete="username"
+//               />
+//             </div>
+//           </div>
+
+//           <div>
+//             <label className="block text-sm font-medium text-gray-700 mb-2">
+//               Password
+//             </label>
+//             <div className="relative">
+//               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+//               <input
+//                 type={showPassword ? "text" : "password"}
+//                 name="password"
+//                 value={formData.password}
+//                 onChange={handleChange}
+//                 disabled={loading}
+//                 className="pl-10 pr-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+//                 placeholder="Enter your password"
+//                 autoComplete="current-password"
+//               />
+//               <button
+//                 type="button"
+//                 onClick={() => setShowPassword(!showPassword)}
+//                 disabled={loading}
+//                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+//               >
+//                 {showPassword ? (
+//                   <EyeOff className="w-5 h-5" />
+//                 ) : (
+//                   <Eye className="w-5 h-5" />
+//                 )}
+//               </button>
+//             </div>
+//           </div>
+
+//           <button
+//             type="submit"
+//             disabled={loading || hasNavigated.current}
+//             className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+//           >
+//             {loading ? (
+//               <>
+//                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+//                 Signing in...
+//               </>
+//             ) : (
+//               <>
+//                 <LogIn className="w-5 h-5" />
+//                 Sign In
+//               </>
+//             )}
+//           </button>
+//         </form>
+
+//         {/* Admin-only registration link */}
+//         {isAdmin && (
+//           <div className="mt-6 text-center">
+//             <p className="text-gray-600">
+//               Need to create an analyst account?{" "}
+//               <Link
+//                 to="/register"
+//                 className="text-blue-600 hover:text-blue-700 font-medium transition-colors inline-flex items-center gap-1"
+//               >
+//                 <UserPlus size={16} />
+//                 Create Analyst
+//               </Link>
+//             </p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default LoginPage;
+
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import {
@@ -376,13 +747,35 @@ const LoginPage = () => {
 
     if (token && user) {
       hasNavigated.current = true;
-      const from = location.state?.from?.pathname || "/file-upload";
-      console.log("Already authenticated, redirecting to:", from);
 
-      // Use a timeout to prevent rapid navigation
-      setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 200);
+      try {
+        const userData = JSON.parse(user);
+        const userRole = userData?.role;
+
+        // Role-based redirection for already authenticated users
+        let redirectPath;
+        if (userRole === "admin") {
+          redirectPath = "/"; // Landing page for admins
+        } else if (userRole === "analyst" || userRole === "senior_analyst") {
+          redirectPath = "/dashboard"; // Dashboard for analysts
+        } else {
+          redirectPath = "/dashboard"; // Default fallback
+        }
+
+        console.log("Already authenticated, redirecting to:", redirectPath);
+
+        // Use a timeout to prevent rapid navigation
+        setTimeout(() => {
+          navigate(redirectPath, { replace: true });
+        }, 200);
+      } catch (parseError) {
+        console.error("Error parsing user data:", parseError);
+        // If user data is corrupted, clear it and stay on login
+        localStorage.removeItem("user");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        hasNavigated.current = false;
+      }
     }
   }, []); // Empty dependency array - run only once
 
@@ -507,12 +900,26 @@ const LoginPage = () => {
           // Mark as navigated to prevent loops
           hasNavigated.current = true;
 
-          // Navigate after a short delay
-          const from = location.state?.from?.pathname || "/file-upload";
-          console.log("Redirecting to:", from);
+          // **ROLE-BASED REDIRECTION LOGIC**
+          const userRole = data.user?.role;
+          let redirectPath;
 
+          if (userRole === "admin") {
+            redirectPath = "/"; // Landing page for admins
+            console.log("Admin user detected, redirecting to landing page");
+          } else if (userRole === "analyst" || userRole === "senior_analyst") {
+            redirectPath = "/dashboard"; // Dashboard for analysts
+            console.log("Analyst user detected, redirecting to dashboard");
+          } else {
+            redirectPath = "/dashboard"; // Default fallback
+            console.log("Unknown role, redirecting to dashboard as fallback");
+          }
+
+          console.log("Final redirect path:", redirectPath);
+
+          // Navigate after a short delay
           setTimeout(() => {
-            navigate(from, { replace: true });
+            navigate(redirectPath, { replace: true });
           }, 300);
         } else {
           console.error("Login response missing required fields:", data);
