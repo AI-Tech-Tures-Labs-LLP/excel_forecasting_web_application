@@ -192,33 +192,8 @@
 
 //         setPerformanceData(performanceChart);
 
-//         // Generate recent activities
-//         const activities = [
-//           {
-//             id: 1,
-//             user:
-//               analysts[0]?.first_name + " " + analysts[0]?.last_name ||
-//               "John Doe",
-//             action: "completed forecast review",
-//             target: "Bridge Gem742 products",
-//             time: "2 hours ago",
-//             type: "success",
-//             icon: CheckCircle,
-//           },
-//           {
-//             id: 2,
-//             user:
-//               analysts[1]?.first_name + " " + analysts[1]?.last_name ||
-//               "Sarah Smith",
-//             action: "uploaded new data",
-//             target: "Gold262&270 collection",
-//             time: "4 hours ago",
-//             type: "info",
-//             icon: BarChart3,
-//           },
-//         ];
-
-//         setRecentActivities(activities);
+//         // Fetch recent file uploads instead of mock activities
+//         await fetchRecentUploads();
 
 //         // Set quick metrics with proper name handling
 //         setQuickMetrics({
@@ -240,6 +215,117 @@
 //       console.error("Error fetching dashboard data:", error);
 //     } finally {
 //       setLoading(false);
+//     }
+//   };
+
+//   const fetchRecentUploads = async () => {
+//     try {
+//       const response = await fetch(
+//         `${import.meta.env.VITE_API_BASE_URL}/forecast/sheet-upload/`,
+//         {
+//           headers: {
+//             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+//             "Content-Type": "application/json",
+//           },
+//         }
+//       );
+
+//       if (response.ok) {
+//         const uploads = await response.json();
+
+//         // Sort uploads by uploaded_at date (most recent first) and take the last 5
+//         const sortedUploads = uploads
+//           .sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))
+//           .slice(0, 5);
+
+//         // Fetch user data to get usernames
+//         const usersResponse = await fetch(
+//           `${import.meta.env.VITE_API_BASE_URL}/auth/users/`,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+//               "Content-Type": "application/json",
+//             },
+//           }
+//         );
+
+//         let userMap = {};
+//         if (usersResponse.ok) {
+//           const users = await usersResponse.json();
+//           userMap = users.reduce((acc, user) => {
+//             acc[user.id] = user.username || user.email || "Unknown User";
+//             return acc;
+//           }, {});
+//         }
+
+//         // Transform uploads data into recent activities format
+//         const activities = sortedUploads.map((upload, index) => {
+//           // Calculate time ago
+//           const uploadDate = new Date(upload.uploaded_at);
+//           const now = new Date();
+//           const diffInMinutes = Math.floor((now - uploadDate) / (1000 * 60));
+
+//           let timeAgo;
+//           if (diffInMinutes < 1) {
+//             timeAgo = "Just now";
+//           } else if (diffInMinutes < 60) {
+//             timeAgo = `${diffInMinutes} minute${
+//               diffInMinutes > 1 ? "s" : ""
+//             } ago`;
+//           } else if (diffInMinutes < 1440) {
+//             const hours = Math.floor(diffInMinutes / 60);
+//             timeAgo = `${hours} hour${hours > 1 ? "s" : ""} ago`;
+//           } else {
+//             const days = Math.floor(diffInMinutes / 1440);
+//             timeAgo = `${days} day${days > 1 ? "s" : ""} ago`;
+//           }
+
+//           // Get file size from the file URL or set as unknown
+//           const fileName = upload.name || "Unknown file";
+//           const userName = userMap[upload.user] || "Admin";
+
+//           // Extract categories info for display
+//           let categoriesInfo = "";
+//           try {
+//             const categories = JSON.parse(upload.categories || "[]");
+//             if (categories.length > 0) {
+//               categoriesInfo = categories
+//                 .map((cat) => `${cat.name}${cat.value}`)
+//                 .join(", ");
+//             }
+//           } catch (e) {
+//             categoriesInfo = upload.output_folder || "";
+//           }
+
+//           return {
+//             id: upload.id || index,
+//             user: userName,
+//             action: "uploaded file",
+//             target: fileName,
+//             time: timeAgo,
+//             type: upload.is_processed ? "success" : "info",
+//             icon: Upload,
+//             fileSize: null, // File size not available in this API
+//             status: upload.is_processed ? "processed" : "pending",
+//             categories: categoriesInfo,
+//             monthRange:
+//               upload.month_from && upload.month_to
+//                 ? `${upload.month_from} - ${upload.month_to}`
+//                 : null,
+//             percentage: upload.percentage,
+//           };
+//         });
+
+//         setRecentActivities(activities);
+//       } else {
+//         console.error("Failed to fetch recent uploads");
+//         // Fallback to empty activities if API fails
+//         setRecentActivities([]);
+//       }
+//     } catch (error) {
+//       console.error("Error fetching recent uploads:", error);
+//       // Fallback to empty activities if API fails
+//       setRecentActivities([]);
 //     }
 //   };
 
@@ -323,7 +409,7 @@
 //       badge: stats.pendingTasks > 0 ? `${stats.pendingTasks} pending` : null,
 //     },
 //     {
-//       title: " Files",
+//       title: "Files",
 //       description: "Manage data files and spreadsheets for analysis",
 //       icon: Upload,
 //       path: "/file-upload",
@@ -332,25 +418,6 @@
 //       adminOnly: false,
 //       badge: "Data Management",
 //     },
-//     // {
-//     //   title: "View Products",
-//     //   description: "Browse and analyze product data across all categories",
-//     //   icon: Package,
-//     //   path: "/products",
-//     //   color: "bg-orange-500",
-//     //   hoverColor: "hover:bg-orange-600",
-//     //   adminOnly: false,
-//     //   count: stats.totalProducts,
-//     // },
-//     // {
-//     //   title: "System Settings",
-//     //   description: "Configure system preferences and user permissions",
-//     //   icon: Settings,
-//     //   path: "/settings",
-//     //   color: "bg-gray-500",
-//     //   hoverColor: "hover:bg-gray-600",
-//     //   adminOnly: false,
-//     // },
 //   ];
 
 //   const filteredActions = adminActions.filter(
@@ -432,6 +499,13 @@
 //       default:
 //         return "text-blue-600 bg-blue-100";
 //     }
+//   };
+
+//   const formatFileSize = (bytes) => {
+//     if (!bytes) return "";
+//     const sizes = ["B", "KB", "MB", "GB"];
+//     const i = Math.floor(Math.log(bytes) / Math.log(1024));
+//     return `${Math.round((bytes / Math.pow(1024, i)) * 100) / 100} ${sizes[i]}`;
 //   };
 
 //   if (loading) {
@@ -609,46 +683,96 @@
 //             </div>
 //           </div>
 
-//           {/* Recent Activities */}
+//           {/* Recent Activities - Now showing file uploads */}
 //           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
 //             <div className="flex items-center justify-between mb-4">
 //               <h2 className="text-lg font-semibold text-gray-900">
-//                 Recent Activities
+//                 Recent File Uploads
 //               </h2>
-//               <button className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+//               <button
+//                 onClick={() => navigate("/file-upload")}
+//                 className="text-indigo-600 hover:text-indigo-700 text-sm font-medium flex items-center gap-1"
+//               >
 //                 View All
+//                 <ExternalLink size={14} />
 //               </button>
 //             </div>
 //             <div className="space-y-4">
-//               {recentActivities.map((activity) => {
-//                 const IconComponent = activity.icon;
-//                 return (
-//                   <div
-//                     key={activity.id}
-//                     className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-//                   >
+//               {recentActivities.length > 0 ? (
+//                 recentActivities.map((activity) => {
+//                   const IconComponent = activity.icon;
+//                   return (
 //                     <div
-//                       className={`p-2 rounded-lg ${getActivityColor(
-//                         activity.type
-//                       )}`}
+//                       key={activity.id}
+//                       className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
 //                     >
-//                       <IconComponent size={16} />
+//                       <div
+//                         className={`p-2 rounded-lg ${getActivityColor(
+//                           activity.type
+//                         )}`}
+//                       >
+//                         <IconComponent size={16} />
+//                       </div>
+//                       <div className="flex-1 min-w-0">
+//                         <p className="text-sm text-gray-900">
+//                           <span className="font-medium">{activity.user}</span>{" "}
+//                           {activity.action}
+//                         </p>
+//                         <p
+//                           className="text-sm text-indigo-600 truncate"
+//                           title={activity.target}
+//                         >
+//                           {activity.target}
+//                         </p>
+//                         {activity.categories && (
+//                           <p className="text-xs text-gray-600 truncate">
+//                             Categories: {activity.categories}
+//                           </p>
+//                         )}
+//                         <div className="flex items-center justify-between mt-1">
+//                           <p className="text-xs text-gray-500">
+//                             {activity.time}
+//                           </p>
+//                           <div className="flex items-center gap-2">
+//                             {activity.percentage && (
+//                               <span className="text-xs text-blue-600">
+//                                 {activity.percentage}%
+//                               </span>
+//                             )}
+//                             {activity.monthRange && (
+//                               <span className="text-xs text-green-600">
+//                                 {activity.monthRange}
+//                               </span>
+//                             )}
+//                             <span
+//                               className={`text-xs px-2 py-1 rounded-full ${
+//                                 activity.status === "processed"
+//                                   ? "bg-green-100 text-green-700"
+//                                   : "bg-blue-100 text-blue-700"
+//                               }`}
+//                             >
+//                               {activity.status === "processed"
+//                                 ? "Processed"
+//                                 : "Pending"}
+//                             </span>
+//                           </div>
+//                         </div>
+//                       </div>
 //                     </div>
-//                     <div className="flex-1 min-w-0">
-//                       <p className="text-sm text-gray-900">
-//                         <span className="font-medium">{activity.user}</span>{" "}
-//                         {activity.action}
-//                       </p>
-//                       <p className="text-sm text-indigo-600">
-//                         {activity.target}
-//                       </p>
-//                       <p className="text-xs text-gray-500 mt-1">
-//                         {activity.time}
-//                       </p>
-//                     </div>
-//                   </div>
-//                 );
-//               })}
+//                   );
+//                 })
+//               ) : (
+//                 <div className="text-center py-6">
+//                   <Upload size={32} className="text-gray-300 mx-auto mb-2" />
+//                   <p className="text-sm text-gray-500">No recent uploads</p>
+//                   <button
+//                     onClick={() => navigate("/file-upload")}
+//                     className="text-indigo-600 hover:text-indigo-700 text-xs mt-1"
+//                   >
+//                     Upload your first file
+//                   </button>
+//                 </div>
+//               )}
 //             </div>
 //           </div>
 //         </div>
@@ -736,75 +860,6 @@
 //         {/* Quick Metrics */}
 //         {isAdmin && (
 //           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-//             {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-//               <div className="flex items-center justify-between mb-4">
-//                 <h3 className="text-lg font-semibold text-gray-900">
-//                   System Health
-//                 </h3>
-//                 <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-//               </div>
-//               <div className="space-y-3">
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">System Status</span>
-//                   <span className="text-sm font-medium text-green-600">
-//                     All Systems Operational
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Database</span>
-//                   <span className="text-sm font-medium text-green-600">
-//                     Connected
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">API Response</span>
-//                   <span className="text-sm font-medium text-green-600">
-//                     {"<"} 200ms
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Active Users</span>
-//                   <span className="text-sm font-medium text-blue-600">
-//                     {stats.activeAnalysts} online
-//                   </span>
-//                 </div>
-//               </div>
-//             </div> */}
-
-//             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-//               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-//                 Quick Stats
-//               </h3>
-//               <div className="space-y-3">
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">
-//                     Avg Products/Analyst
-//                   </span>
-//                   <span className="text-sm font-medium text-gray-900">
-//                     {quickMetrics.avgProductsPerAnalyst || 0}
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Categories</span>
-//                   <span className="text-sm font-medium text-gray-900">
-//                     {stats.categoriesManaged}
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">Top Performer</span>
-//                   <span className="text-sm font-medium text-green-600">
-//                     {quickMetrics.topPerformer?.name?.split(" ")[0] || "N/A"}
-//                   </span>
-//                 </div>
-//                 <div className="flex items-center justify-between">
-//                   <span className="text-sm text-gray-600">System Uptime</span>
-//                   <span className="text-sm font-medium text-green-600">
-//                     99.9%
-//                   </span>
-//                 </div>
-//               </div>
-//             </div>
-
 //             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
 //               <h3 className="text-lg font-semibold text-gray-900 mb-4">
 //                 Actions Needed
@@ -918,6 +973,7 @@ import {
   AlertCircle,
   ChevronRight,
   ExternalLink,
+  Crown,
 } from "lucide-react";
 
 const AdminDashboard = () => {
@@ -1271,15 +1327,14 @@ const AdminDashboard = () => {
         stats.activeAnalysts < stats.totalAnalysts ? "Some Inactive" : null,
     },
     {
-      title: "Create Analyst",
-      description:
-        "Add new analyst users to the system with category assignments",
+      title: "Create User",
+      description: "Add new analyst or administrator users to the system",
       icon: UserPlus,
       path: "/register",
       color: "bg-green-500",
       hoverColor: "hover:bg-green-600",
       adminOnly: true,
-      badge: "Quick Action",
+      badge: "Analysts & Admins",
     },
     {
       title: "Generate Forecast",
@@ -1293,7 +1348,7 @@ const AdminDashboard = () => {
       badge: stats.pendingTasks > 0 ? `${stats.pendingTasks} pending` : null,
     },
     {
-      title: "Upload Files",
+      title: "Files",
       description: "Manage data files and spreadsheets for analysis",
       icon: Upload,
       path: "/file-upload",
