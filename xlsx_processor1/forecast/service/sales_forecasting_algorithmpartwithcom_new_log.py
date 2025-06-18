@@ -111,7 +111,6 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
     omni_dict = {}
 
     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
-    selected_months=None 
     pid_omni_status=False
     is_vdf_item=False
     is_considered_birthstone=False
@@ -138,6 +137,7 @@ def algorithm(vendor,master_sheet_row, vendor_sheet, birthstone_sheet, return_QA
     birthstone_month = None
     minimum_required_oh_for_com=0
     print(pid_type)
+    print("std_period",std_period)
     if pid_type=='store':
         std_index_value=calculate_std_index_value(loader.index_value,std_period)
         logging.info(f'std_index_value: {std_index_value}')

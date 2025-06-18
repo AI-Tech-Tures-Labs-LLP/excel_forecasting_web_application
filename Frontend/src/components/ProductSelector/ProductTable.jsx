@@ -17,6 +17,7 @@ import {
 import { formatDateTime } from "../../utils/dateFormat";
 import axios from "axios";
 import { useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
 
 const ProductTable = ({
   loading,
@@ -34,6 +35,7 @@ const ProductTable = ({
   setCurrentPage,
 }) => {
   // Dropdown states
+  const { sheetId } = useParams();
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
   const [taggedToDropdownOpen, setTaggedToDropdownOpen] = useState(false);
@@ -1890,7 +1892,7 @@ const ProductTable = ({
                 className="px-6 py-4 whitespace-nowrap text-sm text-left text-gray-900"
                 onClick={(e) => e.stopPropagation()}
               >
-                <StatusDropdownWithBadge product={product} />
+                <StatusDropdownWithBadge product={product} sheetId={sheetId} />
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">
                 {productNotesData[product.product_id]?.latestNote?.updated_at
@@ -1966,7 +1968,7 @@ const ProductTable = ({
 };
 
 // Status Dropdown Component
-const StatusDropdownWithBadge = ({ product, onStatusChange }) => {
+const StatusDropdownWithBadge = ({ product, sheetId, onStatusChange }) => {
   const [currentStatus, setCurrentStatus] = useState(product.status);
 
   const statusConfig = {
@@ -2004,16 +2006,20 @@ const StatusDropdownWithBadge = ({ product, onStatusChange }) => {
 
     try {
       await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/${
-          product.latest_note_id
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${
+          product.product_id
         }/`,
-        { status: newStatus }
+        {
+          sheet_id: sheetId,
+          product_details: {
+            status: newStatus,
+          },
+        }
       );
       setCurrentStatus(newStatus);
       if (onStatusChange) onStatusChange(newStatus);
     } catch (error) {
       console.error("Failed to update status:", error);
-      alert("Could not update status");
     }
   };
 
