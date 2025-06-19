@@ -1351,7 +1351,7 @@ def calculate_index_value(Current_FC_Index):
 
 
 
-def get_c2_value(category, pid, std_trend, STD_index_value, month_12_fc_index, forecasting_method, planned_shp, planned_fc, s3_folder_path):
+def get_c2_value(category,pid,updated_rolling_method, updated_std_trend, updated_12_month_fc_index, updated_forecasting_method, updated_current_fc_index,user_updated_final_quantity,planned_shipments,planned_fc,s3_folder_path):
     """
     S3 version of get_c2_value - modifies Excel file stored in S3
     
@@ -1393,10 +1393,9 @@ def get_c2_value(category, pid, std_trend, STD_index_value, month_12_fc_index, f
         print(f"Found PID '{pid}' at row {start_row}")
         
         # Update cells with new values
-        ws[f"F{start_row + 3}"] = std_trend
-        ws[f"E{start_row + 2}"] = STD_index_value
-        ws[f"F{start_row + 2}"] = month_12_fc_index
-        ws[f"F{start_row + 4}"] = forecasting_method
+        ws[f"F{start_row + 3}"] = updated_std_trend
+        ws[f"F{start_row + 2}"] = updated_12_month_fc_index
+        ws[f"F{start_row + 4}"] = updated_forecasting_method
         
         # Update planned_fc values (row + 5)
         ws[f"I{start_row + 5}"] = planned_fc["FEB"]
@@ -1411,20 +1410,26 @@ def get_c2_value(category, pid, std_trend, STD_index_value, month_12_fc_index, f
         ws[f"R{start_row + 5}"] = planned_fc["NOV"]
         ws[f"S{start_row + 5}"] = planned_fc["DEC"]
         ws[f"T{start_row + 5}"] = planned_fc["JAN"]
+
+        ws[f"E{start_row + 33}"] = user_updated_final_quantity
+
+        ws[f"F{start_row + 1}"] = updated_current_fc_index
+
+        ws[f"V1"] = updated_rolling_method
         
         # Update planned_shp values (row + 6)
-        ws[f"I{start_row + 6}"] = planned_shp["FEB"]
-        ws[f"J{start_row + 6}"] = planned_shp["MAR"]
-        ws[f"K{start_row + 6}"] = planned_shp["APR"]
-        ws[f"L{start_row + 6}"] = planned_shp["MAY"]
-        ws[f"M{start_row + 6}"] = planned_shp["JUN"]
-        ws[f"N{start_row + 6}"] = planned_shp["JUL"]
-        ws[f"O{start_row + 6}"] = planned_shp["AUG"]
-        ws[f"P{start_row + 6}"] = planned_shp["SEP"]
-        ws[f"Q{start_row + 6}"] = planned_shp["OCT"]
-        ws[f"R{start_row + 6}"] = planned_shp["NOV"]
-        ws[f"S{start_row + 6}"] = planned_shp["DEC"]
-        ws[f"T{start_row + 6}"] = planned_shp["JAN"]
+        ws[f"I{start_row + 6}"] = planned_shipments["FEB"]
+        ws[f"J{start_row + 6}"] = planned_shipments["MAR"]
+        ws[f"K{start_row + 6}"] = planned_shipments["APR"]
+        ws[f"L{start_row + 6}"] = planned_shipments["MAY"]
+        ws[f"M{start_row + 6}"] = planned_shipments["JUN"]
+        ws[f"N{start_row + 6}"] = planned_shipments["JUL"]
+        ws[f"O{start_row + 6}"] = planned_shipments["AUG"]
+        ws[f"P{start_row + 6}"] = planned_shipments["SEP"]
+        ws[f"Q{start_row + 6}"] = planned_shipments["OCT"]
+        ws[f"R{start_row + 6}"] = planned_shipments["NOV"]
+        ws[f"S{start_row + 6}"] = planned_shipments["DEC"]
+        ws[f"T{start_row + 6}"] = planned_shipments["JAN"]
         
         print(f"Updated cells for PID '{pid}' - forecast and shipment data")
         

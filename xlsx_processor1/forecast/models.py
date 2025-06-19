@@ -111,12 +111,6 @@ class ProductDetail(models.Model):
     planner_response = models.TextField(null=True, blank=True, verbose_name="Planner Response")
     website = models.CharField(max_length=1000, null=True, blank=True, verbose_name="Website")
     
-    rolling_method = models.CharField(max_length=50, null=True, blank=True, verbose_name="Rolling Method")
-    std_trend_original = models.FloatField(null=True, blank=True, verbose_name="STD Trend")
-    forecasting_method= models.CharField(max_length=50, null=True, blank=True, verbose_name="Forecasting Method")
-    std_index_value_original = models.JSONField(null=True, blank=True, verbose_name="STD Index Value")  # Assuming dict-like data
-    current_fc_index = models.CharField(max_length=50,null=True, blank=True, verbose_name="FC Index") #Current FC Index
-    month_12_fc_index_original = models.FloatField(null=True, blank=True, verbose_name="12 Month FC Index")
     external_factor_note = models.CharField(max_length=300,null=True, blank=True)
     external_factor_percentage = models.FloatField(null=True, blank=True, verbose_name="External Factor Percentage")
     user_updated_final_quantity = models.FloatField(null=True, blank=True)
@@ -169,6 +163,21 @@ class ProductDetail(models.Model):
     qty_added_to_maintain_oh_forecast_month = models.FloatField(null=True, blank=True)
     qty_added_to_maintain_oh_next_forecast_month = models.FloatField(null=True, blank=True)
     qty_added_to_balance_soq_forecast_month = models.FloatField(null=True, blank=True)
+    
+    std_index_value_original = models.FloatField(null=True, blank=True, verbose_name="STD Index Value")  # Assuming dict-like data
+
+    rolling_method_original = models.CharField(max_length=50, null=True, blank=True, verbose_name="Rolling Method")
+    std_trend_original = models.FloatField(null=True, blank=True, verbose_name="STD Trend")
+    forecasting_method_original= models.CharField(max_length=50, null=True, blank=True, verbose_name="Forecasting Method")
+    current_fc_index_original = models.CharField(max_length=50,null=True, blank=True, verbose_name="FC Index") #Current FC Index
+    month_12_fc_index_original = models.FloatField(null=True, blank=True, verbose_name="12 Month FC Index")
+
+ 
+    updated_std_trend = models.FloatField(null=True, blank=True)
+    updated_12_month_fc_index = models.FloatField(null=True, blank=True)
+    updated_rolling_method = models.CharField(max_length=100, null=True, blank=True)   
+    updated_current_fc_index = models.CharField(max_length=100, null=True, blank=True)
+    updated_forecasting_method = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         indexes = [
