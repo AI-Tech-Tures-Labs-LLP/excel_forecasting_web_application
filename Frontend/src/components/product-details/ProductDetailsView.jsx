@@ -135,6 +135,95 @@ const ProductDetailsView = () => {
       .slice(0, 10);
   }, [allProducts, searchQuery]);
   // MAIN DATA FETCHING FUNCTION
+  // const fetchProductDetails = async () => {
+  //   console.log("Fetching details for product:", productId);
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const response = await axios.get(
+  //       `${
+  //         import.meta.env.VITE_API_BASE_URL
+  //       }/forecast/product/${productId}/?sheet_id=${sheetId}` // Ensure sheetId is included in the request
+  //     );
+  //     console.log("Product details fetched:", response.data);
+  //     setProductData(response.data);
+
+  //     // Pre-fetch and set the critical adjustment values
+  //     if (response.data.product_details) {
+  //       const userQty =
+  //         response.data.product_details.user_updated_final_quantity;
+  //       setUserAddedQuantity(
+  //         userQty !== null && userQty !== undefined ? userQty.toString() : ""
+  //       );
+
+  //       const extFactorPerc =
+  //         response.data.product_details.external_factor_percentage;
+  //       setExternalFactorPercentage(
+  //         extFactorPerc !== null && extFactorPerc !== undefined
+  //           ? extFactorPerc.toString()
+  //           : ""
+  //       );
+
+  //       setExternalFactor(response.data.product_details.external_factor || "");
+  //     }
+
+  //     // Extract 12-month rolling forecast dynamically
+  //     const rolling = {
+  //       index: [],
+  //       fcByIndex: [],
+  //       fcByTrend: [],
+  //       recommendedFC: [],
+  //       plannedFC: [],
+  //       plannedShipments: [],
+  //       plannedEOH: [],
+  //       grossProjection: [],
+  //       macysProjReceipts: [],
+  //       plannedSellThru: [],
+  //     };
+
+  //     const monthOrder = [
+  //       "feb",
+  //       "mar",
+  //       "apr",
+  //       "may",
+  //       "jun",
+  //       "jul",
+  //       "aug",
+  //       "sep",
+  //       "oct",
+  //       "nov",
+  //       "dec",
+  //       "jan",
+  //     ];
+
+  //     const getForecastValues = (variable) => {
+  //       const item = response.data.monthly_forecast?.find(
+  //         (f) => f.variable_name === variable
+  //       );
+  //       if (!item) return Array(12).fill(0);
+  //       return monthOrder.map((m) => item[m] ?? 0);
+  //     };
+
+  //     rolling.index = getForecastValues("index");
+  //     rolling.fcByIndex = getForecastValues("fc_by_index");
+  //     rolling.fcByTrend = getForecastValues("fc_by_trend");
+  //     rolling.recommendedFC = getForecastValues("recommended_fc");
+  //     rolling.plannedFC = getForecastValues("planned_fc");
+  //     rolling.plannedShipments = getForecastValues("planned_shipments");
+  //     rolling.plannedEOH = getForecastValues("planned_eoh_cal");
+  //     rolling.grossProjection = getForecastValues("gross_projection_nav");
+  //     rolling.macysProjReceipts = getForecastValues("macys_proj_receipts");
+  //     rolling.plannedSellThru = getForecastValues("planned_sell_thru_pct");
+
+  //     setRollingForecastData(rolling);
+  //   } catch (error) {
+  //     console.error("Error fetching product details:", error);
+  //     setError("Failed to load product details");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const fetchProductDetails = async () => {
     console.log("Fetching details for product:", productId);
     setLoading(true);
@@ -143,7 +232,7 @@ const ProductDetailsView = () => {
       const response = await axios.get(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/product/${productId}/?sheet_id=${sheetId}` // Ensure sheetId is included in the request
+        }/forecast/product/${productId}/?sheet_id=${sheetId}`
       );
       console.log("Product details fetched:", response.data);
       setProductData(response.data);
@@ -167,7 +256,7 @@ const ProductDetailsView = () => {
         setExternalFactor(response.data.product_details.external_factor || "");
       }
 
-      // Extract 12-month rolling forecast dynamically
+      // Extract 12-month rolling forecast dynamically with updated variable names
       const rolling = {
         index: [],
         fcByIndex: [],
@@ -204,6 +293,7 @@ const ProductDetailsView = () => {
         return monthOrder.map((m) => item[m] ?? 0);
       };
 
+      // Updated variable names to match backend
       rolling.index = getForecastValues("index");
       rolling.fcByIndex = getForecastValues("fc_by_index");
       rolling.fcByTrend = getForecastValues("fc_by_trend");
@@ -223,7 +313,6 @@ const ProductDetailsView = () => {
       setLoading(false);
     }
   };
-
   const getData = async () => {
     try {
       const res = await axios.get(
@@ -608,45 +697,70 @@ const ProductDetailsView = () => {
         "JAN",
       ];
 
+      // Build context data with updated variable names for control fields
       const contextData = {
-        Rolling_method: rollingMethod,
-        Trend: parseFloat(editableTrend) || 0,
-        Forecasting_Method: forecastingMethod,
-        month_12_fc_index_original: parseFloat(editable12MonthFC) || 100,
-        Current_FC_Index: selectedIndex,
+        updated_rolling_method: rollingMethod,
+        updated_std_trend: parseFloat(editableTrend) || 0,
+        updated_forecasting_method: forecastingMethod,
+        updated_12_month_fc_index: parseFloat(editable12MonthFC) || 100,
+        updated_current_fc_index: selectedIndex,
       };
 
-      monthLabels.forEach((month, index) => {
-        if (!contextData.Index_value) contextData.Index_value = {};
-        if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
-        if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
-        if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
-        if (!contextData.Planned_FC) contextData.Planned_FC = {};
-        if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
-        if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
-        if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
+      // Initialize monthly data objects with NEW variable names
+      contextData.index = {};
+      contextData.fc_by_index = {};
+      contextData.fc_by_trend = {};
+      contextData.recommended_fc = {};
+      contextData.planned_fc = {};
+      contextData.planned_shipments = {};
+      contextData.planned_eoh_cal = {};
+      contextData.planned_sell_thru_pct = {};
+      contextData.gross_projection_nav = {};
+      contextData.macys_proj_receipts = {};
 
-        contextData.Index_value[month] =
-          rollingForecastData.index?.[index] || 0;
-        contextData.FC_by_Index[month] =
+      // Populate monthly data
+      monthLabels.forEach((month, index) => {
+        contextData.index[month] = rollingForecastData.index?.[index] || 0;
+        contextData.fc_by_index[month] =
           rollingForecastData.fcByIndex?.[index] || 0;
-        contextData.FC_by_Trend[month] =
+        contextData.fc_by_trend[month] =
           rollingForecastData.fcByTrend?.[index] || 0;
-        contextData.Recommended_FC[month] =
+        contextData.recommended_fc[month] =
           rollingForecastData.recommendedFC?.[index] || 0;
-        contextData.Planned_FC[month] =
+        contextData.planned_fc[month] =
           editableData.plannedFC?.[month] ||
           rollingForecastData.plannedFC?.[index] ||
           0;
-        contextData.Planned_Shipments[month] =
+        contextData.planned_shipments[month] =
           editableData.plannedShipments?.[month] ||
           rollingForecastData.plannedShipments?.[index] ||
           0;
-        contextData.Planned_EOH[month] =
+        contextData.planned_eoh_cal[month] =
           rollingForecastData.plannedEOH?.[index] || 0;
-        contextData.Planned_sell_thru[month] =
+        contextData.planned_sell_thru_pct[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
+        contextData.gross_projection_nav[month] =
+          rollingForecastData.grossProjection?.[index] || 0;
+        contextData.macys_proj_receipts[month] =
+          rollingForecastData.macysProjReceipts?.[index] || 0;
       });
+
+      const getChangedVariableName = () => {
+        switch (lastChangedField) {
+          case "Trend":
+            return "updated_std_trend";
+          case "month_12_fc_index_original":
+            return "updated_12_month_fc_index";
+          case "Forecasting_Method":
+            return "updated_forecasting_method";
+          case "Rolling_method":
+            return "updated_rolling_method";
+          case "Current_FC_Index":
+            return "updated_current_fc_index";
+          default:
+            return "updated_std_trend";
+        }
+      };
 
       const getChangedFieldValue = () => {
         switch (lastChangedField) {
@@ -661,24 +775,26 @@ const ProductDetailsView = () => {
           case "Current_FC_Index":
             return selectedIndex;
           default:
-            return editableTrend;
+            return parseFloat(editableTrend) || 0;
         }
       };
 
       if (lastChangedField) {
         lastAppliedChangeRef.current = {
-          changed_variable: lastChangedField,
+          changed_variable: getChangedVariableName(),
           new_value: getChangedFieldValue(),
         };
       }
 
       const payload = {
         sheet_id: parseInt(sheetId),
-        changed_variable: lastChangedField || "TREND",
+        changed_variable: getChangedVariableName(),
         new_value: getChangedFieldValue(),
         context_data: contextData,
         pid: productId,
       };
+
+      console.log("Sending payload:", payload); // For debugging
 
       const response = await axios.post(
         `${
@@ -690,32 +806,35 @@ const ProductDetailsView = () => {
       if (response.data && response.data.updated_context) {
         const updatedContext = response.data.updated_context;
 
+        // Update the rolling forecast data based on response with NEW variable names
         const updatedRollingData = {
-          index: monthLabels.map(
-            (month) => updatedContext.Index_value?.[month] || 0
-          ),
+          index: monthLabels.map((month) => updatedContext.index?.[month] || 0),
           fcByIndex: monthLabels.map(
-            (month) => updatedContext.FC_by_Index?.[month] || 0
+            (month) => updatedContext.fc_by_index?.[month] || 0
           ),
           fcByTrend: monthLabels.map(
-            (month) => updatedContext.FC_by_Trend?.[month] || 0
+            (month) => updatedContext.fc_by_trend?.[month] || 0
           ),
           recommendedFC: monthLabels.map(
-            (month) => updatedContext.Recommended_FC?.[month] || 0
+            (month) => updatedContext.recommended_fc?.[month] || 0
           ),
           plannedFC: monthLabels.map(
-            (month) => updatedContext.Planned_FC?.[month] || 0
+            (month) => updatedContext.planned_fc?.[month] || 0
           ),
           plannedShipments: monthLabels.map(
-            (month) => updatedContext.Planned_Shipments?.[month] || 0
+            (month) => updatedContext.planned_shipments?.[month] || 0
           ),
           plannedEOH: monthLabels.map(
-            (month) => updatedContext.Planned_EOH?.[month] || 0
+            (month) => updatedContext.planned_eoh_cal?.[month] || 0
           ),
-          grossProjection: rollingForecastData.grossProjection,
-          macysProjReceipts: rollingForecastData.macysProjReceipts,
+          grossProjection: monthLabels.map(
+            (month) => updatedContext.gross_projection_nav?.[month] || 0
+          ),
+          macysProjReceipts: monthLabels.map(
+            (month) => updatedContext.macys_proj_receipts?.[month] || 0
+          ),
           plannedSellThru: monthLabels.map(
-            (month) => updatedContext.Planned_sell_thru?.[month] || 0
+            (month) => updatedContext.planned_sell_thru_pct?.[month] || 0
           ),
         };
 
@@ -777,52 +896,79 @@ const ProductDetailsView = () => {
         "DEC",
         "JAN",
       ];
+
+      // Map the changed variable to new naming convention
+      const getVariableName = () => {
+        switch (changedVariable) {
+          case "Planned_FC":
+            return "planned_fc";
+          case "Planned_Shipments":
+            return "planned_shipments";
+          default:
+            return changedVariable.toLowerCase();
+        }
+      };
+
       const newValue =
         changedVariable === "Planned_FC"
           ? editableData.plannedFC
           : editableData.plannedShipments;
 
       const contextData = {
-        Rolling_method: rollingMethod || "YTD",
-        Trend: parseFloat(editableTrend) || -0.29,
-        Forecasting_Method: "Average",
-        month_12_fc_index_original: parseFloat(editable12MonthFC) || 100,
-        Current_FC_Index: "Gem",
+        updated_rolling_method: rollingMethod,
+        updated_std_trend: parseFloat(editableTrend) || 0,
+        updated_forecasting_method: forecastingMethod,
+        updated_12_month_fc_index: parseFloat(editable12MonthFC) || 0,
+        updated_current_fc_index: selectedIndex,
       };
 
-      monthLabels.forEach((month, index) => {
-        if (!contextData.Index_value) contextData.Index_value = {};
-        if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
-        if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
-        if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
-        if (!contextData.Planned_FC) contextData.Planned_FC = {};
-        if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
-        if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
-        if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
+      // Add monthly data with updated variable names
+      contextData.index = {};
+      contextData.fc_by_index = {};
+      contextData.fc_by_trend = {};
+      contextData.recommended_fc = {};
+      contextData.planned_fc = {};
+      contextData.planned_shipments = {};
+      contextData.planned_eoh_cal = {};
+      contextData.planned_sell_thru_pct = {};
+      contextData.gross_projection_nav = {};
+      contextData.macys_proj_receipts = {};
 
-        contextData.Index_value[month] =
-          rollingForecastData.index?.[index] || 0;
-        contextData.FC_by_Index[month] =
+      monthLabels.forEach((month, index) => {
+        contextData.index[month] = rollingForecastData.index?.[index] || 0;
+        contextData.fc_by_index[month] =
           rollingForecastData.fcByIndex?.[index] || 0;
-        contextData.FC_by_Trend[month] =
+        contextData.fc_by_trend[month] =
           rollingForecastData.fcByTrend?.[index] || 0;
-        contextData.Recommended_FC[month] =
+        contextData.recommended_fc[month] =
           rollingForecastData.recommendedFC?.[index] || 0;
-        contextData.Planned_FC[month] = editableData.plannedFC?.[month] || 0;
-        contextData.Planned_Shipments[month] =
-          editableData.plannedShipments?.[month] || 0;
-        contextData.Planned_EOH[month] =
+        contextData.planned_fc[month] =
+          editableData.plannedFC?.[month] ||
+          rollingForecastData.plannedFC?.[index] ||
+          0;
+        contextData.planned_shipments[month] =
+          editableData.plannedShipments?.[month] ||
+          rollingForecastData.plannedShipments?.[index] ||
+          0;
+        contextData.planned_eoh_cal[month] =
           rollingForecastData.plannedEOH?.[index] || 0;
-        contextData.Planned_sell_thru[month] =
+        contextData.planned_sell_thru_pct[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
+        contextData.gross_projection_nav[month] =
+          rollingForecastData.grossProjection?.[index] || 0;
+        contextData.macys_proj_receipts[month] =
+          rollingForecastData.macysProjReceipts?.[index] || 0;
       });
 
       const payload = {
-        changed_variable: changedVariable,
+        sheet_id: parseInt(sheetId), // Added sheet_id
+        changed_variable: getVariableName(),
         new_value: newValue,
-        context_data: contextData,
-        product_id: productId,
+        context_data: contextData, // Changed from updated_context to context_data
+        pid: productId, // Changed from product_id to pid
       };
+
+      console.log("Submitting forecast changes payload:", payload); // For debugging
 
       const response = await axios.post(
         `${
@@ -835,35 +981,51 @@ const ProductDetailsView = () => {
         const updatedContext = response.data.updated_context;
 
         const updatedRollingData = {
-          index: monthLabels.map(
-            (month) => updatedContext.Index_value?.[month] || 0
-          ),
+          index: monthLabels.map((month) => updatedContext.index?.[month] || 0),
           fcByIndex: monthLabels.map(
-            (month) => updatedContext.FC_by_Index?.[month] || 0
+            (month) => updatedContext.fc_by_index?.[month] || 0
           ),
           fcByTrend: monthLabels.map(
-            (month) => updatedContext.FC_by_Trend?.[month] || 0
+            (month) => updatedContext.fc_by_trend?.[month] || 0
           ),
           recommendedFC: monthLabels.map(
-            (month) => updatedContext.Recommended_FC?.[month] || 0
+            (month) => updatedContext.recommended_fc?.[month] || 0
           ),
           plannedFC: monthLabels.map(
-            (month) => updatedContext.Planned_FC?.[month] || 0
+            (month) => updatedContext.planned_fc?.[month] || 0
           ),
           plannedShipments: monthLabels.map(
-            (month) => updatedContext.Planned_Shipments?.[month] || 0
+            (month) => updatedContext.planned_shipments?.[month] || 0
           ),
           plannedEOH: monthLabels.map(
-            (month) => updatedContext.Planned_EOH?.[month] || 0
+            (month) => updatedContext.planned_eoh_cal?.[month] || 0
           ),
-          grossProjection: rollingForecastData.grossProjection,
-          macysProjReceipts: rollingForecastData.macysProjReceipts,
+          grossProjection: monthLabels.map(
+            (month) => updatedContext.gross_projection_nav?.[month] || 0
+          ),
+          macysProjReceipts: monthLabels.map(
+            (month) => updatedContext.macys_proj_receipts?.[month] || 0
+          ),
           plannedSellThru: monthLabels.map(
-            (month) => updatedContext.Planned_sell_thru?.[month] || 0
+            (month) => updatedContext.planned_sell_thru_pct?.[month] || 0
           ),
         };
 
         setRollingForecastData(updatedRollingData);
+
+        // Update editableData with new values
+        const newEditableData = {
+          plannedFC: {},
+          plannedShipments: {},
+        };
+        monthLabels.forEach((month, index) => {
+          newEditableData.plannedFC[month] =
+            updatedRollingData.plannedFC[index];
+          newEditableData.plannedShipments[month] =
+            updatedRollingData.plannedShipments[index];
+        });
+        setEditableData(newEditableData);
+
         setLastSubmittedData(payload);
       }
     } catch (error) {
@@ -881,10 +1043,10 @@ const ProductDetailsView = () => {
     setIsSaving(true);
     setShowSaveChangesPopup(true);
 
-    // const file_path = localStorage.getItem("file_path");
     const file_path = files.find(
       (f) => f.id === parseInt(sheetId)
     ).output_folder;
+
     try {
       const monthLabels = [
         "FEB",
@@ -901,63 +1063,53 @@ const ProductDetailsView = () => {
         "JAN",
       ];
 
-      const contextData = {
-        Rolling_method: rollingMethod,
-        Trend: parseFloat(editableTrend) || 0,
-        Forecasting_Method: forecastingMethod,
-        month_12_fc_index_original: parseFloat(editable12MonthFC) || 100,
-        Current_FC_Index: selectedIndex,
+      // Build updated_context with NEW variable names
+      const updated_context = {
+        updated_rolling_method: rollingMethod,
+        updated_std_trend: parseFloat(editableTrend) || 0,
+        updated_forecasting_method: forecastingMethod,
+        updated_12_month_fc_index: parseFloat(editable12MonthFC) || 0,
+        updated_current_fc_index: selectedIndex,
       };
 
-      monthLabels.forEach((month, index) => {
-        if (!contextData.Index_value) contextData.Index_value = {};
-        if (!contextData.FC_by_Index) contextData.FC_by_Index = {};
-        if (!contextData.FC_by_Trend) contextData.FC_by_Trend = {};
-        if (!contextData.Recommended_FC) contextData.Recommended_FC = {};
-        if (!contextData.Planned_FC) contextData.Planned_FC = {};
-        if (!contextData.Planned_Shipments) contextData.Planned_Shipments = {};
-        if (!contextData.Planned_EOH) contextData.Planned_EOH = {};
-        if (!contextData.Planned_sell_thru) contextData.Planned_sell_thru = {};
+      // Initialize monthly data objects with NEW variable names
+      updated_context.index = {};
+      updated_context.fc_by_index = {};
+      updated_context.fc_by_trend = {};
+      updated_context.recommended_fc = {};
+      updated_context.planned_fc = {};
+      updated_context.planned_shipments = {};
+      updated_context.planned_eoh_cal = {};
+      updated_context.planned_sell_thru_pct = {};
+      updated_context.gross_projection_nav = {};
+      updated_context.macys_proj_receipts = {};
 
-        contextData.Index_value[month] =
-          rollingForecastData.index?.[index] || 0;
-        contextData.FC_by_Index[month] =
+      // Populate monthly data
+      monthLabels.forEach((month, index) => {
+        updated_context.index[month] = rollingForecastData.index?.[index] || 0;
+        updated_context.fc_by_index[month] =
           rollingForecastData.fcByIndex?.[index] || 0;
-        contextData.FC_by_Trend[month] =
+        updated_context.fc_by_trend[month] =
           rollingForecastData.fcByTrend?.[index] || 0;
-        contextData.Recommended_FC[month] =
+        updated_context.recommended_fc[month] =
           rollingForecastData.recommendedFC?.[index] || 0;
-        contextData.Planned_FC[month] =
+        updated_context.planned_fc[month] =
           editableData.plannedFC?.[month] ||
           rollingForecastData.plannedFC?.[index] ||
           0;
-        contextData.Planned_Shipments[month] =
+        updated_context.planned_shipments[month] =
           editableData.plannedShipments?.[month] ||
           rollingForecastData.plannedShipments?.[index] ||
           0;
-        contextData.Planned_EOH[month] =
+        updated_context.planned_eoh_cal[month] =
           rollingForecastData.plannedEOH?.[index] || 0;
-        contextData.Planned_sell_thru[month] =
+        updated_context.planned_sell_thru_pct[month] =
           rollingForecastData.plannedSellThru?.[index] || 0;
+        updated_context.gross_projection_nav[month] =
+          rollingForecastData.grossProjection?.[index] || 0;
+        updated_context.macys_proj_receipts[month] =
+          rollingForecastData.macysProjReceipts?.[index] || 0;
       });
-
-      const updated_context = {
-        Rolling_method: rollingMethod,
-        Trend: parseFloat(editableTrend) || 0,
-        Forecasting_Method: forecastingMethod,
-        month_12_fc_index_original: parseFloat(editable12MonthFC) || 0,
-        Current_FC_Index: selectedIndex,
-        Index: contextData.Index_value,
-        FC_by_Index: contextData.FC_by_Index,
-        FC_by_Trend: contextData.FC_by_Trend,
-        Recommended_FC: contextData.Recommended_FC,
-        Planned_FC: contextData.Planned_FC,
-        Planned_Shipments: contextData.Planned_Shipments,
-        Planned_EOH: contextData.Planned_EOH,
-        Gross_Projection_Nav: contextData.Gross_Projection_Nav || {},
-        Macys_Proj_Receipts: contextData.Macys_Proj_Receipts || {},
-        Planned_sell_Thru: contextData.Planned_sell_thru,
-      };
 
       const payload = {
         sheet_id: parseInt(sheetId),
@@ -965,6 +1117,8 @@ const ProductDetailsView = () => {
         file_path: file_path,
         pid: productId,
       };
+
+      console.log("Saving with payload:", payload); // For debugging
 
       const response = await axios.post(
         `${
@@ -976,32 +1130,35 @@ const ProductDetailsView = () => {
       if (response.data && response.data.updated_context) {
         const updatedContext = response.data.updated_context;
 
+        // Update rolling data using NEW variable names from response
         const updatedRollingData = {
-          index: monthLabels.map(
-            (month) => updatedContext.Index_value?.[month] || 0
-          ),
+          index: monthLabels.map((month) => updatedContext.index?.[month] || 0),
           fcByIndex: monthLabels.map(
-            (month) => updatedContext.FC_by_Index?.[month] || 0
+            (month) => updatedContext.fc_by_index?.[month] || 0
           ),
           fcByTrend: monthLabels.map(
-            (month) => updatedContext.FC_by_Trend?.[month] || 0
+            (month) => updatedContext.fc_by_trend?.[month] || 0
           ),
           recommendedFC: monthLabels.map(
-            (month) => updatedContext.Recommended_FC?.[month] || 0
+            (month) => updatedContext.recommended_fc?.[month] || 0
           ),
           plannedFC: monthLabels.map(
-            (month) => updatedContext.Planned_FC?.[month] || 0
+            (month) => updatedContext.planned_fc?.[month] || 0
           ),
           plannedShipments: monthLabels.map(
-            (month) => updatedContext.Planned_Shipments?.[month] || 0
+            (month) => updatedContext.planned_shipments?.[month] || 0
           ),
           plannedEOH: monthLabels.map(
-            (month) => updatedContext.Planned_EOH?.[month] || 0
+            (month) => updatedContext.planned_eoh_cal?.[month] || 0
           ),
-          grossProjection: rollingForecastData.grossProjection,
-          macysProjReceipts: rollingForecastData.macysProjReceipts,
+          grossProjection: monthLabels.map(
+            (month) => updatedContext.gross_projection_nav?.[month] || 0
+          ),
+          macysProjReceipts: monthLabels.map(
+            (month) => updatedContext.macys_proj_receipts?.[month] || 0
+          ),
           plannedSellThru: monthLabels.map(
-            (month) => updatedContext.Planned_sell_thru?.[month] || 0
+            (month) => updatedContext.planned_sell_thru_pct?.[month] || 0
           ),
         };
 
