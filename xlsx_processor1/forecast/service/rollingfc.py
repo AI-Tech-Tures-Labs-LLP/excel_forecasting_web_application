@@ -89,15 +89,15 @@ def get_forecast_variables(product_object,sheet_object, year=2025,last_year=2024
 
 def dependencies():
     return {
-        "Index_value" : ["Current_FC_Index"],
-        "FC_by_Index": ["Index_value", "month_12_fc_index"],
-        "FC_by_Trend": ["Trend"],
-        "FC_by_Average": ["FC_by_Index", "FC_by_Trend"],
-        "Recommended_FC": ["Forecasting_Method", "FC_by_Index", "FC_by_Trend", "FC_by_Average"],
-        "Planned_FC": ["Recommended_FC","Rolling_method"],
-        "Planned_Shipments": ["Gross_Projection"],
-        "Planned_EOH": ["Planned_FC", "Planned_Shipments","Rolling_method"],
-        "Planned_sell_thru": ["Planned_FC", "Planned_EOH"]
+        "index" : ["current_fc_index"],
+        "fc_by_index": ["index", "month_12_fc_index"],
+        "fc_by_trend": ["std_trend"],
+        "fc_by_average": ["fc_by_index", "fc_by_trend"],
+        "recommended_fc": ["forecasting_method", "fc_by_index", "fc_by_trend", "fc_by_average"],
+        "planned_fc": ["recommended_fc","rolling_method"],
+        "planned_shipments": ["gross_projection_nav"],
+        "planned_eoh_cal": ["planned_fc", "planned_shipments","rolling_method"],
+        "planned_sell_thru_pct": ["planned_fc", "planned_eoh_cal"]
  
     }
  
@@ -144,50 +144,50 @@ def build_dependency_order(dependencies, changed_variable):
     return sorted_vars
 
  
-def get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Unit_Sales, last_month_of_previous_month_numeric, current_month_number, current_month):
+def get_function_map(ty_total_sales_units, ty_total_eom_oh, ty_omni_receipts, ly_total_eom_oh, ly_total_sales_units, last_month_of_previous_month_numeric, current_month_number, current_month):
 
     s1 = last_month_of_previous_month_numeric
     k1 = current_month_number
     row_4 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-    row_17 = TY_Unit_Sales
-    row_39 = LY_Unit_Sales
-    row_43 = LY_OH_Units
-    row_37 = TY_Receipts
-    row_21 = TY_OH_Units
+    row_17 = ty_total_sales_units
+    row_39 = ly_total_sales_units
+    row_43 = ly_total_eom_oh
+    row_37 = ty_omni_receipts
+    row_21 = ty_total_eom_oh
     print("row_43:", row_43)
 
     return {
-        "Index_value": {
+        "index": {
             "function": calculate_index_value,
-            "params": lambda ctx: [ctx["Current_FC_Index"]]
+            "params": lambda ctx: [ctx["current_fc_index"]]
         },
-        "FC_by_Index": {
+        "fc_by_index": {
             "function": calculate_fc_by_index,
-            "params": lambda ctx: [ctx["Index_value"], ctx["month_12_fc_index"]]
+            "params": lambda ctx: [ctx["index"], ctx["month_12_fc_index"]]
         },
-        "FC_by_Trend": {
+        "fc_by_trend": {
             "function": calculate_fc_by_trend,
-            "params": lambda ctx: [s1, k1,ctx["Trend"], row_4, list(row_17.values()), list(row_39.values())]
+            "params": lambda ctx: [s1, k1,ctx["std_trend"], row_4, list(row_17.values()), list(row_39.values())]
         },
-        "FC_by_Average": {
+        "fc_by_average": {
             "function": calculate_fc_by_average,
-            "params": lambda ctx: [ctx["FC_by_Index"], ctx["FC_by_Trend"]]
+            "params": lambda ctx: [ctx["fc_by_index"], ctx["fc_by_trend"]]
         },
-        "Recommended_FC": {
+        "recommended_fc": {
             "function": get_recommended_forecast,
-            "params": lambda ctx: [ctx["Forecasting_Method"], ctx["FC_by_Index"], ctx["FC_by_Trend"], None]
+            "params": lambda ctx: [ctx["forecasting_method"], ctx["fc_by_index"], ctx["fc_by_trend"], None]
         },
-        "Planned_FC": {
+        "planned_fc": {
             "function": calculate_planned_fc,
-            "params": lambda ctx: [row_4, ctx["Recommended_FC"], row_17, row_43, str(ctx["Rolling_method"]).upper(), k1]
+            "params": lambda ctx: [row_4, ctx["recommended_fc"], row_17, row_43, str(ctx["rolling_method"]).upper(), k1]
         },
-        "Planned_EOH": {
+        "planned_eoh_cal": {
             "function": calculate_planned_oh_partial,
-            "params": lambda ctx: [str(ctx["Rolling_method"]).upper(), k1, ctx["Planned_FC"], ctx["Planned_Shipments"], row_21, row_37, row_43, row_17, current_month]
+            "params": lambda ctx: [str(ctx["rolling_method"]).upper(), k1, ctx["planned_fc"], ctx["planned_shipments"], row_21, row_37, row_43, row_17, current_month]
         },
-        "Planned_sell_thru": {
+        "planned_sell_thru_pct": {
             "function": calculate_planned_sell_through,
-            "params": lambda ctx: [ctx["Planned_FC"], ctx["Planned_EOH"]]
+            "params": lambda ctx: [ctx["planned_fc"], ctx["planned_eoh_cal"]]
         }
     }
  
@@ -198,13 +198,13 @@ def recalculate_all(changed_var, new_value, context_data, product_object, sheet_
     order = build_dependency_order(deps, changed_var)
     context_data[changed_var] = new_value
     context_data
-    TY_Unit_Sales, LY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units = get_forecast_variables(product_object,sheet_object)
+    ty_total_sales_units, ly_total_sales_units, ty_total_eom_oh, ty_omni_receipts, ly_total_eom_oh = get_forecast_variables(product_object,sheet_object)
     retail = RetailInfo.objects.filter(sheet=sheet_object).first()
     last_month_of_previous_month_numeric = retail.last_month_of_previous_month_numeric
     current_month_number = retail.current_month_number
     current_month = retail.current_month
-    print(type(context_data['Trend']))
-    function_map = get_function_map(TY_Unit_Sales, TY_OH_Units, TY_Receipts, LY_OH_Units, LY_Unit_Sales, last_month_of_previous_month_numeric, current_month_number, current_month.upper())
+    print(type(context_data['std_trend']))
+    function_map = get_function_map(ty_total_sales_units, ty_total_eom_oh, ty_omni_receipts, ly_total_eom_oh, ly_total_sales_units, last_month_of_previous_month_numeric, current_month_number, current_month.upper())
     print("Recalculation order:", order)
     print("Current Month:",current_month)
 

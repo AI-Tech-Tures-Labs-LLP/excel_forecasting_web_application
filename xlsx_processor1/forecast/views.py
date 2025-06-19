@@ -38,7 +38,7 @@ from .serializers import ForecastNoteSerializer
 
 def get_product_forecast_data(pid,sheet_object):
         product = get_object_or_404(ProductDetail, product_id=pid,sheet=sheet_object)
-        return product.category, product.rolling_method, product.std_trend_original, product.std_index_value_original, product.month_12_fc_index_original, product.forecasting_method, product.recommended_total_quantity
+        return product.category, product.updated_rolling_method, product.updated_std_trend, product.updated_12_month_fc_index, product.updated_forecasting_method, product.updated_current_fc_index,product.user_updated_final_quantity
 
 def get_planned_data(pid, year,sheet_object):
     product = ProductDetail.objects.filter(product_id=pid,sheet=sheet_object).first()
@@ -393,11 +393,11 @@ class ProductDetailViewSet(viewsets.ViewSet):
             return Response({"error": "Missing sheet_id"}, status=status.HTTP_400_BAD_REQUEST)
         sheet_object = get_object_or_404(SheetUpload, id=sheet_id)
         save_forecast_data(pid, updated_context, sheet_object)
-        category,rolling_method, std_trend , STD_index_value, month_12_fc_index, forecasting_method, total_added_qty = get_product_forecast_data(pid,sheet_object)
+        category, updated_rolling_method, updated_std_trend, updated_12_month_fc_index, updated_forecasting_method, updated_current_fc_index,user_updated_final_quantity = get_product_forecast_data(pid,sheet_object)
         result = get_planned_data(pid,2025,sheet_object)
-        planned_shp = result["planned_shipments"]
+        planned_shipments = result["planned_shipments"]
         planned_fc = result["planned_fc"]
-        get_c2_value(category,pid,std_trend,STD_index_value,month_12_fc_index,forecasting_method,planned_shp,planned_fc,path)
+        get_c2_value(category,pid,updated_rolling_method, updated_std_trend, updated_12_month_fc_index, updated_forecasting_method, updated_current_fc_index,user_updated_final_quantity,planned_shipments,planned_fc,path)
 
         print("Data saved to DB Successfully")
         return Response({"pid": pid, "updated_context": updated_context})

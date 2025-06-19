@@ -12,7 +12,6 @@ import pandas as pd
 from django.db import transaction
 
 
-
 # MonthlyForecast model Operations 1
 def save_macys_projection_receipts(product, matching_row, year, sheet ):
     """
@@ -180,11 +179,11 @@ def save_forecast_data(pid, updated_context, sheet_object):
     year = datetime.now().year  # You can change this if needed
 
     # Update ProductDetail fields
-    product.rolling_method = updated_context.get("rolling_method", product.rolling_method)
-    product.std_trend_original = updated_context.get("std_trend_original", product.std_trend_original)
-    product.forecasting_method = updated_context.get("forecasting_method", product.forecasting_method)
-    product.month_12_fc_index_original = updated_context.get("month_12_fc_index_original", product.month_12_fc_index_original)
-    product.current_fc_index = updated_context.get("current_fc_index", product.current_fc_index)
+    product.updated_rolling_method = updated_context.get("rolling_method", product.rolling_method_original)
+    product.updated_std_trend = updated_context.get("std_trend", product.std_trend_original)
+    product.updated_forecasting_method = updated_context.get("forecasting_method", product.forecasting_method_original)
+    product.updated_12_month_fc_index = updated_context.get("month_12_fc_index", product.month_12_fc_index_original)
+    product.updated_current_fc_index = updated_context.get("current_fc_index", product.current_fc_index_original)
 
     with transaction.atomic():
         product.save()

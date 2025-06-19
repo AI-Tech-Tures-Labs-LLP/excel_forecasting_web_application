@@ -922,6 +922,8 @@ def process_category(args):
                         qty_added_to_balance_soq_forecast_month=common_variable_dict["qty_added_to_balance_soq_forecast_month"],
                         assigned_to=user_instance,
                         user_updated_final_quantity=0 if common_variable_dict['recommended_total_quantity'] < 0 else common_variable_dict['recommended_total_quantity'],
+                        selected_months= common_variable_dict['selected_months'],
+                        forecast_month_week = common_variable_dict['forecast_month_week']
                     )
                 product_objs.append(productmain)
                 print("Starting StoreForecast data save/update...")
