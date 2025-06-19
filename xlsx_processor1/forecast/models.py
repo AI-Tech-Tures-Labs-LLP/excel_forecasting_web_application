@@ -388,6 +388,7 @@ class ForecastNote(models.Model):
     tagged_to = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="tagged_notes")  # Changed to ManyToManyField
     created_at = models.DateTimeField(auto_now_add=True,null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True,null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         indexes = [
@@ -397,7 +398,49 @@ class ForecastNote(models.Model):
         ]
  
 
+
+from django.utils import timezone
+
+class Notification(models.Model):
+    """Track notifications for tagged users"""
+    
+    NOTIFICATION_TYPES = [
+        ('note_tagged', 'Tagged in Note'),
+        ('note_updated', 'Note Updated'),
+    ]
+    
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_notifications"
+    )
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_notifications"
+    )
+    message = models.TextField()
+    
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['recipient', 'is_read']),
+            models.Index(fields=['created_at']),
+        ]
+        ordering = ['-created_at']
+    
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save(update_fields=['is_read', 'read_at'])
+
+
     def __str__(self):
+        
         return f"{self.product} - {self.note[:50]}..."  # Display first 50 characters of the note
 
 
