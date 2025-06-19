@@ -35,7 +35,16 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import ForecastNote
 from .serializers import ForecastNoteSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
+from django.shortcuts import get_object_or_404
+from .models import ForecastNote, Notification
+from .serializers import ForecastNoteSerializer, NotificationSerializer
+from .service.notification_service import ForecastNoteNotificationService
+import logging
 
+
+logger = logging.getLogger('django')
 def get_product_forecast_data(pid,sheet_object):
         product = get_object_or_404(ProductDetail, product_id=pid,sheet=sheet_object)
         return product.category, product.updated_rolling_method, product.updated_std_trend, product.updated_12_month_fc_index, product.updated_forecasting_method, product.updated_current_fc_index,product.user_updated_final_quantity
@@ -537,16 +546,36 @@ class DownloadFinalQuantityReport(APIView):
         return Response({"download_url": download_url}, status=200)
 
 # Done
+# class ForecastNoteViewSet(viewsets.ModelViewSet):
+#     queryset = ForecastNote.objects.all().order_by('-updated_at')
+#     serializer_class = ForecastNoteSerializer
+ 
+#     def get_queryset(self):
+#         queryset = super().get_queryset()
+#         pid = self.request.query_params.get("pid")
+#         sheet_id = self.request.query_params.get("sheet_id")
+
+#         # Only enforce this in list or custom actions
+#         if self.action in ["list", "bulk_delete"]:
+#             if not sheet_id:
+#                 raise ValidationError({"sheet_id": "This query parameter is required."})
+#             if pid:
+#                 queryset = queryset.filter(productdetail__product_id=pid)
+#             queryset = queryset.filter(sheet_id=sheet_id)
+        
+#         return queryset
+
+
 class ForecastNoteViewSet(viewsets.ModelViewSet):
     queryset = ForecastNote.objects.all().order_by('-updated_at')
     serializer_class = ForecastNoteSerializer
+    permission_classes = [IsAuthenticated]
  
     def get_queryset(self):
         queryset = super().get_queryset()
         pid = self.request.query_params.get("pid")
         sheet_id = self.request.query_params.get("sheet_id")
 
-        # Only enforce this in list or custom actions
         if self.action in ["list", "bulk_delete"]:
             if not sheet_id:
                 raise ValidationError({"sheet_id": "This query parameter is required."})
@@ -555,6 +584,138 @@ class ForecastNoteViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(sheet_id=sheet_id)
         
         return queryset
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        # Check permissions - only creator or admin can delete
+        if instance.created_by != request.user and not request.user.is_staff:
+            return Response(
+                {"detail": "You can only delete notes you created."}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        self.perform_destroy(instance)
+        return Response({"detail": "Forecast note deleted."}, status=status.HTTP_204_NO_CONTENT)
+   
+    def perform_create(self, serializer):
+        """Create note and automatically send WebSocket notifications to tagged users"""
+        
+        # Save the note with created_by automatically set
+        forecast_note = serializer.save(created_by=self.request.user)
+        
+        # Send WebSocket notifications to tagged users
+        try:
+            ForecastNoteNotificationService.notify_tagged_users(forecast_note)
+            logger.info(f"✅ WebSocket notifications sent for note {forecast_note.id}")
+        except Exception as e:
+            logger.error(f"❌ Failed to send WebSocket notifications for note {forecast_note.id}: {e}")
+    
+    def perform_update(self, serializer):
+        """Update note with permission check"""
+        instance = self.get_object()
+        
+        # Check permissions - only creator or admin can update
+        if instance.created_by != self.request.user and not self.request.user.is_staff:
+            raise ValidationError("You can only edit notes you created.")
+        
+        serializer.save()
+    
+    @action(detail=False, methods=['get'])
+    def my_notes(self, request):
+        """Get notes created by the current user"""
+        sheet_id = request.query_params.get("sheet_id")
+        if not sheet_id:
+            return Response({"error": "sheet_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        notes = ForecastNote.objects.filter(
+            created_by=request.user,
+            sheet_id=sheet_id
+        ).order_by('-created_at')
+        
+        serializer = self.get_serializer(notes, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def tagged_notes(self, request):
+        """Get notes where the current user is tagged"""
+        sheet_id = request.query_params.get("sheet_id")
+        if not sheet_id:
+            return Response({"error": "sheet_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        notes = ForecastNote.objects.filter(
+            tagged_to=request.user,
+            sheet_id=sheet_id
+        ).order_by('-created_at')
+        
+        serializer = self.get_serializer(notes, many=True)
+        return Response(serializer.data)
+
+
+class NotificationViewSet(viewsets.ModelViewSet):
+    """API for managing user notifications"""
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Notification.objects.filter(recipient=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def mark_read(self, request, pk=None):
+        """Mark a specific notification as read"""
+        notification = self.get_object()
+        notification.mark_as_read()
+        
+        # Send WebSocket update for unread count
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            unread_count = self.get_queryset().filter(is_read=False).count()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{request.user.id}",
+                {
+                    'type': 'send_notification_update',
+                    'unread_count': unread_count
+                }
+            )
+        
+        return Response({'status': 'marked as read', 'notification_id': notification.id})
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        """Mark all notifications as read for the current user"""
+        notifications = self.get_queryset().filter(is_read=False)
+        count = notifications.count()
+        
+        for notification in notifications:
+            notification.mark_as_read()
+        
+        # Send WebSocket update
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        
+        channel_layer = get_channel_layer()
+        if channel_layer:
+            async_to_sync(channel_layer.group_send)(
+                f"user_{request.user.id}",
+                {
+                    'type': 'send_notification_update',
+                    'unread_count': 0
+                }
+            )
+        
+        return Response({'status': f'{count} notifications marked as read', 'count': count})
+    
+    @action(detail=False, methods=['get'])
+    def unread_count(self, request):
+        """Get unread notification count for the current user"""
+        count = self.get_queryset().filter(is_read=False).count()
+        return Response({'unread_count': count})
+
+
+
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
