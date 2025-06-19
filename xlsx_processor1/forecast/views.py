@@ -42,7 +42,8 @@ from .models import ForecastNote, Notification
 from .serializers import ForecastNoteSerializer, NotificationSerializer
 from .service.notification_service import ForecastNoteNotificationService
 import logging
-
+from .pagination import ProductPagination
+from django.db.models import Prefetch
 
 logger = logging.getLogger('django')
 def get_product_forecast_data(pid,sheet_object):
@@ -422,7 +423,7 @@ class ForecastViewSet(ViewSet):
         sheet_id = request.query_params.get("sheet_id")
         product_type = request.query_params.get("product_type")
  
-        if not sheet_id:    
+        if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=400)
  
         queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
@@ -441,7 +442,6 @@ class ForecastViewSet(ViewSet):
         for field in multi_value_fields:
             values = request.query_params.getlist(field)
             if values:
-                # Use `_id__in` for foreign key fields
                 if field == "assigned_to":
                     queryset = queryset.filter(assigned_to_id__in=values)
                 else:
@@ -452,23 +452,21 @@ class ForecastViewSet(ViewSet):
             if value is not None and value.lower() in ["true", "false"]:
                 queryset = queryset.filter(**{field: value.lower() == "true"})
  
-        product_ids = [product.product_id for product in queryset]
-        notes = ForecastNote.objects.filter(productdetail__product_id__in=product_ids)
-        notes_map = {}
-        serialized_notes = ForecastNoteSerializer(notes, many=True).data
-        for note in serialized_notes:
-            pid = note.get("productdetail")
-            if pid not in notes_map:
-                notes_map[pid] = []
-            notes_map[pid].append(note)
+        # Apply pagination
+        paginator = ProductPagination()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
  
+        # Prefetch forecast notes only for paginated products
+        paginated_qs = ProductDetail.objects.filter(pk__in=[p.pk for p in paginated_qs]).prefetch_related(Prefetch("notes", queryset=ForecastNote.objects.all()))
+ 
+        # Serialize with notes
         result = []
-        for product in queryset:
+        for product in paginated_qs:
             serialized_product = ProductDetailSerializer(product).data
-            serialized_product["forecast_notes"] = notes_map.get(product.id, [])
+            serialized_product["forecast_notes"] = ForecastNoteSerializer(product.notes.all(), many=True).data
             result.append(serialized_product)
  
-        return Response(result)
+        return paginator.get_paginated_response(result)
 
 
 # Done 
