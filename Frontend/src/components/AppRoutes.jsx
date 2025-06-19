@@ -188,7 +188,7 @@ import ProductSelector from "../components/ProductSelector";
 import Navbar from "../components/Navbar";
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import AnalystManagement from "../components/AnalystManagement";
-import AdminDashboard from "../components/AdminDashboard";
+import AdminDashboard from "./admin/AdminDashboard";
 
 // Import auth components
 import LoginPage from "../components/auth/LoginPage";
