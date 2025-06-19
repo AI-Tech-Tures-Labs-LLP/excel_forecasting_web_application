@@ -718,7 +718,7 @@ import Navbar from "./components/Navbar";
 import Toast from "./components/Toast";
 import LoadingOverlay from "./components/LoadingOverlay";
 import AnalystManagement from "./components/AnalystManagement";
-import AdminDashboard from "./components/AdminDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
 
 // Redux imports
 import { setCurrentView } from "./redux/uiSlice";
