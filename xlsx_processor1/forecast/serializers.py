@@ -1,3 +1,4 @@
+from .models import ForecastNote, Notification
 from .models import ProductDetail, MonthlyForecast, StoreForecast, ComForecast, OmniForecast, ForecastNote, SheetUpload
 from rest_framework import serializers
 import math
@@ -37,7 +38,6 @@ class FloatHandlingSerializerMixin:
 
 
 
-from .models import ForecastNote, Notification
 
 class ForecastNoteSerializer(serializers.ModelSerializer):
     tagged_to_usernames = serializers.StringRelatedField(source='tagged_to', many=True, read_only=True)
