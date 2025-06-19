@@ -103,18 +103,29 @@ const RollingForecastTable = ({
     const isAutoChanged = autoChangedCells.has(cellKey);
     const isJustChanged = justChangedCells.has(cellKey);
 
-    if (row.editable && editableData) {
-      const editableKey =
-        row.key === "plannedFC" ? "plannedFC" : "plannedShipments";
-      const editableValue = editableData[editableKey]?.[month] ?? value;
+    // Debug logging for editable rows
+    if (row.editable && process.env.NODE_ENV === "development") {
+      console.log(`${row.key} - ${month}:`, {
+        originalValue: value,
+        editableData: editableData?.[row.key]?.[month],
+        fullEditableData: editableData,
+      });
+    }
+
+    if (row.editable && editableData && row.key === "plannedFC") {
+      const editableValue = editableData.plannedFC?.[month];
+      const displayValue =
+        editableValue !== undefined && editableValue !== null
+          ? editableValue
+          : value;
 
       return (
         <div className="relative">
           <input
             type="number"
-            value={editableValue}
+            value={displayValue === 0 ? "0" : displayValue || ""}
             onChange={(e) =>
-              handleCellChangeWithHighlight(editableKey, month, e.target.value)
+              handleCellChangeWithHighlight("plannedFC", month, e.target.value)
             }
             className={`w-full px-2 py-1 text-center text-sm font-medium rounded transition-all duration-300 ${
               isJustChanged
@@ -123,6 +134,38 @@ const RollingForecastTable = ({
                 ? "border-2 border-gray-500 bg-gray-50 font-semibold"
                 : "border border-blue-300 bg-blue-50 focus:bg-white focus:border-blue-500"
             } focus:outline-none focus:ring-2 focus:ring-blue-200`}
+            style={{ minWidth: "70px" }}
+          />
+        </div>
+      );
+    }
+
+    if (row.editable && editableData && row.key === "plannedShipments") {
+      const editableValue = editableData.plannedShipments?.[month];
+      const displayValue =
+        editableValue !== undefined && editableValue !== null
+          ? editableValue
+          : value;
+
+      return (
+        <div className="relative">
+          <input
+            type="number"
+            value={displayValue === 0 ? "0" : displayValue || ""}
+            onChange={(e) =>
+              handleCellChangeWithHighlight(
+                "plannedShipments",
+                month,
+                e.target.value
+              )
+            }
+            className={`w-full px-2 py-1 text-center text-sm font-medium rounded transition-all duration-300 ${
+              isJustChanged
+                ? "transform scale-110 shadow-lg border-2 border-indigo-400 bg-indigo-50"
+                : isUserChanged || isAutoChanged
+                ? "border-2 border-gray-500 bg-gray-50 font-semibold"
+                : "border border-blue-300 bg-blue-50 focus:bg-white focus:border-blue-500"
+            } focus:outline-none focus:ring-2 focus:ring-2 focus:ring-blue-200`}
             style={{ minWidth: "70px" }}
           />
         </div>
@@ -181,35 +224,42 @@ const RollingForecastTable = ({
           </thead>
           <tbody>
             {rows.map((row, index) => {
-              const totals = {
-                annual: row.data.reduce((sum, val) => sum + (val || 0), 0),
-                spring: row.data
-                  .slice(0, 6)
-                  .reduce((sum, val) => sum + (val || 0), 0),
-                fall: row.data
-                  .slice(6)
-                  .reduce((sum, val) => sum + (val || 0), 0),
-              };
+              // Calculate totals based on the current data (either editable or original)
+              let dataForTotals = row.data;
 
               if (row.editable && editableData) {
-                const editableKey =
-                  row.key === "plannedFC" ? "plannedFC" : "plannedShipments";
-                const editableValues = Object.values(
-                  editableData[editableKey] || {}
-                );
-                if (editableValues.length === 12) {
-                  totals.annual = editableValues.reduce(
-                    (sum, val) => sum + (val || 0),
-                    0
+                if (row.key === "plannedFC" && editableData.plannedFC) {
+                  dataForTotals = monthLabels.map(
+                    (month) =>
+                      editableData.plannedFC[month] ??
+                      row.data[monthLabels.indexOf(month)] ??
+                      0
                   );
-                  totals.spring = editableValues
-                    .slice(0, 6)
-                    .reduce((sum, val) => sum + (val || 0), 0);
-                  totals.fall = editableValues
-                    .slice(6)
-                    .reduce((sum, val) => sum + (val || 0), 0);
+                } else if (
+                  row.key === "plannedShipments" &&
+                  editableData.plannedShipments
+                ) {
+                  dataForTotals = monthLabels.map(
+                    (month) =>
+                      editableData.plannedShipments[month] ??
+                      row.data[monthLabels.indexOf(month)] ??
+                      0
+                  );
                 }
               }
+
+              const totals = {
+                annual: dataForTotals.reduce(
+                  (sum, val) => sum + (Number(val) || 0),
+                  0
+                ),
+                spring: dataForTotals
+                  .slice(0, 6)
+                  .reduce((sum, val) => sum + (Number(val) || 0), 0),
+                fall: dataForTotals
+                  .slice(6)
+                  .reduce((sum, val) => sum + (Number(val) || 0), 0),
+              };
 
               // Check if any cell in this row has changed
               const rowHasUserChanges = monthLabels.some((month) =>
@@ -264,6 +314,29 @@ const RollingForecastTable = ({
                     const isAutoChanged = autoChangedCells.has(cellKey);
                     const isJustChanged = justChangedCells.has(cellKey);
 
+                    // For editable rows, get the current value (either edited or original)
+                    let displayValue = value;
+                    if (row.editable && editableData) {
+                      if (row.key === "plannedFC" && editableData.plannedFC) {
+                        const editedValue =
+                          editableData.plannedFC[monthLabels[i]];
+                        displayValue =
+                          editedValue !== undefined && editedValue !== null
+                            ? editedValue
+                            : value;
+                      } else if (
+                        row.key === "plannedShipments" &&
+                        editableData.plannedShipments
+                      ) {
+                        const editedValue =
+                          editableData.plannedShipments[monthLabels[i]];
+                        displayValue =
+                          editedValue !== undefined && editedValue !== null
+                            ? editedValue
+                            : value;
+                      }
+                    }
+
                     return (
                       <td
                         key={i}
@@ -277,7 +350,7 @@ const RollingForecastTable = ({
                             : ""
                         }`}
                       >
-                        {renderCell(row, value, i, monthLabels[i])}
+                        {renderCell(row, displayValue, i, monthLabels[i])}
                       </td>
                     );
                   })}

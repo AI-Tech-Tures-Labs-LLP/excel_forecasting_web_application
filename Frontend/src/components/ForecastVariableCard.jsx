@@ -747,261 +747,261 @@ const ForecastVariableCards = ({ productData }) => {
   }
 
   // Modal Component for Required Quantity Calculation
-  const RequiredQuantityModal = ({
-    isOpen,
-    onClose,
-    data,
-    type,
-    forecastMonth,
-  }) => {
-    if (!isOpen) return null;
+  // const RequiredQuantityModal = ({
+  //   isOpen,
+  //   onClose,
+  //   data,
+  //   type,
+  //   forecastMonth,
+  // }) => {
+  //   if (!isOpen) return null;
 
-    const doorCount = data?.door_count || 0;
-    const averageComOh = data?.average_com_oh || 0;
-    const fldc = data?.fldc || 0;
-    const requiredQuantity = data?.forecast_month_required_quantity || 0;
+  //   const doorCount = data?.door_count || 0;
+  //   const averageComOh = data?.average_com_oh || 0;
+  //   const fldc = data?.fldc || 0;
+  //   const requiredQuantity = data?.forecast_month_required_quantity || 0;
 
-    // Next forecast month data
-    const nextForecastMonth = data?.next_forecast_month || "Unknown";
-    const nextRequiredQuantity =
-      data?.next_forecast_month_required_quantity || 0;
-    const currentForecastMonth = data?.forecast_month || "Unknown";
+  //   // Next forecast month data
+  //   const nextForecastMonth = data?.next_forecast_month || "Unknown";
+  //   const nextRequiredQuantity =
+  //     data?.next_forecast_month_required_quantity || 0;
+  //   const currentForecastMonth = data?.forecast_month || "Unknown";
 
-    const displayMonth =
-      forecastMonth === "next" ? nextForecastMonth : currentForecastMonth;
-    const displayRequiredQuantity =
-      forecastMonth === "next" ? nextRequiredQuantity : requiredQuantity;
+  //   const displayMonth =
+  //     forecastMonth === "next" ? nextForecastMonth : currentForecastMonth;
+  //   const displayRequiredQuantity =
+  //     forecastMonth === "next" ? nextRequiredQuantity : requiredQuantity;
 
-    // Calculate the sum dynamically
-    const calculatedSum = doorCount + averageComOh + fldc;
+  //   // Calculate the sum dynamically
+  //   const calculatedSum = doorCount + averageComOh + fldc;
 
-    const getTypeColor = () => {
-      switch (type) {
-        case "store":
-          return {
-            bg: "bg-blue-50",
-            text: "text-blue-600",
-            border: "border-blue-200",
-          };
-        case "com":
-          return {
-            bg: "bg-green-50",
-            text: "text-green-600",
-            border: "border-green-200",
-          };
-        case "omni":
-          return {
-            bg: "bg-purple-50",
-            text: "text-purple-600",
-            border: "border-purple-200",
-          };
-        default:
-          return {
-            bg: "bg-gray-50",
-            text: "text-gray-600",
-            border: "border-gray-200",
-          };
-      }
-    };
+  //   const getTypeColor = () => {
+  //     switch (type) {
+  //       case "store":
+  //         return {
+  //           bg: "bg-blue-50",
+  //           text: "text-blue-600",
+  //           border: "border-blue-200",
+  //         };
+  //       case "com":
+  //         return {
+  //           bg: "bg-green-50",
+  //           text: "text-green-600",
+  //           border: "border-green-200",
+  //         };
+  //       case "omni":
+  //         return {
+  //           bg: "bg-purple-50",
+  //           text: "text-purple-600",
+  //           border: "border-purple-200",
+  //         };
+  //       default:
+  //         return {
+  //           bg: "bg-gray-50",
+  //           text: "text-gray-600",
+  //           border: "border-gray-200",
+  //         };
+  //     }
+  //   };
 
-    const colors = getTypeColor();
+  //   const colors = getTypeColor();
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Modal Header */}
-          <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-xl">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white bg-opacity-20 rounded-lg">
-                  <Calculator className="text-white" size={24} />
-                </div>
-                <h2 className="text-xl font-bold">
-                  Required EOH Quantity Calculation
-                </h2>
-              </div>
-              <button
-                onClick={onClose}
-                className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
-              >
-                <X className="text-white" size={20} />
-              </button>
-            </div>
-          </div>
+  //   return (
+  //     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  //       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  //         {/* Modal Header */}
+  //         <div className="bg-gradient-to-r from-emerald-500 to-green-600 text-white p-6 rounded-t-xl">
+  //           <div className="flex items-center justify-between">
+  //             <div className="flex items-center gap-3">
+  //               <div className="p-2 bg-white bg-opacity-20 rounded-lg">
+  //                 <Calculator className="text-white" size={24} />
+  //               </div>
+  //               <h2 className="text-xl font-bold">
+  //                 Required EOH Quantity Calculation
+  //               </h2>
+  //             </div>
+  //             <button
+  //               onClick={onClose}
+  //               className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+  //             >
+  //               <X className="text-white" size={20} />
+  //             </button>
+  //           </div>
+  //         </div>
 
-          {/* Modal Content */}
-          <div className="p-6 space-y-6">
-            {/* Forecast Info */}
-            <div
-              className={`${colors.bg} border ${colors.border} rounded-lg p-4`}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                {type === "store" && (
-                  <Building2 className={colors.text} size={20} />
-                )}
-                {type === "com" && (
-                  <ShoppingCart className={colors.text} size={20} />
-                )}
-                {type === "omni" && (
-                  <Layers className={colors.text} size={20} />
-                )}
-                <h3 className="font-semibold text-gray-800">
-                  {type?.toUpperCase()} Forecast - {displayMonth}
-                </h3>
-              </div>
-              <p className="text-gray-600 text-sm">
-                Required EOH Quantity for Lead guideline month calculation
-              </p>
-            </div>
+  //         {/* Modal Content */}
+  //         <div className="p-6 space-y-6">
+  //           {/* Forecast Info */}
+  //           <div
+  //             className={`${colors.bg} border ${colors.border} rounded-lg p-4`}
+  //           >
+  //             <div className="flex items-center gap-3 mb-2">
+  //               {type === "store" && (
+  //                 <Building2 className={colors.text} size={20} />
+  //               )}
+  //               {type === "com" && (
+  //                 <ShoppingCart className={colors.text} size={20} />
+  //               )}
+  //               {type === "omni" && (
+  //                 <Layers className={colors.text} size={20} />
+  //               )}
+  //               <h3 className="font-semibold text-gray-800">
+  //                 {type?.toUpperCase()} Forecast - {displayMonth}
+  //               </h3>
+  //             </div>
+  //             <p className="text-gray-600 text-sm">
+  //               Required EOH Quantity for Lead guideline month calculation
+  //             </p>
+  //           </div>
 
-            {/* Formula Section */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Calculator className="text-gray-600" size={20} />
-                <h4 className="font-semibold text-gray-800">
-                  Calculation Formula
-                </h4>
-              </div>
-              <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
-                Required EOH for {displayMonth} = KPI Door Count + Average COM
-                EOM OH + FLDC
-              </div>
-            </div>
+  //           {/* Formula Section */}
+  //           <div className="border border-gray-200 rounded-lg p-4">
+  //             <div className="flex items-center gap-2 mb-3">
+  //               <Calculator className="text-gray-600" size={20} />
+  //               <h4 className="font-semibold text-gray-800">
+  //                 Calculation Formula
+  //               </h4>
+  //             </div>
+  //             <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+  //               Required EOH for {displayMonth} = KPI Door Count + Average COM
+  //               EOM OH + FLDC
+  //             </div>
+  //           </div>
 
-            {/* Variables Section */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* KPI Door Count */}
-              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Building2 className="text-blue-600" size={16} />
-                  <span className="font-medium text-blue-700">
-                    KPI Door Count
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-blue-800">
-                  {doorCount.toLocaleString()}
-                </div>
-              </div>
+  //           {/* Variables Section */}
+  //           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  //             {/* KPI Door Count */}
+  //             <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+  //               <div className="flex items-center gap-2 mb-2">
+  //                 <Building2 className="text-blue-600" size={16} />
+  //                 <span className="font-medium text-blue-700">
+  //                   KPI Door Count
+  //                 </span>
+  //               </div>
+  //               <div className="text-2xl font-bold text-blue-800">
+  //                 {doorCount.toLocaleString()}
+  //               </div>
+  //             </div>
 
-              {/* Average COM EOM OH */}
-              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShoppingCart className="text-green-600" size={16} />
-                  <span className="font-medium text-green-700">
-                    Average COM EOM OH
-                  </span>
-                </div>
-                <div className="text-2xl font-bold text-green-800">
-                  {averageComOh.toLocaleString()}
-                </div>
-              </div>
+  //             {/* Average COM EOM OH */}
+  //             <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+  //               <div className="flex items-center gap-2 mb-2">
+  //                 <ShoppingCart className="text-green-600" size={16} />
+  //                 <span className="font-medium text-green-700">
+  //                   Average COM EOM OH
+  //                 </span>
+  //               </div>
+  //               <div className="text-2xl font-bold text-green-800">
+  //                 {averageComOh.toLocaleString()}
+  //               </div>
+  //             </div>
 
-              {/* FLDC */}
-              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="text-purple-600" size={16} />
-                  <span className="font-medium text-purple-700">FLDC</span>
-                </div>
-                <div className="text-2xl font-bold text-purple-800">
-                  {fldc.toLocaleString()}
-                </div>
-              </div>
-            </div>
+  //             {/* FLDC */}
+  //             <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+  //               <div className="flex items-center gap-2 mb-2">
+  //                 <MapPin className="text-purple-600" size={16} />
+  //                 <span className="font-medium text-purple-700">FLDC</span>
+  //               </div>
+  //               <div className="text-2xl font-bold text-purple-800">
+  //                 {fldc.toLocaleString()}
+  //               </div>
+  //             </div>
+  //           </div>
 
-            {/* Calculation Steps */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Activity className="text-gray-600" size={20} />
-                <h4 className="font-semibold text-gray-800">
-                  Calculation Steps
-                </h4>
-              </div>
+  //           {/* Calculation Steps */}
+  //           <div className="border border-gray-200 rounded-lg p-4">
+  //             <div className="flex items-center gap-2 mb-4">
+  //               <Activity className="text-gray-600" size={20} />
+  //               <h4 className="font-semibold text-gray-800">
+  //                 Calculation Steps
+  //               </h4>
+  //             </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">KPI Door Count:</span>
-                  <span className="font-medium">
-                    {doorCount.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">+ Average COM EOM OH:</span>
-                  <span className="font-medium">
-                    {averageComOh.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-gray-700">+ FLDC:</span>
-                  <span className="font-medium">{fldc.toLocaleString()}</span>
-                </div>
-                <hr className="border-gray-300" />
-                <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
-                  <span className="font-semibold text-emerald-800">
-                    Required EOH for {displayMonth}:
-                  </span>
-                  <span className="text-xl font-bold text-emerald-800">
-                    {calculatedSum.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
+  //             <div className="space-y-3">
+  //               <div className="flex justify-between items-center py-2">
+  //                 <span className="text-gray-700">KPI Door Count:</span>
+  //                 <span className="font-medium">
+  //                   {doorCount.toLocaleString()}
+  //                 </span>
+  //               </div>
+  //               <div className="flex justify-between items-center py-2">
+  //                 <span className="text-gray-700">+ Average COM EOM OH:</span>
+  //                 <span className="font-medium">
+  //                   {averageComOh.toLocaleString()}
+  //                 </span>
+  //               </div>
+  //               <div className="flex justify-between items-center py-2">
+  //                 <span className="text-gray-700">+ FLDC:</span>
+  //                 <span className="font-medium">{fldc.toLocaleString()}</span>
+  //               </div>
+  //               <hr className="border-gray-300" />
+  //               <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+  //                 <span className="font-semibold text-emerald-800">
+  //                   Required EOH for {displayMonth}:
+  //                 </span>
+  //                 <span className="text-xl font-bold text-emerald-800">
+  //                   {calculatedSum.toLocaleString()}
+  //                 </span>
+  //               </div>
+  //             </div>
+  //           </div>
 
-            {/* Validation Check */}
-            {calculatedSum !== displayRequiredQuantity &&
-              displayRequiredQuantity > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertTriangle
-                      className="text-yellow-600 mt-0.5"
-                      size={16}
-                    />
-                    <div>
-                      <h5 className="font-medium text-yellow-800 mb-1">
-                        Calculation Note
-                      </h5>
-                      <p className="text-yellow-700 text-sm">
-                        Calculated value ({calculatedSum.toLocaleString()})
-                        differs from stored value (
-                        {displayRequiredQuantity.toLocaleString()}). This may
-                        indicate additional factors in the actual calculation.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+  //           {/* Validation Check */}
+  //           {calculatedSum !== displayRequiredQuantity &&
+  //             displayRequiredQuantity > 0 && (
+  //               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+  //                 <div className="flex items-start gap-3">
+  //                   <AlertTriangle
+  //                     className="text-yellow-600 mt-0.5"
+  //                     size={16}
+  //                   />
+  //                   <div>
+  //                     <h5 className="font-medium text-yellow-800 mb-1">
+  //                       Calculation Note
+  //                     </h5>
+  //                     <p className="text-yellow-700 text-sm">
+  //                       Calculated value ({calculatedSum.toLocaleString()})
+  //                       differs from stored value (
+  //                       {displayRequiredQuantity.toLocaleString()}). This may
+  //                       indicate additional factors in the actual calculation.
+  //                     </p>
+  //                   </div>
+  //                 </div>
+  //               </div>
+  //             )}
 
-            {/* Additional Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <Info className="text-blue-600 mt-0.5" size={16} />
-                <div>
-                  <h5 className="font-medium text-blue-800 mb-1">
-                    About This Calculation
-                  </h5>
-                  <p className="text-blue-700 text-sm">
-                    The Required EOH (End of Hand) quantity represents the
-                    minimum inventory level needed at the end of the forecast
-                    month to maintain adequate stock levels across all
-                    locations.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+  //           {/* Additional Info */}
+  //           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+  //             <div className="flex items-start gap-3">
+  //               <Info className="text-blue-600 mt-0.5" size={16} />
+  //               <div>
+  //                 <h5 className="font-medium text-blue-800 mb-1">
+  //                   About This Calculation
+  //                 </h5>
+  //                 <p className="text-blue-700 text-sm">
+  //                   The Required EOH (End of Hand) quantity represents the
+  //                   minimum inventory level needed at the end of the forecast
+  //                   month to maintain adequate stock levels across all
+  //                   locations.
+  //                 </p>
+  //               </div>
+  //             </div>
+  //           </div>
+  //         </div>
 
-          {/* Modal Footer */}
-          <div className="border-t border-gray-200 p-4 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  //         {/* Modal Footer */}
+  //         <div className="border-t border-gray-200 p-4 flex justify-end">
+  //           <button
+  //             onClick={onClose}
+  //             className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+  //           >
+  //             Close
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // };
 
   const [modalState, setModalState] = useState({
     isOpen: false,

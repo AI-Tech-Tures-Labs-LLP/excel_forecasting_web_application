@@ -163,7 +163,7 @@ const NotesModal = ({
   //   }
   // };
 
-  // Handle multiple user selection
+  // Handle multiple user selectionz
   const handleUserSelection = (userId) => {
     setNewNote((prev) => ({
       ...prev,
