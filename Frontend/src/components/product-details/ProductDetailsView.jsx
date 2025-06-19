@@ -29,6 +29,13 @@ import {
 import { useNavigate, useParams } from "react-router-dom";
 
 const ProductDetailsView = () => {
+  const [dynamicModalState, setDynamicModalState] = useState({
+    isOpen: false,
+    type: null,
+    data: null,
+    modalType: null,
+    forecastMonth: null,
+  });
   const dispatch = useDispatch();
   const { sheetId, productId } = useParams();
   const navigate = useNavigate();
@@ -289,8 +296,14 @@ const ProductDetailsView = () => {
         const item = response.data.monthly_forecast?.find(
           (f) => f.variable_name === variable
         );
-        if (!item) return Array(12).fill(0);
-        return monthOrder.map((m) => item[m] ?? 0);
+        if (!item) {
+          console.warn(`Variable ${variable} not found in monthly_forecast`);
+          return Array(12).fill(0);
+        }
+
+        const values = monthOrder.map((m) => item[m] ?? 0);
+        console.log(`${variable} values:`, values);
+        return values;
       };
 
       // Updated variable names to match backend
@@ -305,6 +318,7 @@ const ProductDetailsView = () => {
       rolling.macysProjReceipts = getForecastValues("macys_proj_receipts");
       rolling.plannedSellThru = getForecastValues("planned_sell_thru_pct");
 
+      console.log("Rolling forecast data:", rolling);
       setRollingForecastData(rolling);
     } catch (error) {
       console.error("Error fetching product details:", error);
@@ -318,14 +332,42 @@ const ProductDetailsView = () => {
       const res = await axios.get(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/product/${productId}/?sheet_id=${sheetId}` // Ensure sheetId is included in the request
+        }/forecast/product/${productId}/?sheet_id=${sheetId}`
       );
-      const rolling = res.data.product_details.rolling_method;
-      const trend = res.data.product_details.std_trend_original;
+
+      const productDetails = res.data.product_details;
+
+      // Check for updated values first, then fall back to original values
+      const rolling =
+        productDetails.updated_rolling_method ||
+        productDetails.rolling_method_original ||
+        productDetails.rolling_method;
+
+      const trend =
+        productDetails.updated_std_trend || productDetails.std_trend_original;
+
       const editablemonths =
-        res.data.product_details.month_12_fc_index_original;
-      const selectedIndexVal = res.data.product_details.currect_fc_index;
-      const forecasting = res.data.product_details.forecasting_method;
+        productDetails.updated_12_month_fc_index ||
+        productDetails.month_12_fc_index_original;
+
+      const selectedIndexVal =
+        productDetails.updated_current_fc_index ||
+        productDetails.current_fc_index_original ||
+        productDetails.currect_fc_index;
+
+      const forecasting =
+        productDetails.updated_forecasting_method ||
+        productDetails.forecasting_method_original ||
+        productDetails.forecasting_method;
+
+      console.log("Control values from API:", {
+        rolling,
+        trend,
+        editablemonths,
+        selectedIndexVal,
+        forecasting,
+      });
+
       setRollingMethod(rolling || "YTD");
       setEditableTrend(trend?.toString() || "12.5");
       setEditable12MonthFC(editablemonths?.toString() || "1200");
@@ -335,7 +377,6 @@ const ProductDetailsView = () => {
       console.log("Error in getData:", err);
     }
   };
-
   // SEARCH HANDLERS
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -1063,7 +1104,7 @@ const ProductDetailsView = () => {
         "JAN",
       ];
 
-      // Build updated_context with NEW variable names
+      // Build updated_context exactly matching your JSON structure
       const updated_context = {
         updated_rolling_method: rollingMethod,
         updated_std_trend: parseFloat(editableTrend) || 0,
@@ -1072,9 +1113,9 @@ const ProductDetailsView = () => {
         updated_current_fc_index: selectedIndex,
       };
 
-      // Initialize monthly data objects with NEW variable names
+      // Initialize monthly data objects with exact variable names from your JSON
       updated_context.index = {};
-      updated_context.fc_by_index = {};
+      updated_context.fc_by_index = {}; // Note: your JSON has "fc_by_inex" but should be "fc_by_index"
       updated_context.fc_by_trend = {};
       updated_context.recommended_fc = {};
       updated_context.planned_fc = {};
@@ -1111,6 +1152,7 @@ const ProductDetailsView = () => {
           rollingForecastData.macysProjReceipts?.[index] || 0;
       });
 
+      // Create payload exactly matching your JSON structure
       const payload = {
         sheet_id: parseInt(sheetId),
         updated_context: updated_context,
@@ -1118,7 +1160,7 @@ const ProductDetailsView = () => {
         pid: productId,
       };
 
-      console.log("Saving with payload:", payload); // For debugging
+      console.log("Saving with payload:", JSON.stringify(payload, null, 2)); // Pretty print for debugging
 
       const response = await axios.post(
         `${
@@ -1130,7 +1172,7 @@ const ProductDetailsView = () => {
       if (response.data && response.data.updated_context) {
         const updatedContext = response.data.updated_context;
 
-        // Update rolling data using NEW variable names from response
+        // Update rolling data using variable names from response
         const updatedRollingData = {
           index: monthLabels.map((month) => updatedContext.index?.[month] || 0),
           fcByIndex: monthLabels.map(
