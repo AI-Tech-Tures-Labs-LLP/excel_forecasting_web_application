@@ -378,6 +378,7 @@ class ProductDetailViewSet(viewsets.ViewSet):
         try:
             updated_context = recalculate_all(changed_variable, new_value, context_data.copy(), product_object, sheet_object)
             print("Rolling 12 FC updated to Database ")
+            print(updated_context)
             return Response({"pid": pid,"updated_context": updated_context})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -412,7 +413,7 @@ class ForecastViewSet(ViewSet):
         sheet_id = request.query_params.get("sheet_id")
         product_type = request.query_params.get("product_type")
  
-        if not sheet_id:
+        if not sheet_id:    
             return Response({"error": "sheet_id is required"}, status=400)
  
         queryset = ProductDetail.objects.filter(sheet_id=sheet_id)

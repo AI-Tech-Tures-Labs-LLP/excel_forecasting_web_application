@@ -923,7 +923,13 @@ def process_category(args):
                         assigned_to=user_instance,
                         user_updated_final_quantity=0 if common_variable_dict['recommended_total_quantity'] < 0 else common_variable_dict['recommended_total_quantity'],
                         selected_months= common_variable_dict['selected_months'],
-                        forecast_month_week = common_variable_dict['forecast_month_week']
+                        forecast_month_week = common_variable_dict['forecast_month_week'],
+                        updated_std_trend = std_trend,
+                        updated_12_month_fc_index = month_12_fc_index,
+                        updated_rolling_method = rolling_method,   
+                        updated_current_fc_index = safe_str(loader.current_fc_index),
+                        updated_forecasting_method = forecasting_method
+
                     )
                 product_objs.append(productmain)
                 print("Starting StoreForecast data save/update...")
