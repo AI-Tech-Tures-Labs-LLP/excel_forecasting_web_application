@@ -235,7 +235,6 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
             "valentine_day": product.valentine_day,
             "mothers_day": product.mothers_day,
             "fathers_day": product.fathers_day,
-            "mens_day": product.mens_day,
             "womens_day": product.womens_day,
             "forecast_month": product.forecast_month,
             "next_forecast_month": product.next_forecast_month,
@@ -344,23 +343,21 @@ def process_data(input_path, file_path, month_from, month_to, percentage, input_
     df_com = pd.DataFrame(com_data)
     df_omni = pd.DataFrame(omni_data)
 
+    df_store_renamed = df_store.rename(columns=STORE_RENAME_MAP)
+    df_coms_renamed = df_com.rename(columns=COM_RENAME_MAP)
+    df_omni_renamed = df_omni.rename(columns=OMNI_RENAME_MAP)
 
-
-    # df_store_renamed = df_store.rename(columns=STORE_RENAME_MAP)
-    # df_coms_renamed = df_com.rename(columns=COM_RENAME_MAP)
-    # df_omni_renamed = df_omni.rename(columns=OMNI_RENAME_MAP)
-
-    # df_store_filtered = df_store_renamed[[col for col in STORE_RENAME_MAP.values()]]
-    # df_coms_filtered = df_coms_renamed[[col for col in COM_RENAME_MAP.values()]]
-    # df_omni_filtered = df_omni_renamed[[col for col in OMNI_RENAME_MAP.values()]]
+    df_store_filtered = df_store_renamed[[col for col in STORE_RENAME_MAP.values()]]
+    df_coms_filtered = df_coms_renamed[[col for col in COM_RENAME_MAP.values()]]
+    df_omni_filtered = df_omni_renamed[[col for col in OMNI_RENAME_MAP.values()]]
 
     excel_buffer = io.BytesIO()
 
     with pd.ExcelWriter(excel_buffer, engine="xlsxwriter") as writer:
         for sheet_name, df in [
-            ("store", df_store),
-            ("coms", df_com),
-            ("omni", df_omni)
+            ("store", df_store_filtered),
+            ("coms", df_coms_filtered),
+            ("omni", df_omni_filtered)
         ]:
             df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=1, header=False)
 
@@ -922,7 +919,7 @@ def process_category(args):
                         qty_added_to_balance_soq_forecast_month=common_variable_dict["qty_added_to_balance_soq_forecast_month"],
                         assigned_to=user_instance,
                         user_updated_final_quantity=0 if common_variable_dict['recommended_total_quantity'] < 0 else common_variable_dict['recommended_total_quantity'],
-                        selected_months= common_variable_dict['selected_months'],
+                        selected_months = common_variable_dict['selected_months'],
                         forecast_month_week = common_variable_dict['forecast_month_week'],
                         updated_std_trend = std_trend,
                         updated_12_month_fc_index = month_12_fc_index,
@@ -1171,18 +1168,19 @@ def process_category(args):
             f"D{start_row + 35}":loader.macy_spring_projection_note,
             f"B{start_row + 39}": "\"Past Review Comments\"",
             f"B{start_row + 40}": loader.planner_response,
-            f"I{start_row + 1}": loader.index_value['FEB'],
-            f"J{start_row + 1}": loader.index_value['MAR'],
-            f"K{start_row + 1}": loader.index_value['APR'],
-            f"L{start_row + 1}": loader.index_value['MAY'],
-            f"M{start_row + 1}": loader.index_value['JUN'],
-            f"N{start_row + 1}": loader.index_value['JUL'],
-            f"O{start_row + 1}": loader.index_value['AUG'],
-            f"P{start_row + 1}": loader.index_value['SEP'],
-            f"Q{start_row + 1}": loader.index_value['OCT'],
-            f"R{start_row + 1}": loader.index_value['NOV'],
-            f"S{start_row + 1}": loader.index_value['DEC'],
-            f"T{start_row + 1}": loader.index_value['JAN'],
+            f"I{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,2,0)',
+            f"J{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,3,0)',
+            f"K{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,4,0)',
+            f"L{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,5,0)',
+            f"M{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,6,0)',
+            f"N{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,7,0)',
+            f"O{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,8,0)',
+            f"P{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,9,0)',
+            f"Q{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,10,0)',
+            f"R{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,11,0)',
+            f"S{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,12,0)',
+            f"T{start_row + 1}": f'=VLOOKUP($F{start_row + 1},Index!$A:$Q,13,0)',
+ 
             f"U{start_row + 1}": f"=SUM(I{start_row + 1}:T{start_row + 1})",
             f"V{start_row + 1}": f"=IFERROR(SUM(I{start_row + 1}:N{start_row + 1}),0)",
             f"W{start_row + 1}": f"=IFERROR(SUM(O{start_row + 1}:T{start_row + 1}),0)",
