@@ -5,7 +5,7 @@ import io
 import zipfile 
 import pandas as pd
 from datetime import datetime
-
+import calendar
 from django.conf import settings
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
@@ -445,6 +445,16 @@ class ForecastViewSet(ViewSet):
             if values:
                 if field == "assigned_to":
                     queryset = queryset.filter(assigned_to_id__in=values)
+                elif field == "forecast_month":
+                    month_values = [
+                        next(
+                            (abbr.upper() for name, abbr in zip(calendar.month_name, calendar.month_abbr)
+                            if name.lower().startswith(val.lower()) or abbr.lower().startswith(val.lower())),
+                            None
+                        )
+                        for val in values
+                    ]
+                    queryset = queryset.filter(**{f"{field}__in": month_values})
                 else:
                     queryset = queryset.filter(**{f"{field}__in": values})
 
