@@ -13,6 +13,8 @@ import {
   X,
   ArrowUpDown,
   ChevronUp,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import { formatDateTime } from "../../utils/dateFormat";
 import axios from "axios";
@@ -34,12 +36,16 @@ const ProductTable = ({
   availableFilters,
   setCurrentPage,
 }) => {
+  // Get data from Redux store (from fetchProducts response)
+  const assignedUsers = useSelector(
+    (state) => state.products.assignedUsers || []
+  );
+  const categories = useSelector((state) => state.products.categories || []);
+
   // Dropdown states
   const { sheetId } = useParams();
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState("");
-  const [taggedToDropdownOpen, setTaggedToDropdownOpen] = useState(false);
-  const [taggedToSearchTerm, setTaggedToSearchTerm] = useState("");
   const [assignedToDropdownOpen, setAssignedToDropdownOpen] = useState(false);
   const [assignedToSearchTerm, setAssignedToSearchTerm] = useState("");
   const [notesDropdownOpen, setNotesDropdownOpen] = useState(false);
@@ -51,34 +57,15 @@ const ProductTable = ({
   const [lastReviewedDropdownOpen, setLastReviewedDropdownOpen] =
     useState(false);
   const [finalQtyDropdownOpen, setFinalQtyDropdownOpen] = useState(false);
-  // State for users data
+
+  // No need for separate API call - use Redux data
   const [usersData, setUsersData] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const files = useSelector((state) => state.forecast.files);
-  // Fetch users data from API
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setUsersLoading(true);
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/users/`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-            },
-          }
-        );
-        setUsersData(response.data || []);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        setUsersData([]);
-      } finally {
-        setUsersLoading(false);
-      }
-    };
 
-    fetchUsers();
-  }, []);
+  // Update usersData when Redux assignedUsers changes
+  useEffect(() => {
+    setUsersData(assignedUsers);
+  }, [assignedUsers]);
 
   const isAllSelected =
     processedProducts.length > 0 &&
@@ -86,11 +73,33 @@ const ProductTable = ({
 
   const isSomeSelected = selectedProductIds.length > 0 && !isAllSelected;
 
+  // Get unique forecast months from current products
+  const getUniqueForecastMonths = () => {
+    const months = new Set();
+    currentProducts.forEach((product) => {
+      if (product.forecast_month) {
+        months.add(product.forecast_month);
+      }
+    });
+    return Array.from(months).sort();
+  };
+
+  // Status options
+  const statusOptions = [
+    {
+      value: "not_reviewed",
+      label: "Not Reviewed",
+      icon: AlertCircle,
+      color: "red",
+    },
+    { value: "pending", label: "Pending", icon: Clock, color: "yellow" },
+    { value: "reviewed", label: "Reviewed", icon: CheckCircle, color: "green" },
+  ];
+
   // Handle click outside to close dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       const categoryDropdown = event.target.closest(".category-dropdown");
-      const taggedToDropdown = event.target.closest(".tagged-to-dropdown");
       const assignedToDropdown = event.target.closest(".assigned-to-dropdown");
       const notesDropdown = event.target.closest(".notes-dropdown");
       const forecastMonthDropdown = event.target.closest(
@@ -102,16 +111,16 @@ const ProductTable = ({
         ".last-reviewed-dropdown"
       );
       const finalQtyDropdown = event.target.closest(".final-qty-dropdown");
+
       if (
         !categoryDropdown &&
-        !taggedToDropdown &&
         !assignedToDropdown &&
         !notesDropdown &&
         !forecastMonthDropdown &&
         !addedQtyDropdown &&
         !statusDropdown &&
         !lastReviewedDropdown &&
-        !finalQtyDropdown && // Add this condition
+        !finalQtyDropdown &&
         !event.target.closest("th")
       ) {
         closeAllDropdowns();
@@ -139,8 +148,6 @@ const ProductTable = ({
   const closeAllDropdowns = () => {
     setCategoryDropdownOpen(false);
     setCategorySearchTerm("");
-    setTaggedToDropdownOpen(false);
-    setTaggedToSearchTerm("");
     setAssignedToDropdownOpen(false);
     setAssignedToSearchTerm("");
     setNotesDropdownOpen(false);
@@ -199,6 +206,32 @@ const ProductTable = ({
     setCurrentPage(1);
   };
 
+  // Handle sorting changes
+  const handleSortChange = (sortKey, direction) => {
+    setSelectedFilters((prev) => ({
+      ...prev,
+      sort_by: sortKey,
+      sort_direction: direction,
+    }));
+    setCurrentPage(1);
+  };
+
+  // Get sort icon for column headers
+  const getSortIcon = (sortKey) => {
+    const currentSort = selectedFilters?.sort_by;
+    const currentDirection = selectedFilters?.sort_direction;
+
+    if (currentSort !== sortKey) {
+      return <ArrowUpDown size={14} className="text-gray-400" />;
+    }
+
+    if (currentDirection === "asc") {
+      return <ArrowUp size={14} className="text-indigo-600" />;
+    } else {
+      return <ArrowDown size={14} className="text-indigo-600" />;
+    }
+  };
+
   const formatStatusDisplay = (product) => {
     const status = product.status;
 
@@ -242,9 +275,8 @@ const ProductTable = ({
     );
   };
 
-  // Updated function to use assigned_to from the product data with API lookup
+  // Updated function to use assigned_to from the product data with Redux data lookup
   const formatAssignedToDisplay = (product) => {
-    // First check if there's assigned_to data directly on the product
     const assignedTo = product.assigned_to;
 
     if (assignedTo) {
@@ -274,7 +306,7 @@ const ProductTable = ({
         );
       }
 
-      // If assigned_to is a number (user ID), look up the user details from API data
+      // If assigned_to is a number (user ID), look up from Redux data
       if (typeof assignedTo === "number") {
         const assignedUser = usersData.find((user) => user.id === assignedTo);
 
@@ -298,21 +330,16 @@ const ProductTable = ({
                     {assignedUser.email}
                   </span>
                 )}
+                {assignedUser.role && (
+                  <span className="text-xs text-blue-600 capitalize">
+                    {assignedUser.role.name}
+                  </span>
+                )}
               </div>
-            </div>
-          );
-        } else if (usersLoading) {
-          // Show loading state while fetching users
-          return (
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                <div className="w-3 h-3 border border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
-              </div>
-              <span className="text-sm text-gray-500">Loading...</span>
             </div>
           );
         } else {
-          // User not found in API data
+          // User not found in Redux data
           return (
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
@@ -412,7 +439,7 @@ const ProductTable = ({
     return Array.from(assignedIds);
   };
 
-  // Get users that are actually assigned to products
+  // Get users that are actually assigned to products from Redux data
   const getAssignedUsers = () => {
     const assignedUserIds = getAssignedUserIds();
     return usersData.filter((user) => assignedUserIds.includes(user.id));
@@ -463,6 +490,7 @@ const ProductTable = ({
       </div>
     );
   }
+
   return (
     <div className="overflow-x-auto min-h-[500px]">
       <table className="min-w-full divide-y divide-gray-200">
@@ -557,9 +585,7 @@ const ProductTable = ({
                   <div className="p-2 border-b border-gray-100 flex justify-between">
                     <button
                       onClick={() => {
-                        const filteredCategories = (
-                          availableFilters?.categories || []
-                        ).filter((cat) =>
+                        const filteredCategories = categories.filter((cat) =>
                           cat
                             .toLowerCase()
                             .includes(categorySearchTerm.toLowerCase())
@@ -592,7 +618,7 @@ const ProductTable = ({
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
-                    {(availableFilters?.categories || [])
+                    {categories
                       .filter((cat) =>
                         cat
                           .toLowerCase()
@@ -634,7 +660,7 @@ const ProductTable = ({
                       ))}
 
                     {categorySearchTerm &&
-                      (availableFilters?.categories || []).filter((cat) =>
+                      categories.filter((cat) =>
                         cat
                           .toLowerCase()
                           .includes(categorySearchTerm.toLowerCase())
@@ -649,8 +675,7 @@ const ProductTable = ({
                     <div className="p-2 border-t border-gray-100 bg-gray-50">
                       <span className="text-xs text-gray-600">
                         {selectedFilters?.category?.length} of{" "}
-                        {(availableFilters?.categories || []).length} categories
-                        selected
+                        {categories.length} categories selected
                       </span>
                     </div>
                   )}
@@ -766,7 +791,6 @@ const ProductTable = ({
                   </div>
 
                   <div className="flex-1 overflow-y-auto">
-                    {/* Show "Unassigned" option only if there are unassigned products */}
                     {hasUnassignedProducts() && (
                       <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50">
                         <div className="relative">
@@ -804,96 +828,86 @@ const ProductTable = ({
                       </label>
                     )}
 
-                    {/* Show only users who are assigned to products */}
-                    {usersLoading ? (
-                      <div className="p-4 text-center text-gray-500 text-sm">
-                        <div className="w-5 h-5 border border-gray-300 border-t-indigo-600 rounded-full animate-spin mx-auto mb-2"></div>
-                        Loading users...
-                      </div>
-                    ) : (
-                      getAssignedUsers()
-                        .filter((user) => {
-                          const searchText = assignedToSearchTerm.toLowerCase();
-                          if (!searchText) return true;
+                    {getAssignedUsers()
+                      .filter((user) => {
+                        const searchText = assignedToSearchTerm.toLowerCase();
+                        if (!searchText) return true;
 
-                          return (
-                            (user.username || "")
-                              .toLowerCase()
-                              .includes(searchText) ||
-                            (user.email || "")
-                              .toLowerCase()
-                              .includes(searchText) ||
-                            (user.first_name || "")
-                              .toLowerCase()
-                              .includes(searchText) ||
-                            (user.last_name || "")
-                              .toLowerCase()
-                              .includes(searchText)
-                          );
-                        })
-                        .map((user) => {
-                          const displayName =
-                            user.first_name && user.last_name
-                              ? `${user.first_name} ${user.last_name}`
-                              : user.username || user.email || "Unknown User";
+                        return (
+                          (user.username || "")
+                            .toLowerCase()
+                            .includes(searchText) ||
+                          (user.email || "")
+                            .toLowerCase()
+                            .includes(searchText) ||
+                          (user.first_name || "")
+                            .toLowerCase()
+                            .includes(searchText) ||
+                          (user.last_name || "")
+                            .toLowerCase()
+                            .includes(searchText)
+                        );
+                      })
+                      .map((user) => {
+                        const displayName =
+                          user.first_name && user.last_name
+                            ? `${user.first_name} ${user.last_name}`
+                            : user.username || user.email || "Unknown User";
 
-                          return (
-                            <label
-                              key={user.id}
-                              className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0"
-                            >
-                              <div className="relative">
-                                <input
-                                  type="checkbox"
-                                  checked={(
-                                    selectedFilters?.assigned_to || []
-                                  ).includes(user.id)}
-                                  onChange={(e) =>
-                                    handleMultiSelectFilterChange(
-                                      "assigned_to",
-                                      user.id,
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                        return (
+                          <label
+                            key={user.id}
+                            className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0"
+                          >
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={(
+                                  selectedFilters?.assigned_to || []
+                                ).includes(user.id)}
+                                onChange={(e) =>
+                                  handleMultiSelectFilterChange(
+                                    "assigned_to",
+                                    user.id,
+                                    e.target.checked
+                                  )
+                                }
+                                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
+                              />
+                              {(selectedFilters?.assigned_to || []).includes(
+                                user.id
+                              ) && (
+                                <Check
+                                  size={12}
+                                  className="absolute top-0.5 left-0.5 text-white pointer-events-none"
                                 />
-                                {(selectedFilters?.assigned_to || []).includes(
-                                  user.id
-                                ) && (
-                                  <Check
-                                    size={12}
-                                    className="absolute top-0.5 left-0.5 text-white pointer-events-none"
-                                  />
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-1">
+                              <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center">
+                                <User size={12} className="text-indigo-600" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-700">
+                                  {user.username}
+                                </span>
+                                {user.email && (
+                                  <span className="text-xs text-gray-500">
+                                    {user.email}
+                                  </span>
+                                )}
+                                {user.role && (
+                                  <span className="text-xs text-blue-600 capitalize">
+                                    {user.role.name}
+                                  </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 flex-1">
-                                <div className="w-6 h-6 bg-indigo-100 rounded-full flex items-center justify-center">
-                                  <User size={12} className="text-indigo-600" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-sm text-gray-700">
-                                    {user.username}
-                                  </span>
-                                  {user.email && (
-                                    <span className="text-xs text-gray-500">
-                                      {user.email}
-                                    </span>
-                                  )}
-                                  {user.role && (
-                                    <span className="text-xs text-blue-600 capitalize">
-                                      {user.role.name}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </label>
-                          );
-                        })
-                    )}
+                            </div>
+                          </label>
+                        );
+                      })}
 
-                    {/* Show message when no assigned users found */}
-                    {!usersLoading &&
-                      getAssignedUsers().length === 0 &&
+                    {getAssignedUsers().length === 0 &&
                       !hasUnassignedProducts() && (
                         <div className="p-4 text-center text-gray-500 text-sm">
                           No users assigned to products
@@ -901,7 +915,6 @@ const ProductTable = ({
                       )}
 
                     {assignedToSearchTerm &&
-                      !usersLoading &&
                       getAssignedUsers().filter((user) => {
                         const searchText = assignedToSearchTerm.toLowerCase();
                         return (
@@ -940,130 +953,83 @@ const ProductTable = ({
               )}
             </th>
 
-            {/* Notes Filter Header */}
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500  tracking-wider relative">
+            {/* Notes Column with Sorting */}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
               <button
                 onClick={() => {
                   closeAllDropdowns();
                   setNotesDropdownOpen(!notesDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters.notes_sort
+                  selectedFilters?.sort_by === "created_at"
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
-                <span className="flex items-center gap-1">
-                  {selectedFilters.notes_sort && <Filter size={14} />}
-                  Notes
-                </span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${
-                    notesDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-                {selectedFilters.notes_sort && (
-                  <span className="ml-1 bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                    {selectedFilters.notes_sort === "latest"
-                      ? "Latest"
-                      : "Oldest"}
-                  </span>
-                )}
+                <span>Notes</span>
+                {getSortIcon("created_at")}
               </button>
 
               {notesDropdownOpen && (
                 <div
-                  className="notes-dropdown absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col"
+                  className="notes-dropdown absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Header */}
-                  <div className="p-3 border-b border-gray-100">
-                    <span className="text-sm font-medium text-gray-700">
-                      Sort by Notes
-                    </span>
-                  </div>
-
-                  {/* Options */}
                   <div className="p-2">
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="notes_sort"
-                        value=""
-                        checked={!selectedFilters.notes_sort}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            notes_sort: null,
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">No Sorting</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="notes_sort"
-                        value="latest"
-                        checked={selectedFilters.notes_sort === "latest"}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            notes_sort: "latest",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">
-                        Latest Notes First
-                      </span>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="notes_sort"
-                        value="oldest"
-                        checked={selectedFilters.notes_sort === "oldest"}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            notes_sort: "oldest",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">
-                        Oldest Notes First
-                      </span>
-                    </label>
+                    <button
+                      onClick={() => {
+                        handleSortChange("created_at", "desc");
+                        setNotesDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
+                        selectedFilters?.sort_by === "created_at" &&
+                        selectedFilters?.sort_direction === "desc"
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <ArrowDown size={14} />
+                      Latest Notes First
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleSortChange("created_at", "asc");
+                        setNotesDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
+                        selectedFilters?.sort_by === "created_at" &&
+                        selectedFilters?.sort_direction === "asc"
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <ArrowUp size={14} />
+                      Oldest Notes First
+                    </button>
+                    {selectedFilters?.sort_by === "created_at" && (
+                      <div className="border-t border-gray-100 pt-2 mt-2">
+                        <button
+                          onClick={() => {
+                            setSelectedFilters((prev) => ({
+                              ...prev,
+                              sort_by: null,
+                              sort_direction: null,
+                            }));
+                            setNotesDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 text-gray-500"
+                        >
+                          Clear Sort
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Clear button */}
-                  {selectedFilters.notes_sort && (
-                    <div className="p-2 border-t border-gray-100">
-                      <button
-                        onClick={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            notes_sort: null,
-                          }))
-                        }
-                        className="w-full px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                      >
-                        Clear Sorting
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
             </th>
 
-            {/* Forecast Month Header */}
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+            {/* Forecast Month Filter Header */}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
               <button
                 onClick={() => {
                   closeAllDropdowns();
@@ -1071,13 +1037,13 @@ const ProductTable = ({
                   setForecastMonthSearchTerm("");
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters.forecast_month?.length > 0
+                  (selectedFilters?.forecast_month?.length || 0) > 0
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
                 <span className="flex items-center gap-1">
-                  {selectedFilters.forecast_month?.length > 0 && (
+                  {(selectedFilters?.forecast_month?.length || 0) > 0 && (
                     <Filter size={14} />
                   )}
                   Forecast Month
@@ -1088,19 +1054,18 @@ const ProductTable = ({
                     forecastMonthDropdownOpen ? "rotate-180" : ""
                   }`}
                 />
-                {selectedFilters.forecast_month?.length > 0 && (
+                {(selectedFilters?.forecast_month?.length || 0) > 0 && (
                   <span className="ml-1 bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                    {selectedFilters.forecast_month.length}
+                    {selectedFilters?.forecast_month?.length}
                   </span>
                 )}
               </button>
 
               {forecastMonthDropdownOpen && (
                 <div
-                  className="forecast-month-dropdown absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 flex flex-col"
+                  className="forecast-month-dropdown absolute top-full left-0 mt-2 w-60 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-80 flex flex-col"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Header with search */}
                   <div className="p-3 border-b border-gray-100">
                     <div className="relative">
                       <Search
@@ -1127,21 +1092,20 @@ const ProductTable = ({
                     </div>
                   </div>
 
-                  {/* Action buttons */}
                   <div className="p-2 border-b border-gray-100 flex justify-between">
                     <button
                       onClick={() => {
-                        const filteredMonths =
-                          availableFilters.forecast_months.filter((month) =>
+                        const filteredMonths = getUniqueForecastMonths().filter(
+                          (month) =>
                             month
                               .toLowerCase()
                               .includes(forecastMonthSearchTerm.toLowerCase())
-                          );
+                        );
                         setSelectedFilters((prev) => ({
                           ...prev,
                           forecast_month: [
                             ...new Set([
-                              ...(prev.forecast_month || []),
+                              ...(prev?.forecast_month || []),
                               ...filteredMonths,
                             ]),
                           ],
@@ -1149,15 +1113,7 @@ const ProductTable = ({
                       }}
                       className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
                     >
-                      Select All{" "}
-                      {forecastMonthSearchTerm &&
-                        `(${
-                          availableFilters.forecast_months.filter((month) =>
-                            month
-                              .toLowerCase()
-                              .includes(forecastMonthSearchTerm.toLowerCase())
-                          ).length
-                        })`}
+                      Select All
                     </button>
                     <button
                       onClick={() =>
@@ -1172,9 +1128,8 @@ const ProductTable = ({
                     </button>
                   </div>
 
-                  {/* Months list */}
                   <div className="flex-1 overflow-y-auto">
-                    {availableFilters.forecast_months
+                    {getUniqueForecastMonths()
                       .filter((month) =>
                         month
                           .toLowerCase()
@@ -1189,7 +1144,7 @@ const ProductTable = ({
                             <input
                               type="checkbox"
                               checked={(
-                                selectedFilters.forecast_month || []
+                                selectedFilters?.forecast_month || []
                               ).includes(month)}
                               onChange={(e) =>
                                 handleMultiSelectFilterChange(
@@ -1200,7 +1155,7 @@ const ProductTable = ({
                               }
                               className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
                             />
-                            {(selectedFilters.forecast_month || []).includes(
+                            {(selectedFilters?.forecast_month || []).includes(
                               month
                             ) && (
                               <Check
@@ -1215,9 +1170,8 @@ const ProductTable = ({
                         </label>
                       ))}
 
-                    {/* No results message */}
                     {forecastMonthSearchTerm &&
-                      availableFilters.forecast_months.filter((month) =>
+                      getUniqueForecastMonths().filter((month) =>
                         month
                           .toLowerCase()
                           .includes(forecastMonthSearchTerm.toLowerCase())
@@ -1228,13 +1182,11 @@ const ProductTable = ({
                       )}
                   </div>
 
-                  {/* Footer with selection count */}
-                  {(selectedFilters.forecast_month?.length || 0) > 0 && (
+                  {(selectedFilters?.forecast_month?.length || 0) > 0 && (
                     <div className="p-2 border-t border-gray-100 bg-gray-50">
                       <span className="text-xs text-gray-600">
-                        {selectedFilters.forecast_month.length} of{" "}
-                        {availableFilters.forecast_months.length} months
-                        selected
+                        {selectedFilters?.forecast_month?.length} of{" "}
+                        {getUniqueForecastMonths().length} months selected
                       </span>
                     </div>
                   )}
@@ -1242,153 +1194,101 @@ const ProductTable = ({
               )}
             </th>
 
-            {/* Added Qty Header */}
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+            {/* Recommended Qty Column with Sorting */}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
               <button
                 onClick={() => {
                   closeAllDropdowns();
                   setAddedQtyDropdownOpen(!addedQtyDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters.added_qty_sort
+                  selectedFilters?.sort_by === "recommended_total_quantity"
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
-                <span className="flex items-center gap-1">
-                  {selectedFilters.added_qty_sort && <Filter size={14} />}
-                  Recommended Qty
-                </span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${
-                    addedQtyDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-                {selectedFilters.added_qty_sort && (
-                  <span className="ml-1 bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                    {selectedFilters.added_qty_sort === "asc" ? "↑" : "↓"}
-                  </span>
-                )}
+                <span>Recommended Qty</span>
+                {getSortIcon("recommended_total_quantity")}
               </button>
 
               {addedQtyDropdownOpen && (
                 <div
-                  className="added-qty-dropdown absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col"
+                  className="added-qty-dropdown absolute top-full left-0 mt-2 w-52 bg-white border border-gray-200 rounded-lg shadow-xl z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Header */}
-                  <div className="p-3 border-b border-gray-100">
-                    <span className="text-sm font-medium text-gray-700">
-                      Sort by Recommended Quantity
-                    </span>
-                  </div>
-
-                  {/* Options */}
                   <div className="p-2">
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="added_qty_sort"
-                        value=""
-                        checked={!selectedFilters.added_qty_sort}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            added_qty_sort: null,
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">No Sorting</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="added_qty_sort"
-                        value="asc"
-                        checked={selectedFilters.added_qty_sort === "asc"}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            added_qty_sort: "asc",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">Ascending</span>
-                        <span className="text-xs text-gray-500">
-                          (Low to High)
-                        </span>
-                        <ArrowUpDown
-                          size={14}
-                          className="text-gray-400 rotate-180"
-                        />
+                    <button
+                      onClick={() => {
+                        handleSortChange("recommended_total_quantity", "desc");
+                        setAddedQtyDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
+                        selectedFilters?.sort_by ===
+                          "recommended_total_quantity" &&
+                        selectedFilters?.sort_direction === "desc"
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <ArrowDown size={14} />
+                      Highest First
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleSortChange("recommended_total_quantity", "asc");
+                        setAddedQtyDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
+                        selectedFilters?.sort_by ===
+                          "recommended_total_quantity" &&
+                        selectedFilters?.sort_direction === "asc"
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <ArrowUp size={14} />
+                      Lowest First
+                    </button>
+                    {selectedFilters?.sort_by ===
+                      "recommended_total_quantity" && (
+                      <div className="border-t border-gray-100 pt-2 mt-2">
+                        <button
+                          onClick={() => {
+                            setSelectedFilters((prev) => ({
+                              ...prev,
+                              sort_by: null,
+                              sort_direction: null,
+                            }));
+                            setAddedQtyDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 text-gray-500"
+                        >
+                          Clear Sort
+                        </button>
                       </div>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="added_qty_sort"
-                        value="desc"
-                        checked={selectedFilters.added_qty_sort === "desc"}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            added_qty_sort: "desc",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">
-                          Descending
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          (High to Low)
-                        </span>
-                        <ArrowUpDown size={14} className="text-gray-400" />
-                      </div>
-                    </label>
+                    )}
                   </div>
-
-                  {/* Clear button */}
-                  {selectedFilters.added_qty_sort && (
-                    <div className="p-2 border-t border-gray-100">
-                      <button
-                        onClick={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            added_qty_sort: null,
-                          }))
-                        }
-                        className="w-full px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                      >
-                        Clear Sorting
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
             </th>
-            {/* Status Header */}
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
+
+            {/* Status Filter Header */}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
               <button
                 onClick={() => {
                   closeAllDropdowns();
                   setStatusDropdownOpen(!statusDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters.status?.length > 0
+                  (selectedFilters?.status?.length || 0) > 0
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
                 <span className="flex items-center gap-1">
-                  {selectedFilters.status?.length > 0 && <Filter size={14} />}
+                  {(selectedFilters?.status?.length || 0) > 0 && (
+                    <Filter size={14} />
+                  )}
                   Status
                 </span>
                 <ChevronDown
@@ -1397,32 +1297,24 @@ const ProductTable = ({
                     statusDropdownOpen ? "rotate-180" : ""
                   }`}
                 />
-                {selectedFilters.status?.length > 0 && (
+                {(selectedFilters?.status?.length || 0) > 0 && (
                   <span className="ml-1 bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                    {selectedFilters.status.length}
+                    {selectedFilters?.status?.length}
                   </span>
                 )}
               </button>
 
               {statusDropdownOpen && (
                 <div
-                  className="status-dropdown absolute top-full left-0 mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-96 flex flex-col"
+                  className="status-dropdown absolute top-full left-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Header */}
-                  <div className="p-3 border-b border-gray-100">
-                    <span className="text-sm font-medium text-gray-700">
-                      Filter by Status
-                    </span>
-                  </div>
-
-                  {/* Action buttons */}
                   <div className="p-2 border-b border-gray-100 flex justify-between">
                     <button
                       onClick={() => {
                         setSelectedFilters((prev) => ({
                           ...prev,
-                          status: [...availableFilters.statuses],
+                          status: statusOptions.map((opt) => opt.value),
                         }));
                       }}
                       className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
@@ -1442,59 +1334,61 @@ const ProductTable = ({
                     </button>
                   </div>
 
-                  {/* Status list */}
-                  <div className="flex-1 overflow-y-auto">
-                    {availableFilters.statuses.map((status) => (
-                      <label
-                        key={status}
-                        className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0"
-                      >
-                        <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={(selectedFilters.status || []).includes(
-                              status
-                            )}
-                            onChange={(e) =>
-                              handleMultiSelectFilterChange(
-                                "status",
-                                status,
-                                e.target.checked
-                              )
-                            }
-                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
-                          />
-                          {(selectedFilters.status || []).includes(status) && (
-                            <Check
-                              size={12}
-                              className="absolute top-0.5 left-0.5 text-white pointer-events-none"
+                  <div className="p-2">
+                    {statusOptions.map((status) => {
+                      const IconComponent = status.icon;
+                      return (
+                        <label
+                          key={status.value}
+                          className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded"
+                        >
+                          <div className="relative">
+                            <input
+                              type="checkbox"
+                              checked={(selectedFilters?.status || []).includes(
+                                status.value
+                              )}
+                              onChange={(e) =>
+                                handleMultiSelectFilterChange(
+                                  "status",
+                                  status.value,
+                                  e.target.checked
+                                )
+                              }
+                              className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500"
                             />
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 flex-1">
-                          {status === "Reviewed" && (
-                            <CheckCircle size={16} className="text-green-500" />
-                          )}
-                          {status === "Not Reviewed" && (
-                            <AlertCircle size={16} className="text-red-500" />
-                          )}
-                          {status === "Pending" && (
-                            <Clock size={16} className="text-yellow-500" />
-                          )}
-                          <span className="text-sm text-gray-700">
-                            {status}
-                          </span>
-                        </div>
-                      </label>
-                    ))}
+                            {(selectedFilters?.status || []).includes(
+                              status.value
+                            ) && (
+                              <Check
+                                size={12}
+                                className="absolute top-0.5 left-0.5 text-white pointer-events-none"
+                              />
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-1">
+                            <div
+                              className={`w-6 h-6 rounded-full flex items-center justify-center bg-${status.color}-100`}
+                            >
+                              <IconComponent
+                                size={12}
+                                className={`text-${status.color}-600`}
+                              />
+                            </div>
+                            <span className="text-sm text-gray-700">
+                              {status.label}
+                            </span>
+                          </div>
+                        </label>
+                      );
+                    })}
                   </div>
 
-                  {/* Footer with selection count */}
-                  {(selectedFilters.status?.length || 0) > 0 && (
+                  {(selectedFilters?.status?.length || 0) > 0 && (
                     <div className="p-2 border-t border-gray-100 bg-gray-50">
                       <span className="text-xs text-gray-600">
-                        {selectedFilters.status.length} of{" "}
-                        {availableFilters.statuses.length} statuses selected
+                        {selectedFilters?.status?.length} of{" "}
+                        {statusOptions.length} statuses selected
                       </span>
                     </div>
                   )}
@@ -1502,195 +1396,12 @@ const ProductTable = ({
               )}
             </th>
 
-            {/* Last Reviewed Header */}
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative">
-              <button
-                onClick={() => {
-                  closeAllDropdowns();
-                  setLastReviewedDropdownOpen(!lastReviewedDropdownOpen);
-                }}
-                className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters.last_reviewed_sort
-                    ? "text-indigo-600 font-semibold"
-                    : ""
-                }`}
-              >
-                <span className="flex items-center gap-1">
-                  {selectedFilters.last_reviewed_sort && <Filter size={14} />}
-                  Last Reviewed At
-                </span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${
-                    lastReviewedDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-                {selectedFilters.last_reviewed_sort && (
-                  <span className="ml-1 bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                    {selectedFilters.last_reviewed_sort === "newest"
-                      ? "↓"
-                      : "↑"}
-                  </span>
-                )}
-              </button>
-
-              {lastReviewedDropdownOpen && (
-                <div
-                  className="last-reviewed-dropdown absolute top-full left-[-40px] mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {/* Header */}
-                  <div className="p-3 border-b border-gray-100">
-                    <span className="text-sm font-medium text-gray-700">
-                      Sort by Last Reviewed Date
-                    </span>
-                  </div>
-
-                  {/* Options */}
-                  <div className="p-2">
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="last_reviewed_sort"
-                        value=""
-                        checked={!selectedFilters.last_reviewed_sort}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            last_reviewed_sort: null,
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">No Sorting</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="last_reviewed_sort"
-                        value="newest"
-                        checked={
-                          selectedFilters.last_reviewed_sort === "newest"
-                        }
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            last_reviewed_sort: "newest",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">
-                          Newest First
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          (Recent to Old)
-                        </span>
-                        <ChevronDown size={14} className="text-gray-400" />
-                      </div>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="last_reviewed_sort"
-                        value="oldest"
-                        checked={
-                          selectedFilters.last_reviewed_sort === "oldest"
-                        }
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            last_reviewed_sort: "oldest",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">
-                          Oldest First
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          (Old to Recent)
-                        </span>
-                        <ChevronUp size={14} className="text-gray-400" />
-                      </div>
-                    </label>
-                  </div>
-
-                  {/* Additional filter options */}
-                  <div className="border-t border-gray-100 p-2">
-                    <div className="text-xs font-medium text-gray-600 mb-2 px-3">
-                      Quick Filters
-                    </div>
-
-                    <button
-                      onClick={() => {
-                        // Filter products reviewed in the last 7 days
-                        const sevenDaysAgo = new Date();
-                        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-                        setSelectedFilters((prev) => ({
-                          ...prev,
-                          last_reviewed_sort: "newest",
-                        }));
-                        // You can add additional logic here to filter by date range if needed
-                      }}
-                      className="w-full text-left px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded"
-                    >
-                      📅 Last 7 days
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        // Filter products reviewed in the last 30 days
-                        setSelectedFilters((prev) => ({
-                          ...prev,
-                          last_reviewed_sort: "newest",
-                        }));
-                      }}
-                      className="w-full text-left px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded"
-                    >
-                      📅 Last 30 days
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        // Show products never reviewed (no updated_at date)
-                        setSelectedFilters((prev) => ({
-                          ...prev,
-                          last_reviewed_sort: "oldest",
-                        }));
-                      }}
-                      className="w-full text-left px-3 py-1 text-xs text-gray-600 hover:bg-gray-50 rounded"
-                    >
-                      ⏰ Never reviewed
-                    </button>
-                  </div>
-
-                  {/* Clear button */}
-                  {selectedFilters.last_reviewed_sort && (
-                    <div className="p-2 border-t border-gray-100">
-                      <button
-                        onClick={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            last_reviewed_sort: null,
-                          }))
-                        }
-                        className="w-full px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                      >
-                        Clear Sorting
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Last Reviewed At Column */}
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider">
+              Last Reviewed At
             </th>
 
-            {/* Final Qty Header */}
+            {/* Final Qty Column with Sorting */}
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
               <button
                 onClick={() => {
@@ -1698,127 +1409,72 @@ const ProductTable = ({
                   setFinalQtyDropdownOpen(!finalQtyDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters.final_qty_sort
+                  selectedFilters?.sort_by === "user_updated_final_quantity"
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
-                <span className="flex items-center gap-1">
-                  {selectedFilters.final_qty_sort && <Filter size={14} />}
-                  Final Qty
-                </span>
-                <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${
-                    finalQtyDropdownOpen ? "rotate-180" : ""
-                  }`}
-                />
-                {selectedFilters.final_qty_sort && (
-                  <span className="ml-1 bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded-full text-xs font-medium">
-                    {selectedFilters.final_qty_sort === "asc" ? "↑" : "↓"}
-                  </span>
-                )}
+                <span>Final Qty</span>
+                {getSortIcon("user_updated_final_quantity")}
               </button>
 
               {finalQtyDropdownOpen && (
                 <div
-                  className="final-qty-dropdown absolute top-full left-[-100px] mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50 flex flex-col"
+                  className="final-qty-dropdown absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {/* Header */}
-                  <div className="p-3 border-b border-gray-100">
-                    <span className="text-sm font-medium text-gray-700">
-                      Sort by Final Quantity
-                    </span>
-                  </div>
-
-                  {/* Options */}
                   <div className="p-2">
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="final_qty_sort"
-                        value=""
-                        checked={!selectedFilters.final_qty_sort}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            final_qty_sort: null,
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <span className="text-sm text-gray-700">No Sorting</span>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="final_qty_sort"
-                        value="asc"
-                        checked={selectedFilters.final_qty_sort === "asc"}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            final_qty_sort: "asc",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">Ascending</span>
-                        <span className="text-xs text-gray-500">
-                          (Low to High)
-                        </span>
-                        <ArrowUpDown
-                          size={14}
-                          className="text-gray-400 rotate-180"
-                        />
+                    <button
+                      onClick={() => {
+                        handleSortChange("user_updated_final_quantity", "desc");
+                        setFinalQtyDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
+                        selectedFilters?.sort_by ===
+                          "user_updated_final_quantity" &&
+                        selectedFilters?.sort_direction === "desc"
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <ArrowDown size={14} />
+                      Highest First
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleSortChange("user_updated_final_quantity", "asc");
+                        setFinalQtyDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
+                        selectedFilters?.sort_by ===
+                          "user_updated_final_quantity" &&
+                        selectedFilters?.sort_direction === "asc"
+                          ? "text-indigo-600 bg-indigo-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <ArrowUp size={14} />
+                      Lowest First
+                    </button>
+                    {selectedFilters?.sort_by ===
+                      "user_updated_final_quantity" && (
+                      <div className="border-t border-gray-100 pt-2 mt-2">
+                        <button
+                          onClick={() => {
+                            setSelectedFilters((prev) => ({
+                              ...prev,
+                              sort_by: null,
+                              sort_direction: null,
+                            }));
+                            setFinalQtyDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 text-gray-500"
+                        >
+                          Clear Sort
+                        </button>
                       </div>
-                    </label>
-
-                    <label className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer rounded">
-                      <input
-                        type="radio"
-                        name="final_qty_sort"
-                        value="desc"
-                        checked={selectedFilters.final_qty_sort === "desc"}
-                        onChange={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            final_qty_sort: "desc",
-                          }))
-                        }
-                        className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                      />
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-700">
-                          Descending
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          (High to Low)
-                        </span>
-                        <ArrowUpDown size={14} className="text-gray-400" />
-                      </div>
-                    </label>
+                    )}
                   </div>
-
-                  {/* Clear button */}
-                  {selectedFilters.final_qty_sort && (
-                    <div className="p-2 border-t border-gray-100">
-                      <button
-                        onClick={() =>
-                          setSelectedFilters((prev) => ({
-                            ...prev,
-                            final_qty_sort: null,
-                          }))
-                        }
-                        className="w-full px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
-                      >
-                        Clear Sorting
-                      </button>
-                    </div>
-                  )}
                 </div>
               )}
             </th>

@@ -1,4 +1,4 @@
-// Enhanced productSlice.js with proper pagination integration
+// Updated productSlice.js to store assigned users and categories
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -72,16 +72,28 @@ export const fetchProducts = createAsyncThunk(
         }
       });
 
-      // Add sorting parameters
+      // Add sorting parameters - Updated to use the new sort_by parameter
+      if (filters.sort_by) {
+        let sortParam = filters.sort_by;
+
+        // Add direction prefix for DESC ordering
+        if (filters.sort_direction === "desc") {
+          sortParam = `-${sortParam}`;
+        }
+
+        params.append("sort_by", sortParam);
+      }
+
+      // Legacy sorting support (keeping for backward compatibility)
       if (filters.notes_sort) {
         params.append(
-          "ordering",
+          "sort_by",
           filters.notes_sort === "latest" ? "-created_at" : "created_at"
         );
       }
       if (filters.added_qty_sort) {
         params.append(
-          "ordering",
+          "sort_by",
           filters.added_qty_sort === "asc"
             ? "recommended_total_quantity"
             : "-recommended_total_quantity"
@@ -89,7 +101,7 @@ export const fetchProducts = createAsyncThunk(
       }
       if (filters.final_qty_sort) {
         params.append(
-          "ordering",
+          "sort_by",
           filters.final_qty_sort === "asc"
             ? "user_updated_final_quantity"
             : "-user_updated_final_quantity"
@@ -97,7 +109,7 @@ export const fetchProducts = createAsyncThunk(
       }
       if (filters.last_reviewed_sort) {
         params.append(
-          "ordering",
+          "sort_by",
           filters.last_reviewed_sort === "newest" ? "-updated_at" : "updated_at"
         );
       }
@@ -143,8 +155,11 @@ export const fetchProducts = createAsyncThunk(
         sheetId,
         timestamp: Date.now(),
         count: count,
-        product_type_counts: responseData.product_type_counts || {}, // ✅ Add this
-        note_status_counts: responseData.note_status_counts || {}, // ✅ Add this if needed
+        product_type_counts: responseData.product_type_counts || {},
+        note_status_counts: responseData.note_status_counts || {},
+        // Add these new fields from the API response
+        categories: responseData.categories || [],
+        assigned_users: responseData.assigned_users || [],
       };
     } catch (error) {
       console.error("Error in fetchProducts:", error);
@@ -187,6 +202,11 @@ const initialState = {
   pending: 0,
   reviewed: 0,
   not_reviewed: 0,
+
+  // Add these new fields for assigned users and categories
+  assignedUsers: [],
+  categories: [],
+
   // Selected states
   selectedProductType: "store",
   selectedProduct: null,
@@ -259,7 +279,7 @@ const initialState = {
     },
   },
 
-  // Enhanced filter state
+  // Enhanced filter state with new sorting and filtering options
   appliedFilters: {
     category: [],
     birthstone: [],
@@ -280,10 +300,17 @@ const initialState = {
     fathers_day: null,
     mens_day: null,
     womens_day: null,
+
+    // New sorting parameters
+    sort_by: null, // 'created_at', 'recommended_total_quantity', 'user_updated_final_quantity'
+    sort_direction: null, // 'asc', 'desc'
+
+    // Legacy sorting (keeping for backward compatibility)
     notes_sort: null,
     added_qty_sort: null,
     final_qty_sort: null,
     last_reviewed_sort: null,
+
     search: "",
   },
 };
@@ -352,6 +379,41 @@ const productSlice = createSlice({
       });
     },
 
+    // New action specifically for sorting
+    setSorting: (state, action) => {
+      const { sortBy, direction } = action.payload;
+      state.appliedFilters.sort_by = sortBy;
+      state.appliedFilters.sort_direction = direction;
+
+      // Clear legacy sorting when using new sorting
+      if (sortBy) {
+        state.appliedFilters.notes_sort = null;
+        state.appliedFilters.added_qty_sort = null;
+        state.appliedFilters.final_qty_sort = null;
+        state.appliedFilters.last_reviewed_sort = null;
+      }
+
+      // Reset pagination when sorting changes
+      Object.keys(state.pagination).forEach((productType) => {
+        state.pagination[productType].currentPage = 1;
+      });
+    },
+
+    // Clear sorting
+    clearSorting: (state) => {
+      state.appliedFilters.sort_by = null;
+      state.appliedFilters.sort_direction = null;
+      state.appliedFilters.notes_sort = null;
+      state.appliedFilters.added_qty_sort = null;
+      state.appliedFilters.final_qty_sort = null;
+      state.appliedFilters.last_reviewed_sort = null;
+
+      // Reset pagination when sorting is cleared
+      Object.keys(state.pagination).forEach((productType) => {
+        state.pagination[productType].currentPage = 1;
+      });
+    },
+
     clearAppliedFilters: (state) => {
       state.appliedFilters = {
         category: [],
@@ -373,6 +435,8 @@ const productSlice = createSlice({
         fathers_day: null,
         mens_day: null,
         womens_day: null,
+        sort_by: null,
+        sort_direction: null,
         notes_sort: null,
         added_qty_sort: null,
         final_qty_sort: null,
@@ -468,6 +532,15 @@ const productSlice = createSlice({
         }
       }
     },
+
+    // Add actions to update assigned users and categories if needed
+    setAssignedUsers: (state, action) => {
+      state.assignedUsers = action.payload;
+    },
+
+    setCategories: (state, action) => {
+      state.categories = action.payload;
+    },
   },
 
   extraReducers: (builder) => {
@@ -499,12 +572,16 @@ const productSlice = createSlice({
           count,
           product_type_counts,
           note_status_counts,
+          categories,
+          assigned_users,
         } = action.payload;
 
         console.log("Products fetched successfully:", {
           productType,
           dataLength: Array.isArray(data) ? data.length : "not array",
           pagination,
+          categoriesCount: categories?.length || 0,
+          assignedUsersCount: assigned_users?.length || 0,
         });
 
         state.loading.products = false;
@@ -521,6 +598,15 @@ const productSlice = createSlice({
           };
         }
 
+        // Update assigned users and categories from API response
+        if (assigned_users && Array.isArray(assigned_users)) {
+          state.assignedUsers = assigned_users;
+        }
+
+        if (categories && Array.isArray(categories)) {
+          state.categories = categories;
+        }
+
         // Handle data based on product type
         if (Array.isArray(data)) {
           state.pending = note_status_counts.pending || 0;
@@ -529,6 +615,7 @@ const productSlice = createSlice({
           state.storeProductCount = product_type_counts.store || 0;
           state.comProductCount = product_type_counts.com || 0;
           state.omniProductCount = product_type_counts.omni || 0;
+
           if (!productType || productType === "all") {
             // If no specific product type or "all", distribute to appropriate arrays
             state.storeProducts =
@@ -610,6 +697,8 @@ const productSlice = createSlice({
           com: state.comProducts.length,
           omni: state.omniProducts.length,
           pagination: state.pagination[targetType],
+          assignedUsers: state.assignedUsers.length,
+          categories: state.categories.length,
         });
       })
       .addCase(fetchProducts.rejected, (state, action) => {
@@ -696,6 +785,10 @@ export const selectAllProducts = (state) => [
   ...state.products.omniProducts,
 ];
 
+// New selectors for assigned users and categories
+export const selectAssignedUsers = (state) => state.products.assignedUsers;
+export const selectCategories = (state) => state.products.categories;
+
 // Enhanced pagination selectors
 export const selectPagination = (state) => state.products.pagination;
 
@@ -765,6 +858,23 @@ export const selectPageNumbers = (state) => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 };
 
+// Sorting selectors
+export const selectCurrentSort = (state) => ({
+  sortBy: state.products.appliedFilters.sort_by,
+  direction: state.products.appliedFilters.sort_direction,
+});
+
+export const selectIsSorted = (state) => {
+  const filters = state.products.appliedFilters;
+  return !!(
+    filters.sort_by ||
+    filters.notes_sort ||
+    filters.added_qty_sort ||
+    filters.final_qty_sort ||
+    filters.last_reviewed_sort
+  );
+};
+
 // Other selectors (unchanged)
 export const selectProductCache = (state) =>
   state.products.cache.productDetails;
@@ -810,6 +920,10 @@ export const selectProductsDebug = (state) => ({
   currentPagination: selectCurrentPagination(state),
   paginationInfo: selectPaginationInfo(state),
   appliedFilters: state.products.appliedFilters,
+  assignedUsers: state.products.assignedUsers,
+  categories: state.products.categories,
+  currentSort: selectCurrentSort(state),
+  isSorted: selectIsSorted(state),
   sampleStoreProduct: state.products.storeProducts[0] || null,
   sampleComProduct: state.products.comProducts[0] || null,
   sampleOmniProduct: state.products.omniProducts[0] || null,
@@ -823,6 +937,8 @@ export const {
   setPageSize,
   resetPagination,
   setAppliedFilters,
+  setSorting,
+  clearSorting,
   clearAppliedFilters,
   clearErrors,
   clearCache,
@@ -831,6 +947,8 @@ export const {
   goToFirstPage,
   goToLastPage,
   updatePaginationOptimistic,
+  setAssignedUsers,
+  setCategories,
 } = productSlice.actions;
 
 export default productSlice.reducer;

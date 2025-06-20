@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import PropTypes from "prop-types";
-import { AlertTriangle, Save, AlertCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  Save,
+  AlertCircle,
+  CheckCircle,
+  Clock,
+} from "lucide-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
@@ -16,6 +22,7 @@ const CriticalAdjustments = ({
   productId,
   onSave,
   fetchProducts,
+  productData, // Add productData prop to get current status
 }) => {
   const dispatch = useDispatch();
   const { sheetId } = useParams();
@@ -24,9 +31,42 @@ const CriticalAdjustments = ({
     (state) => state.filters.selectedProductType
   );
 
+  // Status state - initialize with current product status
+  const [currentStatus, setCurrentStatus] = useState(
+    productData?.product_details?.status || "not_reviewed"
+  );
+
   // Validation states
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Status options
+  const statusOptions = [
+    {
+      value: "not_reviewed",
+      label: "Not Reviewed",
+      icon: <AlertCircle size={14} className="text-red-600" />,
+      bgColor: "bg-red-100",
+      textColor: "text-red-800",
+      borderColor: "border-red-300",
+    },
+    {
+      value: "pending",
+      label: "Pending",
+      icon: <Clock size={14} className="text-yellow-600" />,
+      bgColor: "bg-yellow-100",
+      textColor: "text-yellow-800",
+      borderColor: "border-yellow-300",
+    },
+    {
+      value: "reviewed",
+      label: "Reviewed",
+      icon: <CheckCircle size={14} className="text-green-600" />,
+      bgColor: "bg-green-100",
+      textColor: "text-green-800",
+      borderColor: "border-green-300",
+    },
+  ];
 
   const formatValue = (value) => {
     if (value === null || value === undefined || value === "") return "-";
@@ -105,6 +145,46 @@ const CriticalAdjustments = ({
     // Clear note-related errors when user starts typing
     if (errors.externalFactor) {
       setErrors((prev) => ({ ...prev, externalFactor: null }));
+    }
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${productId}/`,
+        {
+          sheet_id: sheetId,
+          product_details: {
+            status: newStatus,
+          },
+        }
+      );
+
+      if (response.status === 200 || response.status === 201) {
+        setCurrentStatus(newStatus);
+
+        // Refresh products data if fetchProducts is available
+        if (
+          fetchProducts &&
+          dispatch &&
+          selectedProductType &&
+          selectedFilters
+        ) {
+          dispatch(
+            fetchProducts({
+              productType: selectedProductType,
+              filters: selectedFilters,
+              sheetId: sheetId,
+            })
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      setErrors((prev) => ({
+        ...prev,
+        status: "Failed to update status. Please try again.",
+      }));
     }
   };
 
@@ -192,13 +272,20 @@ const CriticalAdjustments = ({
 
         if (onSave) onSave();
 
-        dispatch(
-          fetchProducts({
-            productType: selectedProductType,
-            filters: selectedFilters,
-            sheetId: sheetId,
-          })
-        );
+        if (
+          fetchProducts &&
+          dispatch &&
+          selectedProductType &&
+          selectedFilters
+        ) {
+          dispatch(
+            fetchProducts({
+              productType: selectedProductType,
+              filters: selectedFilters,
+              sheetId: sheetId,
+            })
+          );
+        }
 
         // Clear any remaining errors after successful save
         setErrors({});
@@ -222,15 +309,46 @@ const CriticalAdjustments = ({
     (userAddedQuantity && userAddedQuantity.trim() !== "") ||
     (externalFactor && externalFactor.trim() !== "");
 
+  // Get current status configuration
+  const currentStatusConfig =
+    statusOptions.find((option) => option.value === currentStatus) ||
+    statusOptions[0];
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-amber-200 overflow-hidden">
       <div className="bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3 border-b border-amber-100">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="text-amber-600" size={16} />
-          <h3 className="text-sm font-semibold text-gray-800">
-            Critical Adjustments
-          </h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="text-amber-600" size={16} />
+            <h3 className="text-sm font-semibold text-gray-800">
+              Critical Adjustments
+            </h3>
+          </div>
+
+          {/* Status Selector in Header */}
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-medium text-gray-700">Status:</label>
+            <select
+              value={currentStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className={`px-3 py-1.5 border rounded-md text-xs font-medium focus:outline-none focus:ring-2 transition-all ${currentStatusConfig.bgColor} ${currentStatusConfig.textColor} ${currentStatusConfig.borderColor} focus:ring-indigo-100`}
+            >
+              {statusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+
+        {/* Status Error Message */}
+        {errors.status && (
+          <div className="mt-2 text-xs text-red-600 flex items-center gap-1">
+            <AlertCircle size={12} />
+            {errors.status}
+          </div>
+        )}
       </div>
 
       <div className="p-4">
@@ -407,6 +525,7 @@ CriticalAdjustments.propTypes = {
   productId: PropTypes.string.isRequired,
   onSave: PropTypes.func,
   fetchProducts: PropTypes.func.isRequired,
+  productData: PropTypes.object, // Add productData prop
 };
 
 export default CriticalAdjustments;

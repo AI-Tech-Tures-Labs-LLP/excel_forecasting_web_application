@@ -1606,6 +1606,7 @@ const ProductDetailsView = () => {
           productId={productId}
           onSave={handleCriticalSave}
           fetchProducts={fetchProducts}
+          productData={productData}
         />
 
         {/* Rolling Forecast */}
