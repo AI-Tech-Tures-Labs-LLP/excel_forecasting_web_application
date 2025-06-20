@@ -356,9 +356,6 @@ const AdminDashboard = () => {
           onRefresh={handleRefresh}
         />
 
-        {/* Stats Cards - Only show for admins */}
-        {isAdmin && <StatsCards stats={stats} />}
-
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
           {/* Quick Actions - Now includes Forecast Approval modal */}

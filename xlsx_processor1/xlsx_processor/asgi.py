@@ -1,21 +1,11 @@
 import os
-import django
-from channels.routing import ProtocolTypeRouter, URLRouter
-from channels.auth import AuthMiddlewareStack
 from django.core.asgi import get_asgi_application
-import forecast.routing
+from channels.routing import ProtocolTypeRouter, URLRouter
+from forecast.routing import websocket_urlpatterns
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "xlsx_processor.settings")
-django.setup()
-
-# Separate Django and WebSocket apps
-django_asgi_app = get_asgi_application()
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'xlsx_processor.settings')
 
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,  # ✅ Handles Django REST Framework, admin, etc.
-    "websocket": AuthMiddlewareStack(
-        URLRouter(
-            forecast.routing.websocket_urlpatterns
-        )
-    ),
+    "http": get_asgi_application(),
+    "websocket": URLRouter(websocket_urlpatterns),
 })

@@ -941,9 +941,7 @@ const QuickActions = ({ stats, isAdmin, filteredActions }) => {
             </div>
             <h2 className="text-2xl font-bold text-slate-900">Quick Actions</h2>
           </div>
-          <div className="text-sm text-slate-500">
-            {enhancedActions.length} available actions
-          </div>
+          <div className="text-sm text-slate-500">{enhancedActions.length}</div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {enhancedActions.map((action, index) => {
@@ -984,10 +982,7 @@ const QuickActions = ({ stats, isAdmin, filteredActions }) => {
                   <div className="flex items-center justify-between">
                     {action.count !== undefined && (
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl font-bold text-slate-800">
-                          {action.count}
-                        </span>
-                        <span className="text-sm text-slate-500">items</span>
+                        <span className="text-2xl font-bold text-slate-800"></span>
                       </div>
                     )}
                     {action.badge && (

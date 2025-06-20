@@ -62,7 +62,7 @@ function LandingPage() {
                   </p>
 
                   <Link
-                    to="/file-upload"
+                    to="/dashboard"
                     className="block w-full py-4 px-8 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors text-center text-lg"
                   >
                     Start Forecasting

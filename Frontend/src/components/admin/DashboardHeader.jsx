@@ -56,22 +56,7 @@ const DashboardHeader = ({
               performance insights. Monitor your team's progress and manage
               operations efficiently.
             </p>
-            {isAdmin && (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-emerald-500/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-emerald-400/30">
-                  <Shield size={14} className="text-emerald-300" />
-                  <span className="text-emerald-100 text-sm font-medium">
-                    Administrator Access
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 bg-blue-500/20 backdrop-blur-sm px-3 py-1.5 rounded-full border border-blue-400/30">
-                  <Sparkles size={14} className="text-blue-300" />
-                  <span className="text-blue-100 text-sm">
-                    Premium Features Enabled
-                  </span>
-                </div>
-              </div>
-            )}
+            {isAdmin && <div className="flex items-center gap-3"></div>}
           </div>
 
           <div className="flex gap-3">
