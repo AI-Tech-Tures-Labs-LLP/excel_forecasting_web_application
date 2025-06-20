@@ -177,7 +177,7 @@ function ProductSelector() {
       //   ...(data.omni_products || []),
       // ];
 
-      const allProducts = [...data];
+      const allProducts = [...data.results];
 
       const categories = [
         ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
@@ -208,7 +208,13 @@ function ProductSelector() {
         const notesResponse = await fetch(
           `${
             import.meta.env.VITE_API_BASE_URL
-          }/forecast/forecast-notes/?sheet_id=${sheetId}`
+          }/forecast/forecast-notes/?sheet_id=${sheetId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
         const notesData = await notesResponse.json();
         const notes = notesData.results || notesData;
@@ -245,7 +251,7 @@ function ProductSelector() {
         availableCategories: categories.sort(),
       }));
     } catch (error) {
-      console.error("Error loading filter options:", error);
+      // console.error("Error loading filter options:", error);
       dispatch(
         addToast({
           type: "error",
@@ -273,7 +279,13 @@ function ProductSelector() {
       const response = await fetch(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/?sheet_id=${sheetId}`
+        }/forecast/forecast-notes/?sheet_id=${sheetId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
       const allNotes = await response.json();
 
@@ -861,7 +873,7 @@ function ProductSelector() {
     }
   };
 
-  console.log("productnotedata", productNotesData);
+  // console.log("productnotedata", productNotesData);
   return (
     <>
       <div className="w-full mx-auto bg-white rounded-xl shadow-lg overflow-hidden">

@@ -126,7 +126,13 @@ const CriticalAdjustments = ({
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`,
-        noteData
+        noteData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       console.log("Note saved successfully:", response.data);

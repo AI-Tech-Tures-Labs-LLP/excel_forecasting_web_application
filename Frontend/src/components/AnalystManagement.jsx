@@ -1509,7 +1509,7 @@ const AnalystManagement = () => {
       }
 
       const data = await response.json();
-      const analystUsers = data.filter(
+      const analystUsers = data.results.filter(
         (user) =>
           user.role?.name === "analyst" || user.role?.name === "senior_analyst"
       );
@@ -1537,7 +1537,7 @@ const AnalystManagement = () => {
 
       if (response.ok) {
         const allProducts = await response.json();
-        const analystProducts = allProducts.filter(
+        const analystProducts = allProducts.results.filter(
           (p) => p.assigned_to === analystId
         );
         const categories = [

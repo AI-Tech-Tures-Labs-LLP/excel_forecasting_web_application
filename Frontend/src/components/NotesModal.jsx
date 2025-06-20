@@ -69,7 +69,13 @@ const NotesModal = ({
       const response = await axios.get(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/?sheet_id=${sheetId}`
+        }/forecast/forecast-notes/?sheet_id=${sheetId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
       console.log("Fetched notes:", response.data);
 
@@ -103,7 +109,13 @@ const NotesModal = ({
 
       const response = await axios.post(
         `${import.meta.env.VITE_API_BASE_URL}/forecast/forecast-notes/`,
-        noteData
+        noteData,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
 
       setNotes([response.data, ...notes]);
@@ -134,7 +146,13 @@ const NotesModal = ({
       await axios.delete(
         `${
           import.meta.env.VITE_API_BASE_URL
-        }/forecast/forecast-notes/${noteId}/`
+        }/forecast/forecast-notes/${noteId}/`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
       setNotes(notes.filter((note) => note.id !== noteId));
     } catch (error) {

@@ -1,15 +1,22 @@
-// Updated productSlice.js with enhanced filter support and fixes
+// Updated productSlice.js with enhanced filter support, fixes, and pagination
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Updated async thunk for API calls with enhanced filters
+// Updated async thunk for API calls with enhanced filters and pagination
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
-  async ({ productType, filters, sheetId }, { rejectWithValue }) => {
+  async (
+    { productType, filters, sheetId, page = 1, pageSize = 10 },
+    { rejectWithValue }
+  ) => {
     try {
       const params = new URLSearchParams();
+
+      // Add pagination parameters
+      params.append("page", page.toString());
+      params.append("page_size", pageSize.toString());
 
       if (sheetId) {
         params.append("sheet_id", sheetId);
@@ -21,6 +28,10 @@ export const fetchProducts = createAsyncThunk(
         "birthstone",
         "is_red_box_item",
         "vdf_status",
+        "tagged_to",
+        "forecast_month",
+        "status",
+        "assigned_to",
       ];
 
       multiSelectFilters.forEach((filterKey) => {
@@ -61,6 +72,41 @@ export const fetchProducts = createAsyncThunk(
         }
       });
 
+      // Add sorting parameters
+      if (filters.notes_sort) {
+        params.append(
+          "ordering",
+          filters.notes_sort === "latest" ? "-created_at" : "created_at"
+        );
+      }
+      if (filters.added_qty_sort) {
+        params.append(
+          "ordering",
+          filters.added_qty_sort === "asc"
+            ? "recommended_total_quantity"
+            : "-recommended_total_quantity"
+        );
+      }
+      if (filters.final_qty_sort) {
+        params.append(
+          "ordering",
+          filters.final_qty_sort === "asc"
+            ? "user_updated_final_quantity"
+            : "-user_updated_final_quantity"
+        );
+      }
+      if (filters.last_reviewed_sort) {
+        params.append(
+          "ordering",
+          filters.last_reviewed_sort === "newest" ? "-updated_at" : "updated_at"
+        );
+      }
+
+      // Add search query
+      if (filters.search) {
+        params.append("search", filters.search);
+      }
+
       // Product type filter
       if (productType) {
         params.append("product_type", productType);
@@ -72,9 +118,27 @@ export const fetchProducts = createAsyncThunk(
         `${API_BASE_URL}/forecast/query/filter_products/?${params}`
       );
 
+      console.log("API Response:", response.data);
+
+      // Handle paginated response
+      const responseData = response.data;
+      const results = responseData.results || [];
+      const count = responseData.count || 0;
+      const totalPages = Math.ceil(count / pageSize);
+
       return {
         productType,
-        data: response.data,
+        data: results,
+        pagination: {
+          currentPage: page,
+          pageSize: pageSize,
+          totalCount: count,
+          totalPages: totalPages,
+          hasNext: !!responseData.next,
+          hasPrevious: !!responseData.previous,
+          next: responseData.next,
+          previous: responseData.previous,
+        },
         filters,
         sheetId,
         timestamp: Date.now(),
@@ -141,11 +205,38 @@ const initialState = {
     productDetails: {},
   },
 
-  // Pagination
+  // Enhanced pagination with backend support
   pagination: {
-    store: { page: 1, totalPages: 1, totalItems: 0 },
-    com: { page: 1, totalPages: 1, totalItems: 0 },
-    omni: { page: 1, totalPages: 1, totalItems: 0 },
+    store: {
+      currentPage: 1,
+      pageSize: 10,
+      totalCount: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+      next: null,
+      previous: null,
+    },
+    com: {
+      currentPage: 1,
+      pageSize: 10,
+      totalCount: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+      next: null,
+      previous: null,
+    },
+    omni: {
+      currentPage: 1,
+      pageSize: 10,
+      totalCount: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+      next: null,
+      previous: null,
+    },
   },
 
   // Enhanced filter state
@@ -154,6 +245,10 @@ const initialState = {
     birthstone: [],
     is_red_box_item: [],
     vdf_status: [],
+    tagged_to: [],
+    forecast_month: [],
+    status: [],
+    assigned_to: [],
     is_considered_birthstone: null,
     is_added_quantity_using_macys_soq: null,
     is_below_min_order: null,
@@ -165,6 +260,11 @@ const initialState = {
     fathers_day: null,
     mens_day: null,
     womens_day: null,
+    notes_sort: null,
+    added_qty_sort: null,
+    final_qty_sort: null,
+    last_reviewed_sort: null,
+    search: "",
   },
 };
 
@@ -189,9 +289,45 @@ const productSlice = createSlice({
       state.selectedProductDetails = null;
     },
 
+    // Pagination actions
+    setCurrentPage: (state, action) => {
+      const { productType, page } = action.payload;
+      if (state.pagination[productType]) {
+        state.pagination[productType].currentPage = page;
+      }
+    },
+
+    setPageSize: (state, action) => {
+      const { productType, pageSize } = action.payload;
+      if (state.pagination[productType]) {
+        state.pagination[productType].pageSize = pageSize;
+        state.pagination[productType].currentPage = 1; // Reset to first page
+      }
+    },
+
+    resetPagination: (state, action) => {
+      const productType = action.payload;
+      if (state.pagination[productType]) {
+        state.pagination[productType] = {
+          currentPage: 1,
+          pageSize: state.pagination[productType].pageSize,
+          totalCount: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrevious: false,
+          next: null,
+          previous: null,
+        };
+      }
+    },
+
     // Filter management
     setAppliedFilters: (state, action) => {
       state.appliedFilters = { ...state.appliedFilters, ...action.payload };
+      // Reset pagination when filters change
+      Object.keys(state.pagination).forEach((productType) => {
+        state.pagination[productType].currentPage = 1;
+      });
     },
 
     clearAppliedFilters: (state) => {
@@ -200,6 +336,10 @@ const productSlice = createSlice({
         birthstone: [],
         is_red_box_item: [],
         vdf_status: [],
+        tagged_to: [],
+        forecast_month: [],
+        status: [],
+        assigned_to: [],
         is_considered_birthstone: null,
         is_added_quantity_using_macys_soq: null,
         is_below_min_order: null,
@@ -211,7 +351,16 @@ const productSlice = createSlice({
         fathers_day: null,
         mens_day: null,
         womens_day: null,
+        notes_sort: null,
+        added_qty_sort: null,
+        final_qty_sort: null,
+        last_reviewed_sort: null,
+        search: "",
       };
+      // Reset pagination when filters are cleared
+      Object.keys(state.pagination).forEach((productType) => {
+        state.pagination[productType].currentPage = 1;
+      });
     },
 
     // Clear errors
@@ -233,10 +382,15 @@ const productSlice = createSlice({
       };
     },
 
-    // Pagination
+    // Legacy pagination setter (for backward compatibility)
     setPagination: (state, action) => {
       const { productType, pagination } = action.payload;
-      state.pagination[productType] = pagination;
+      if (state.pagination[productType]) {
+        state.pagination[productType] = {
+          ...state.pagination[productType],
+          ...pagination,
+        };
+      }
     },
   },
 
@@ -248,18 +402,23 @@ const productSlice = createSlice({
         state.errors.products = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
-        const { productType, data, filters, timestamp } = action.payload;
+        const { productType, data, filters, timestamp, pagination } =
+          action.payload;
 
         console.log("Products fetched successfully:", {
           productType,
           dataLength: Array.isArray(data) ? data.length : "not array",
-          dataType: typeof data,
-          sampleData: Array.isArray(data) ? data[0] : data,
+          pagination,
         });
 
         state.loading.products = false;
         state.appliedFilters = filters;
         state.lastFetch[productType] = timestamp;
+
+        // Update pagination state
+        if (pagination && state.pagination[productType]) {
+          state.pagination[productType] = pagination;
+        }
 
         // Handle the case where data is already filtered by product type from API
         if (Array.isArray(data)) {
@@ -321,6 +480,7 @@ const productSlice = createSlice({
           store: state.storeProducts.length,
           com: state.comProducts.length,
           omni: state.omniProducts.length,
+          pagination: state.pagination[productType],
         });
       })
       .addCase(fetchProducts.rejected, (state, action) => {
@@ -395,10 +555,59 @@ export const selectAllProducts = (state) => [
   ...state.products.omniProducts,
 ];
 
+// Pagination selectors
+export const selectPagination = (state) => state.products.pagination;
+export const selectCurrentPagination = (state) =>
+  state.products.pagination[state.products.selectedProductType];
+
+export const selectPaginationByType = (state, productType) =>
+  state.products.pagination[productType];
+
+export const selectCurrentPage = (state) =>
+  state.products.pagination[state.products.selectedProductType]?.currentPage ||
+  1;
+
+export const selectPageSize = (state) =>
+  state.products.pagination[state.products.selectedProductType]?.pageSize || 10;
+
+export const selectTotalCount = (state) =>
+  state.products.pagination[state.products.selectedProductType]?.totalCount ||
+  0;
+
+export const selectTotalPages = (state) =>
+  state.products.pagination[state.products.selectedProductType]?.totalPages ||
+  0;
+
+export const selectHasNext = (state) =>
+  state.products.pagination[state.products.selectedProductType]?.hasNext ||
+  false;
+
+export const selectHasPrevious = (state) =>
+  state.products.pagination[state.products.selectedProductType]?.hasPrevious ||
+  false;
+
+// Computed pagination info selector
+export const selectPaginationInfo = (state) => {
+  const pagination =
+    state.products.pagination[state.products.selectedProductType];
+  if (!pagination) return { startIndex: 0, endIndex: 0, totalCount: 0 };
+
+  const { currentPage, pageSize, totalCount } = pagination;
+  const startIndex = (currentPage - 1) * pageSize + 1;
+  const endIndex = Math.min(startIndex + pageSize - 1, totalCount);
+
+  return {
+    startIndex: totalCount > 0 ? startIndex : 0,
+    endIndex: totalCount > 0 ? endIndex : 0,
+    totalCount,
+    currentPage,
+    pageSize,
+  };
+};
+
 export const selectProductCache = (state) =>
   state.products.cache.productDetails;
 export const selectLastFetch = (state) => state.products.lastFetch;
-export const selectPagination = (state) => state.products.pagination;
 export const selectAppliedFilters = (state) => state.products.appliedFilters;
 
 // Check if data needs refresh (older than 5 minutes)
@@ -427,6 +636,7 @@ export const selectProductsDebug = (state) => ({
   loading: state.products.loading.products,
   errors: state.products.errors.products,
   selectedType: state.products.selectedProductType,
+  pagination: state.products.pagination,
   sampleStoreProduct: state.products.storeProducts[0] || null,
   sampleComProduct: state.products.comProducts[0] || null,
   sampleOmniProduct: state.products.omniProducts[0] || null,
@@ -436,6 +646,9 @@ export const {
   setSelectedProductType,
   setSelectedProduct,
   clearSelectedProduct,
+  setCurrentPage,
+  setPageSize,
+  resetPagination,
   setAppliedFilters,
   clearAppliedFilters,
   clearErrors,

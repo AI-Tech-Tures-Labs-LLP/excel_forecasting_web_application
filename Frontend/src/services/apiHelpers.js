@@ -1,12 +1,21 @@
-// src/services/apiHelpers.js - Helper functions for API calls with enhanced filtering
+// src/services/apiHelpers.js - Helper functions for API calls with enhanced filtering and pagination
 
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Build query parameters for the enhanced filter API
-export const buildFilterParams = (filters, productType) => {
+// Build query parameters for the enhanced filter API with pagination
+export const buildFilterParams = (
+  filters,
+  productType,
+  page = 1,
+  pageSize = 10
+) => {
   const params = new URLSearchParams();
+
+  // Add pagination parameters
+  params.append("page", page.toString());
+  params.append("page_size", pageSize.toString());
 
   // Multi-select filters that accept arrays
   const multiSelectFilters = {
@@ -14,6 +23,10 @@ export const buildFilterParams = (filters, productType) => {
     birthstone: filters.birthstone || [],
     is_red_box_item: filters.is_red_box_item || [],
     vdf_status: filters.vdf_status || [],
+    tagged_to: filters.tagged_to || [],
+    forecast_month: filters.forecast_month || [],
+    status: filters.status || [],
+    assigned_to: filters.assigned_to || [],
   };
 
   // Add multi-select filters
@@ -67,6 +80,41 @@ export const buildFilterParams = (filters, productType) => {
     }
   });
 
+  // Add sorting parameters
+  if (filters.notes_sort) {
+    params.append(
+      "ordering",
+      filters.notes_sort === "latest" ? "-created_at" : "created_at"
+    );
+  }
+  if (filters.added_qty_sort) {
+    params.append(
+      "ordering",
+      filters.added_qty_sort === "asc"
+        ? "recommended_total_quantity"
+        : "-recommended_total_quantity"
+    );
+  }
+  if (filters.final_qty_sort) {
+    params.append(
+      "ordering",
+      filters.final_qty_sort === "asc"
+        ? "user_updated_final_quantity"
+        : "-user_updated_final_quantity"
+    );
+  }
+  if (filters.last_reviewed_sort) {
+    params.append(
+      "ordering",
+      filters.last_reviewed_sort === "newest" ? "-updated_at" : "updated_at"
+    );
+  }
+
+  // Add search query
+  if (filters.search) {
+    params.append("search", filters.search);
+  }
+
   // Add product type if specified
   if (productType) {
     params.append("product_type", productType);
@@ -75,23 +123,47 @@ export const buildFilterParams = (filters, productType) => {
   return params;
 };
 
-// Fetch products with enhanced filtering
-export const fetchProductsWithFilters = async (productType, filters) => {
+// Fetch products with enhanced filtering and pagination
+export const fetchProductsWithFilters = async (
+  productType,
+  filters,
+  sheetId,
+  page = 1,
+  pageSize = 10
+) => {
   try {
-    const params = buildFilterParams(filters, productType);
+    const params = buildFilterParams(filters, productType, page, pageSize);
 
-    // //console.log(
-    //   "API Request:",
-    //   `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
-    // );
+    // Add sheet_id parameter
+    if (sheetId) {
+      params.append("sheet_id", sheetId);
+    }
+
+    console.log(
+      "API Request:",
+      `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
+    );
 
     const response = await axios.get(
       `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
     );
 
+    // Handle paginated response structure
+    const data = response.data;
+
     return {
       success: true,
-      data: response.data,
+      data: {
+        results: data.results || [],
+        count: data.count || 0,
+        next: data.next,
+        previous: data.previous,
+        totalPages: Math.ceil((data.count || 0) / pageSize),
+        currentPage: page,
+        pageSize: pageSize,
+        hasNext: !!data.next,
+        hasPrevious: !!data.previous,
+      },
       productType,
       appliedFilters: filters,
       timestamp: Date.now(),
@@ -103,23 +175,32 @@ export const fetchProductsWithFilters = async (productType, filters) => {
       error: error.response?.data || error.message,
       productType,
       appliedFilters: filters,
+      data: {
+        results: [],
+        count: 0,
+        totalPages: 0,
+        currentPage: page,
+        pageSize: pageSize,
+        hasNext: false,
+        hasPrevious: false,
+      },
     };
   }
 };
 
 // Fetch available filter options
-export const fetchAvailableFilters = async () => {
+export const fetchAvailableFilters = async (sheetId) => {
   try {
+    const params = new URLSearchParams();
+    if (sheetId) {
+      params.append("sheet_id", sheetId);
+    }
+
     const response = await axios.get(
-      `${API_BASE_URL}/forecast/query/filter_products/`
+      `${API_BASE_URL}/forecast/query/filter_products/?${params.toString()}`
     );
 
-    // const allProducts = [
-    //   ...(response.data.store_products || []),
-    //   ...(response.data.com_products || []),
-    //   ...(response.data.omni_products || []),
-    // ];
-    const allProducts = response.data || [];
+    const allProducts = response.data.results || [];
 
     // Extract unique values for each filter type
     const categories = [
@@ -130,9 +211,56 @@ export const fetchAvailableFilters = async () => {
       ...new Set(allProducts.map((p) => p.birthstone).filter(Boolean)),
     ].sort();
 
+    // Extract forecast months
+    const forecastMonths = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const statuses = ["Reviewed", "Not Reviewed", "Pending"];
+
     // Static options for boolean filters
     const redBoxItems = ["Yes", "No"];
     const vdfStatuses = ["Active", "Inactive"];
+
+    // Get tagged users from notes if available
+    let taggedToUsers = ["Unassigned"];
+    try {
+      const notesResponse = await axios.get(
+        `${API_BASE_URL}/forecast/forecast-notes/?sheet_id=${sheetId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const notesData = notesResponse.data;
+      const notes = notesData.results || notesData;
+
+      const assignedUsers = [
+        ...new Set(
+          notes
+            .map((note) => note.assigned_to)
+            .filter(Boolean)
+            .filter((user) => user !== "Unassigned")
+        ),
+      ];
+
+      taggedToUsers = ["Unassigned", ...assignedUsers.sort()];
+    } catch (notesError) {
+      console.warn("Could not load notes for tagged users:", notesError);
+    }
 
     return {
       success: true,
@@ -141,6 +269,9 @@ export const fetchAvailableFilters = async () => {
         birthstones,
         is_red_box_items: redBoxItems,
         vdf_statuses: vdfStatuses,
+        forecast_months: forecastMonths,
+        statuses: statuses,
+        tagged_to: taggedToUsers,
         // Holiday filters are boolean, so they don't need options from API
         holidays: [
           "Valentine's Day",
@@ -161,6 +292,9 @@ export const fetchAvailableFilters = async () => {
         birthstones: [],
         is_red_box_items: [],
         vdf_statuses: [],
+        forecast_months: [],
+        statuses: [],
+        tagged_to: [],
         holidays: [],
       },
     };
@@ -189,39 +323,16 @@ export const fetchProductDetails = async (productId, sheetId) => {
   }
 };
 
-// Fetch product notes
-// export const fetchProductNotes = async (productIds = []) => {
-//   try {
-//     let url = `${API_BASE_URL}/forecast/forecast-notes/`;
-
-//     // If specific product IDs are provided, filter by them
-//     if (productIds.length > 0) {
-//       const params = new URLSearchParams();
-//       productIds.forEach((pid) => params.append("pid", pid));
-//       url += `?${params.toString()}`;
-//     }
-
-//     const response = await axios.get(url);
-
-//     return {
-//       success: true,
-//       data: response.data.results || response.data,
-//     };
-//   } catch (error) {
-//     console.error("Error fetching product notes:", error);
-//     return {
-//       success: false,
-//       error: error.response?.data || error.message,
-//       data: [],
-//     };
-//   }
-// };
-
 // Create or update product note
 export const saveProductNote = async (noteData) => {
   try {
     const url = `${API_BASE_URL}/forecast/forecast-notes/`;
-    const response = await axios.post(url, noteData);
+    const response = await axios.post(url, noteData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     return {
       success: true,
@@ -240,7 +351,12 @@ export const saveProductNote = async (noteData) => {
 export const updateProductNote = async (noteId, noteData) => {
   try {
     const url = `${API_BASE_URL}/forecast/forecast-notes/${noteId}/`;
-    const response = await axios.patch(url, noteData);
+    const response = await axios.patch(url, noteData, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     return {
       success: true,
@@ -259,7 +375,12 @@ export const updateProductNote = async (noteId, noteData) => {
 export const deleteProductNote = async (noteId) => {
   try {
     const url = `${API_BASE_URL}/forecast/forecast-notes/${noteId}/`;
-    await axios.delete(url);
+    await axios.delete(url, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        "Content-Type": "application/json",
+      },
+    });
 
     return {
       success: true,
@@ -337,6 +458,10 @@ export const validateFilters = (filters) => {
     "birthstone",
     "is_red_box_item",
     "vdf_status",
+    "tagged_to",
+    "forecast_month",
+    "status",
+    "assigned_to",
   ];
   arrayFilters.forEach((key) => {
     if (filters[key] && !Array.isArray(filters[key])) {
@@ -381,7 +506,6 @@ export default {
   fetchProductsWithFilters,
   fetchAvailableFilters,
   fetchProductDetails,
-  fetchProductNotes,
   saveProductNote,
   updateProductNote,
   deleteProductNote,
