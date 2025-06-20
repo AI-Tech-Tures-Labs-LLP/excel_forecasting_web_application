@@ -75,16 +75,7 @@ const DashboardHeader = ({
           </div>
 
           <div className="flex gap-3">
-            <div className="relative">
-              <button className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white p-3 rounded-xl transition-all duration-200 hover:scale-105 border border-white/20 group">
-                <Bell size={20} className="group-hover:animate-pulse" />
-                {notifications.filter((n) => n.unread).length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-medium shadow-lg animate-pulse">
-                    {notifications.filter((n) => n.unread).length}
-                  </span>
-                )}
-              </button>
-            </div>
+            <div className="relative"></div>
             <button
               onClick={onRefresh}
               disabled={refreshing}

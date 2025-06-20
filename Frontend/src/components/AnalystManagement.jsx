@@ -1509,7 +1509,7 @@ const AnalystManagement = () => {
       }
 
       const data = await response.json();
-      const analystUsers = data.results.filter(
+      const analystUsers = data.filter(
         (user) =>
           user.role?.name === "analyst" || user.role?.name === "senior_analyst"
       );
