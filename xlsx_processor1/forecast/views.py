@@ -13,7 +13,7 @@ from django.http import HttpResponse, JsonResponse
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 
-
+from django.db.models import Case, When
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -494,12 +494,19 @@ class ForecastViewSet(ViewSet):
         paginator = ProductPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
 
-        paginated_qs = ProductDetail.objects.filter(
-            pk__in=[p.pk for p in paginated_qs]
-        ).prefetch_related(
+        # paginated_qs = paginated_qs.prefetch_related(
+        #     Prefetch("notes", queryset=ForecastNote.objects.all())
+        # )
+
+        ordered_ids = [p.pk for p in paginated_qs]
+
+        preserved_order = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(ordered_ids)])
+
+        paginated_qs = ProductDetail.objects.filter(pk__in=ordered_ids).annotate(
+            _order=preserved_order
+        ).order_by("_order").prefetch_related(
             Prefetch("notes", queryset=ForecastNote.objects.all())
         )
-
         result = []
         for product in paginated_qs:
             serialized_product = ProductDetailSerializer(product).data
@@ -531,6 +538,7 @@ class ForecastViewSet(ViewSet):
         response.data["product_type_counts"] = product_type_counts
         response.data["categories"] = all_categories
         response.data["assigned_users"] = assigned_users_serialized
+        
 
         return response
     
