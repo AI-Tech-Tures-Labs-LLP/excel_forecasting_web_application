@@ -802,7 +802,7 @@ const DetailedDashboard = () => {
                 )}
                 %
               </div>
-              <div className="text-sm text-emerald-600">Avg Accuracy</div>
+              <div className="text-sm text-emerald-600">Total Time Spent</div>
               <div className="text-xs text-emerald-500 mt-1">
                 Across all analysts
               </div>
