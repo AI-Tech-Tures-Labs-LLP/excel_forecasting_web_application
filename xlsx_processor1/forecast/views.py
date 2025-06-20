@@ -29,8 +29,9 @@ from .service.exportExcel import process_data
 from forecast.service.rollingfc import recalculate_all
 from forecast.service.adddatabase import save_forecast_data
 from forecast.service.utils import get_c2_value
-
-
+from authentication.models import CustomUser
+from authentication.serializers import CustomUserSerializer
+from django.db.models import Prefetch, Count, Q, Max
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import ForecastNote
@@ -420,29 +421,23 @@ class ForecastViewSet(ViewSet):
     permission_classes = [AllowAny]
 
 
-
-
-
     @action(detail=False, methods=["get"])
     def filter_products(self, request):
         sheet_id = request.query_params.get("sheet_id")
-        product_type = request.query_params.get("product_type")
+        sort_by = request.query_params.get("sort_by")
 
         if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=400)
 
-        # Base queryset
         queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
 
-        if product_type:
-            queryset = queryset.filter(product_type=product_type)
-
-        multi_value_fields = ["category", "birthstone", "assigned_to"]
-        boolean_fields = [
-            "is_red_box_item", "is_considered_birthstone",
-            "is_added_quantity_using_macys_soq", "is_added_only_to_balance_macys_soq",
-            "is_below_min_order", "is_over_macys_soq", "is_need_to_review_first",
-            "valentine_day", "mothers_day", "fathers_day", "mens_day", "womens_day"
+        # ✅ Multi-value fields
+        multi_value_fields = [
+            "forecast_month",  # New
+            "status",          # New
+            "category",
+            "birthstone",
+            "assigned_to",
         ]
 
         for field in multi_value_fields:
@@ -453,23 +448,48 @@ class ForecastViewSet(ViewSet):
                 else:
                     queryset = queryset.filter(**{f"{field}__in": values})
 
+        # ✅ Boolean fields
+        boolean_fields = [
+            "is_red_box_item", "is_considered_birthstone",
+            "is_added_quantity_using_macys_soq", "is_added_only_to_balance_macys_soq",
+            "is_below_min_order", "is_over_macys_soq", "is_need_to_review_first",
+            "valentine_day", "mothers_day", "fathers_day", "mens_day", "womens_day"
+        ]
+
         for field in boolean_fields:
             value = request.query_params.get(field)
             if value is not None and value.lower() in ["true", "false"]:
                 queryset = queryset.filter(**{field: value.lower() == "true"})
 
-        # Pagination
+        # ✅ Sorting
+        if sort_by:
+            valid_sort_fields = [
+                "recommended_total_quantity", "-recommended_total_quantity",
+                "user_updated_final_quantity", "-user_updated_final_quantity",
+                "note_created_at", "-note_created_at",
+                "note_updated_at", "-note_updated_at"
+            ]
+            if sort_by not in valid_sort_fields:
+                return Response({"error": f"Invalid sort_by field: {sort_by}"}, status=400)
+
+            if sort_by.startswith("note_"):
+                note_field = sort_by.replace("note_", "").lstrip("-")
+                queryset = queryset.annotate(latest_note_date=Max(f"notes__{note_field}"))
+                direction = "-" if sort_by.startswith("-") else ""
+                queryset = queryset.order_by(f"{direction}latest_note_date")
+            else:
+                queryset = queryset.order_by(sort_by)
+
+        # 🔄 Continue with pagination, prefetch, serialization...
         paginator = ProductPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
 
-        # Prefetch notes for paginated products
         paginated_qs = ProductDetail.objects.filter(
             pk__in=[p.pk for p in paginated_qs]
         ).prefetch_related(
             Prefetch("notes", queryset=ForecastNote.objects.all())
         )
 
-        # Serialize results
         result = []
         for product in paginated_qs:
             serialized_product = ProductDetailSerializer(product).data
@@ -478,49 +498,29 @@ class ForecastViewSet(ViewSet):
             ).data
             result.append(serialized_product)
 
-        # -----------------------------
-        # Custom Aggregations
-        # -----------------------------
-
-        # 1. Count of products with at least one note of each status
         filtered_ids = list(queryset.values_list("id", flat=True))
 
         note_status_counts = {
-            "reviewed": ProductDetail.objects.filter(
-                id__in=filtered_ids, status="reviewed"
-            ).count(),
-
-            "not_reviewed": ProductDetail.objects.filter(
-                id__in=filtered_ids, status="not_reviewed"
-            ).count(),
-
-            "pending": ProductDetail.objects.filter(
-                id__in=filtered_ids, status="pending"
-            ).count(),
+            "reviewed": ProductDetail.objects.filter(id__in=filtered_ids, status="reviewed").count(),
+            "not_reviewed": ProductDetail.objects.filter(id__in=filtered_ids, status="not_reviewed").count(),
+            "pending": ProductDetail.objects.filter(id__in=filtered_ids, status="pending").count(),
         }
-            
-        
 
-        # 3. Count of products per product_type (total)
-       # 2. product_status_counts
-        
+        product_type_counts_raw = ProductDetail.objects.filter(sheet_id=sheet_id).values("product_type").annotate(count=Count("id"))
+        product_type_counts = {row["product_type"]: row["count"] for row in product_type_counts_raw}
 
-        # 3. product_type_counts
-        product_type_counts_raw = ProductDetail.objects.filter(
-        sheet_id=sheet_id  # Restrict to this sheet only
-            ).values("product_type").annotate(count=Count("id"))
+        all_categories = ProductDetail.objects.filter(sheet_id=sheet_id).values_list("category", flat=True).distinct()
+        all_categories = [c for c in all_categories if c]
 
-        product_type_counts = {
-                row["product_type"]: row["count"]
-                for row in product_type_counts_raw
-            }
-        # -----------------------------
-        # Return Final Response
-        # -----------------------------
+        assigned_user_ids = ProductDetail.objects.filter(sheet_id=sheet_id).exclude(assigned_to=None).values_list("assigned_to", flat=True).distinct()
+        assigned_users = CustomUser.objects.filter(id__in=assigned_user_ids)
+        assigned_users_serialized = CustomUserSerializer(assigned_users, many=True).data
+
         response = paginator.get_paginated_response(result)
         response.data["note_status_counts"] = note_status_counts
-     
         response.data["product_type_counts"] = product_type_counts
+        response.data["categories"] = all_categories
+        response.data["assigned_users"] = assigned_users_serialized
 
         return response
     
