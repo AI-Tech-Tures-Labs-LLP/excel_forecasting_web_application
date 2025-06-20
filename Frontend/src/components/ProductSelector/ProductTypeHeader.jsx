@@ -5,9 +5,13 @@ import { Store, Package, Globe } from "lucide-react";
 const ProductTypeHeader = ({
   selectedProductType,
   onProductTypeChange,
+
   storeProducts,
   comProducts,
   omniProducts,
+  storeProductCount,
+  comProductCount,
+  omniProductCount,
 }) => {
   const productTypeConfig = {
     store: {
@@ -30,11 +34,11 @@ const ProductTypeHeader = ({
   const getProductCount = (productType) => {
     switch (productType) {
       case "store":
-        return storeProducts.length;
+        return storeProductCount;
       case "com":
-        return comProducts.length;
+        return comProductCount;
       case "omni":
-        return omniProducts.length;
+        return omniProductCount;
       default:
         return 0;
     }

@@ -30,7 +30,38 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const ForecastVariableCards = ({ productData }) => {
+const ForecastVariableCards = ({ productData, onOpenModal }) => {
+  const attachModalConfig = (fields) => {
+    const modalTypeMapping = {
+      forecast_month_required_quantity: "required_quantity",
+      next_forecast_month_required_quantity: "required_quantity",
+      month_12_fc_index_original: "fc_index",
+      new_month_12_fc_index: "fc_index",
+      store_month_12_fc_index_original: "fc_index",
+      com_month_12_fc_index: "fc_index",
+      loss_updated: "loss",
+      std_trend: "trend",
+      com_trend_for_selected_month: "trend",
+      store_trend: "trend",
+      store_month_12_fc_index_loss: "fc_index_loss",
+      qty_added_to_maintain_oh_forecast_month: "planned_shipment",
+      qty_added_to_maintain_oh_next_forecast_month: "planned_shipment",
+      recommended_total_quantity: "total_added_qty",
+    };
+
+    return fields.map((field) => {
+      if (modalTypeMapping[field.key]) {
+        return {
+          ...field,
+          clickable: true,
+          modalType: modalTypeMapping[field.key],
+          ...(field.forecastMonth === "next" && { forecastMonth: "next" }),
+        };
+      }
+      return field;
+    });
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState("grouped");
   const [selectedGroup, setSelectedGroup] = useState("all");
@@ -855,11 +886,11 @@ const ForecastVariableCards = ({ productData }) => {
   //       return [];
   //   }
   // };
+
   const getVariableConfigByType = (type) => {
     switch (type) {
-      case "store":
-        return [
-          // Lead Time Calculation
+      case "store": {
+        const storeConfigRaw = [
           {
             key: "vendor_name",
             label: "Vendor",
@@ -1140,10 +1171,10 @@ const ForecastVariableCards = ({ productData }) => {
             type: "boolean",
           },
         ];
-
-      case "com":
-        return [
-          // Lead Time Calculation
+        return attachModalConfig(storeConfigRaw);
+      }
+      case "com": {
+        const comConfigRaw = [
           {
             key: "vendor_name",
             label: "Vendor",
@@ -1385,8 +1416,10 @@ const ForecastVariableCards = ({ productData }) => {
             type: "boolean",
           },
         ];
-      case "omni":
-        return [
+        return attachModalConfig(comConfigRaw);
+      }
+      case "omni": {
+        const omniConfigRaw = [
           // Lead Time Calculation
           {
             key: "vendor_name",
@@ -1734,7 +1767,8 @@ const ForecastVariableCards = ({ productData }) => {
             type: "boolean",
           },
         ];
-
+        return attachModalConfig(omniConfigRaw);
+      }
       default:
         return [];
     }
@@ -2118,11 +2152,28 @@ const ForecastVariableCards = ({ productData }) => {
   };
 
   const handleVariableClick = (variable, value, data, type) => {
-    if (variable.clickable && variable.modalType === "required_quantity") {
-      openRequiredQuantityModal(data, type, variable.forecastMonth);
+    console.log("=== Variable Click Debug ===");
+    console.log("Variable:", variable.key);
+    console.log("Is clickable:", variable.clickable);
+    console.log("Modal type:", variable.modalType);
+    console.log("onOpenModal exists:", !!onOpenModal);
+    console.log("Data:", data);
+    console.log("Type:", type);
+
+    if (variable.clickable) {
+      if (onOpenModal) {
+        console.log("Calling onOpenModal...");
+        onOpenModal(data, type, variable.modalType, variable.forecastMonth);
+      } else {
+        console.log("No onOpenModal, using fallback...");
+        if (variable.modalType === "required_quantity") {
+          openRequiredQuantityModal(data, type, variable.forecastMonth);
+        }
+      }
+    } else {
+      console.log("Variable is not clickable");
     }
   };
-
   const formatVariableValue = (value, config, productDetailsFallback = {}) => {
     if (value === null || value === undefined) {
       // Try to fallback to productDetails

@@ -1,10 +1,10 @@
-// Updated productSlice.js with enhanced filter support, fixes, and pagination
+// Enhanced productSlice.js with proper pagination integration
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Updated async thunk for API calls with enhanced filters and pagination
+// Enhanced async thunk for API calls with pagination support
 export const fetchProducts = createAsyncThunk(
   "products/fetchProducts",
   async (
@@ -103,12 +103,12 @@ export const fetchProducts = createAsyncThunk(
       }
 
       // Add search query
-      if (filters.search) {
-        params.append("search", filters.search);
+      if (filters.search && filters.search.trim()) {
+        params.append("search", filters.search.trim());
       }
 
       // Product type filter
-      if (productType) {
+      if (productType && productType !== "all") {
         params.append("product_type", productType);
       }
 
@@ -142,6 +142,9 @@ export const fetchProducts = createAsyncThunk(
         filters,
         sheetId,
         timestamp: Date.now(),
+        count: count,
+        product_type_counts: responseData.product_type_counts || {}, // ✅ Add this
+        note_status_counts: responseData.note_status_counts || {}, // ✅ Add this if needed
       };
     } catch (error) {
       console.error("Error in fetchProducts:", error);
@@ -174,10 +177,16 @@ export const fetchProductDetails = createAsyncThunk(
 
 const initialState = {
   // Product data
+  storeProductCount: 0,
+  comProductCount: 0,
+  omniProductCount: 0,
   storeProducts: [],
   comProducts: [],
   omniProducts: [],
-
+  all: [],
+  pending: 0,
+  reviewed: 0,
+  not_reviewed: 0,
   // Selected states
   selectedProductType: "store",
   selectedProduct: null,
@@ -200,6 +209,7 @@ const initialState = {
     store: null,
     com: null,
     omni: null,
+    all: null,
   },
   cache: {
     productDetails: {},
@@ -228,6 +238,16 @@ const initialState = {
       previous: null,
     },
     omni: {
+      currentPage: 1,
+      pageSize: 10,
+      totalCount: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+      next: null,
+      previous: null,
+    },
+    all: {
       currentPage: 1,
       pageSize: 10,
       totalCount: 0,
@@ -292,21 +312,23 @@ const productSlice = createSlice({
     // Pagination actions
     setCurrentPage: (state, action) => {
       const { productType, page } = action.payload;
-      if (state.pagination[productType]) {
-        state.pagination[productType].currentPage = page;
+      const targetType = productType || state.selectedProductType;
+      if (state.pagination[targetType]) {
+        state.pagination[targetType].currentPage = page;
       }
     },
 
     setPageSize: (state, action) => {
       const { productType, pageSize } = action.payload;
-      if (state.pagination[productType]) {
-        state.pagination[productType].pageSize = pageSize;
-        state.pagination[productType].currentPage = 1; // Reset to first page
+      const targetType = productType || state.selectedProductType;
+      if (state.pagination[targetType]) {
+        state.pagination[targetType].pageSize = pageSize;
+        state.pagination[targetType].currentPage = 1; // Reset to first page
       }
     },
 
     resetPagination: (state, action) => {
-      const productType = action.payload;
+      const productType = action.payload || state.selectedProductType;
       if (state.pagination[productType]) {
         state.pagination[productType] = {
           currentPage: 1,
@@ -379,17 +401,71 @@ const productSlice = createSlice({
       return {
         ...initialState,
         selectedProductType: state.selectedProductType,
+        pagination: {
+          ...initialState.pagination,
+          // Preserve page sizes
+          store: {
+            ...initialState.pagination.store,
+            pageSize: state.pagination.store.pageSize,
+          },
+          com: {
+            ...initialState.pagination.com,
+            pageSize: state.pagination.com.pageSize,
+          },
+          omni: {
+            ...initialState.pagination.omni,
+            pageSize: state.pagination.omni.pageSize,
+          },
+          all: {
+            ...initialState.pagination.all,
+            pageSize: state.pagination.all.pageSize,
+          },
+        },
       };
     },
 
     // Legacy pagination setter (for backward compatibility)
     setPagination: (state, action) => {
       const { productType, pagination } = action.payload;
-      if (state.pagination[productType]) {
-        state.pagination[productType] = {
-          ...state.pagination[productType],
+      const targetType = productType || state.selectedProductType;
+      if (state.pagination[targetType]) {
+        state.pagination[targetType] = {
+          ...state.pagination[targetType],
           ...pagination,
         };
+      }
+    },
+
+    // Utility actions for better UX
+    goToFirstPage: (state, action) => {
+      const productType = action.payload || state.selectedProductType;
+      if (state.pagination[productType]) {
+        state.pagination[productType].currentPage = 1;
+      }
+    },
+
+    goToLastPage: (state, action) => {
+      const productType = action.payload || state.selectedProductType;
+      if (
+        state.pagination[productType] &&
+        state.pagination[productType].totalPages > 0
+      ) {
+        state.pagination[productType].currentPage =
+          state.pagination[productType].totalPages;
+      }
+    },
+
+    // Optimistic update for pagination (before API response)
+    updatePaginationOptimistic: (state, action) => {
+      const { productType, page, pageSize } = action.payload;
+      const targetType = productType || state.selectedProductType;
+      if (state.pagination[targetType]) {
+        if (page !== undefined) {
+          state.pagination[targetType].currentPage = page;
+        }
+        if (pageSize !== undefined) {
+          state.pagination[targetType].pageSize = pageSize;
+        }
       }
     },
   },
@@ -397,13 +473,33 @@ const productSlice = createSlice({
   extraReducers: (builder) => {
     builder
       // Fetch products
-      .addCase(fetchProducts.pending, (state) => {
+      .addCase(fetchProducts.pending, (state, action) => {
         state.loading.products = true;
         state.errors.products = null;
+
+        // Optimistic pagination update
+        const { productType, page, pageSize } = action.meta.arg;
+        const targetType = productType || state.selectedProductType;
+        if (state.pagination[targetType]) {
+          if (page !== undefined) {
+            state.pagination[targetType].currentPage = page;
+          }
+          if (pageSize !== undefined) {
+            state.pagination[targetType].pageSize = pageSize;
+          }
+        }
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
-        const { productType, data, filters, timestamp, pagination } =
-          action.payload;
+        const {
+          productType,
+          data,
+          filters,
+          timestamp,
+          pagination,
+          count,
+          product_type_counts,
+          note_status_counts,
+        } = action.payload;
 
         console.log("Products fetched successfully:", {
           productType,
@@ -413,41 +509,60 @@ const productSlice = createSlice({
 
         state.loading.products = false;
         state.appliedFilters = filters;
-        state.lastFetch[productType] = timestamp;
+
+        const targetType = productType || "all";
+        state.lastFetch[targetType] = timestamp;
 
         // Update pagination state
-        if (pagination && state.pagination[productType]) {
-          state.pagination[productType] = pagination;
+        if (pagination && state.pagination[targetType]) {
+          state.pagination[targetType] = {
+            ...state.pagination[targetType],
+            ...pagination,
+          };
         }
 
-        // Handle the case where data is already filtered by product type from API
+        // Handle data based on product type
         if (Array.isArray(data)) {
-          // If API returns a flat array, filter by product_type
-          if (!productType) {
-            // If no specific product type requested, update all
+          state.pending = note_status_counts.pending || 0;
+          state.reviewed = note_status_counts.reviewed || 0;
+          state.not_reviewed = note_status_counts.not_reviewed || 0;
+          state.storeProductCount = product_type_counts.store || 0;
+          state.comProductCount = product_type_counts.com || 0;
+          state.omniProductCount = product_type_counts.omni || 0;
+          if (!productType || productType === "all") {
+            // If no specific product type or "all", distribute to appropriate arrays
             state.storeProducts =
               data.filter((d) => d.product_type === "store") || [];
             state.comProducts =
               data.filter((d) => d.product_type === "com") || [];
             state.omniProducts =
               data.filter((d) => d.product_type === "omni") || [];
+            state.storeProductCount = product_type_counts.store || 0;
+            state.comProductCount = product_type_counts.com || 0;
+            state.omniProductCount = product_type_counts.omni || 0;
           } else {
             // Update specific product type
             switch (productType) {
               case "store":
-                state.storeProducts =
-                  data.filter((d) => d.product_type === "store") || [];
+                state.storeProductCount = count || 0;
+                state.storeProducts = data || [];
                 break;
               case "com":
-                state.comProducts =
-                  data.filter((d) => d.product_type === "com") || [];
+                state.comProductCount = count || 0;
+                state.comProducts = data || [];
                 break;
               case "omni":
-                state.omniProducts =
-                  data.filter((d) => d.product_type === "omni") || [];
+                state.omniProductCount = count || 0;
+                state.omniProducts = data || [];
                 break;
               default:
-                // If productType doesn't match known types, still filter the data
+                // Fallback: filter and distribute
+                state.storeProductCount = product_type_counts.store || 0;
+                state.comProductCount = product_type_counts.com || 0;
+                state.omniProductCount = product_type_counts.omni || 0;
+                state.pending = note_status_counts.pending || 0;
+                state.reviewed = note_status_counts.reviewed || 0;
+                state.not_reviewed = note_status_counts.not_reviewed || 0;
                 state.storeProducts =
                   data.filter((d) => d.product_type === "store") || [];
                 state.comProducts =
@@ -457,7 +572,7 @@ const productSlice = createSlice({
             }
           }
         } else if (data && typeof data === "object") {
-          // If API returns an object with separate arrays (legacy format)
+          // Handle legacy object format
           if (data.store_products !== undefined) {
             state.storeProducts = data.store_products || [];
           }
@@ -468,11 +583,25 @@ const productSlice = createSlice({
             state.omniProducts = data.omni_products || [];
           }
         } else {
-          // Fallback: if data format is unexpected
           console.warn("Unexpected data format received:", data);
-          state.storeProducts = [];
-          state.comProducts = [];
-          state.omniProducts = [];
+          // Only clear the specific product type on unexpected format
+          if (productType) {
+            switch (productType) {
+              case "store":
+                state.storeProducts = [];
+                break;
+              case "com":
+                state.comProducts = [];
+                break;
+              case "omni":
+                state.omniProducts = [];
+                break;
+              default:
+                state.storeProducts = [];
+                state.comProducts = [];
+                state.omniProducts = [];
+            }
+          }
         }
 
         // Log the final state for debugging
@@ -480,17 +609,29 @@ const productSlice = createSlice({
           store: state.storeProducts.length,
           com: state.comProducts.length,
           omni: state.omniProducts.length,
-          pagination: state.pagination[productType],
+          pagination: state.pagination[targetType],
         });
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         console.error("fetchProducts rejected:", action.payload);
         state.loading.products = false;
         state.errors.products = action.payload;
-        // Clear products on error
-        state.storeProducts = [];
-        state.comProducts = [];
-        state.omniProducts = [];
+
+        // Reset pagination on error but don't clear products unless critical error
+        const { productType } = action.meta.arg;
+        const targetType = productType || state.selectedProductType;
+        if (state.pagination[targetType]) {
+          state.pagination[targetType] = {
+            ...state.pagination[targetType],
+            currentPage: 1,
+            totalCount: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrevious: false,
+            next: null,
+            previous: null,
+          };
+        }
       })
 
       // Fetch product details
@@ -516,7 +657,7 @@ const productSlice = createSlice({
   },
 });
 
-// Selectors
+// Enhanced Selectors
 export const selectSelectedProductType = (state) =>
   state.products.selectedProductType;
 
@@ -545,7 +686,7 @@ export const selectSelectedProductDetails = (state) =>
   state.products.selectedProductDetails;
 export const selectProductErrors = (state) => state.products.errors;
 
-// Additional selectors
+// Product selectors
 export const selectStoreProducts = (state) => state.products.storeProducts;
 export const selectComProducts = (state) => state.products.comProducts;
 export const selectOmniProducts = (state) => state.products.omniProducts;
@@ -555,45 +696,41 @@ export const selectAllProducts = (state) => [
   ...state.products.omniProducts,
 ];
 
-// Pagination selectors
+// Enhanced pagination selectors
 export const selectPagination = (state) => state.products.pagination;
+
 export const selectCurrentPagination = (state) =>
-  state.products.pagination[state.products.selectedProductType];
+  state.products.pagination[state.products.selectedProductType] ||
+  state.products.pagination.store;
 
 export const selectPaginationByType = (state, productType) =>
-  state.products.pagination[productType];
+  state.products.pagination[productType] || state.products.pagination.store;
 
 export const selectCurrentPage = (state) =>
-  state.products.pagination[state.products.selectedProductType]?.currentPage ||
-  1;
+  selectCurrentPagination(state)?.currentPage || 1;
 
 export const selectPageSize = (state) =>
-  state.products.pagination[state.products.selectedProductType]?.pageSize || 10;
+  selectCurrentPagination(state)?.pageSize || 10;
 
 export const selectTotalCount = (state) =>
-  state.products.pagination[state.products.selectedProductType]?.totalCount ||
-  0;
+  selectCurrentPagination(state)?.totalCount || 0;
 
 export const selectTotalPages = (state) =>
-  state.products.pagination[state.products.selectedProductType]?.totalPages ||
-  0;
+  selectCurrentPagination(state)?.totalPages || 0;
 
 export const selectHasNext = (state) =>
-  state.products.pagination[state.products.selectedProductType]?.hasNext ||
-  false;
+  selectCurrentPagination(state)?.hasNext || false;
 
 export const selectHasPrevious = (state) =>
-  state.products.pagination[state.products.selectedProductType]?.hasPrevious ||
-  false;
+  selectCurrentPagination(state)?.hasPrevious || false;
 
-// Computed pagination info selector
+// Enhanced pagination info selector
 export const selectPaginationInfo = (state) => {
-  const pagination =
-    state.products.pagination[state.products.selectedProductType];
+  const pagination = selectCurrentPagination(state);
   if (!pagination) return { startIndex: 0, endIndex: 0, totalCount: 0 };
 
   const { currentPage, pageSize, totalCount } = pagination;
-  const startIndex = (currentPage - 1) * pageSize + 1;
+  const startIndex = totalCount > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endIndex = Math.min(startIndex + pageSize - 1, totalCount);
 
   return {
@@ -602,17 +739,50 @@ export const selectPaginationInfo = (state) => {
     totalCount,
     currentPage,
     pageSize,
+    totalPages: pagination.totalPages || 0,
   };
 };
 
+// Pagination state selectors
+export const selectCanGoNext = (state) => selectHasNext(state);
+export const selectCanGoPrevious = (state) => selectHasPrevious(state);
+
+export const selectPageNumbers = (state) => {
+  const totalPages = selectTotalPages(state);
+  const currentPage = selectCurrentPage(state);
+
+  if (totalPages <= 1) return [];
+
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let end = Math.min(totalPages, start + maxVisible - 1);
+
+  // Adjust start if we're near the end
+  if (end - start + 1 < maxVisible) {
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+};
+
+// Other selectors (unchanged)
 export const selectProductCache = (state) =>
   state.products.cache.productDetails;
 export const selectLastFetch = (state) => state.products.lastFetch;
 export const selectAppliedFilters = (state) => state.products.appliedFilters;
 
+export const getStoreCount = (state) => state.products.storeProductCount;
+export const getComCount = (state) => state.products.comProductCount;
+export const getOmniCount = (state) => state.products.omniProductCount;
+
+export const getReviewed = (state) => state.products.reviewed;
+export const getNotReviewed = (state) => state.products.not_reviewed;
+export const getPending = (state) => state.products.pending;
+
 // Check if data needs refresh (older than 5 minutes)
 export const selectShouldRefreshProducts = (state, productType) => {
-  const lastFetch = state.products.lastFetch[productType];
+  const targetType = productType || state.products.selectedProductType;
+  const lastFetch = state.products.lastFetch[targetType];
   if (!lastFetch) return true;
   return Date.now() - lastFetch > 5 * 60 * 1000; // 5 minutes
 };
@@ -628,7 +798,7 @@ export const selectHasActiveFilters = (state) => {
   });
 };
 
-// Debug selector to check product data structure
+// Debug selector
 export const selectProductsDebug = (state) => ({
   storeCount: state.products.storeProducts.length,
   comCount: state.products.comProducts.length,
@@ -637,6 +807,9 @@ export const selectProductsDebug = (state) => ({
   errors: state.products.errors.products,
   selectedType: state.products.selectedProductType,
   pagination: state.products.pagination,
+  currentPagination: selectCurrentPagination(state),
+  paginationInfo: selectPaginationInfo(state),
+  appliedFilters: state.products.appliedFilters,
   sampleStoreProduct: state.products.storeProducts[0] || null,
   sampleComProduct: state.products.comProducts[0] || null,
   sampleOmniProduct: state.products.omniProducts[0] || null,
@@ -655,6 +828,9 @@ export const {
   clearCache,
   resetProductState,
   setPagination,
+  goToFirstPage,
+  goToLastPage,
+  updatePaginationOptimistic,
 } = productSlice.actions;
 
 export default productSlice.reducer;

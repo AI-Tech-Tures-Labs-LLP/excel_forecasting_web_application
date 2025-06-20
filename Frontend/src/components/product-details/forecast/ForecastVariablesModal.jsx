@@ -978,7 +978,7 @@ const ForecastVariablesModal = ({
     const IconComponent = modalConfig.icon;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto">
           <div
             className={`bg-gradient-to-r ${modalConfig.gradient} text-white p-6 rounded-t-xl`}
@@ -1020,6 +1020,12 @@ const ForecastVariablesModal = ({
     modalType,
     forecastMonth = "current"
   ) => {
+    console.log("=== Opening Dynamic Modal ===");
+    console.log("Data:", data);
+    console.log("Type:", type);
+    console.log("Modal Type:", modalType);
+    console.log("Forecast Month:", forecastMonth);
+
     setDynamicModalState({
       isOpen: true,
       type,
@@ -1028,7 +1034,6 @@ const ForecastVariablesModal = ({
       forecastMonth,
     });
   };
-
   const closeDynamicModal = () => {
     setDynamicModalState({
       isOpen: false,
@@ -1104,7 +1109,7 @@ const ForecastVariablesModal = ({
             <div className="h-full overflow-y-auto p-6 custom-scrollbar">
               <ForecastVariableCards
                 productData={productData}
-                onOpenModal={openDynamicModal}
+                onOpenModal={openDynamicModal} // Add this prop
               />
             </div>
           </div>

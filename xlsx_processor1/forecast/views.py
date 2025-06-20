@@ -44,6 +44,7 @@ from .service.notification_service import ForecastNoteNotificationService
 import logging
 from .pagination import ProductPagination
 from django.db.models import Prefetch
+from django.db.models import Count, Q, Prefetch
 
 logger = logging.getLogger('django')
 def get_product_forecast_data(pid,sheet_object):
@@ -417,20 +418,25 @@ class ProductDetailViewSet(viewsets.ViewSet):
 # Done 
 class ForecastViewSet(ViewSet):
     permission_classes = [AllowAny]
-    
+
+
+
+
+
     @action(detail=False, methods=["get"])
     def filter_products(self, request):
         sheet_id = request.query_params.get("sheet_id")
         product_type = request.query_params.get("product_type")
- 
+
         if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=400)
- 
+
+        # Base queryset
         queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
- 
+
         if product_type:
             queryset = queryset.filter(product_type=product_type)
- 
+
         multi_value_fields = ["category", "birthstone", "assigned_to"]
         boolean_fields = [
             "is_red_box_item", "is_considered_birthstone",
@@ -438,7 +444,7 @@ class ForecastViewSet(ViewSet):
             "is_below_min_order", "is_over_macys_soq", "is_need_to_review_first",
             "valentine_day", "mothers_day", "fathers_day", "mens_day", "womens_day"
         ]
- 
+
         for field in multi_value_fields:
             values = request.query_params.getlist(field)
             if values:
@@ -446,27 +452,129 @@ class ForecastViewSet(ViewSet):
                     queryset = queryset.filter(assigned_to_id__in=values)
                 else:
                     queryset = queryset.filter(**{f"{field}__in": values})
- 
+
         for field in boolean_fields:
             value = request.query_params.get(field)
             if value is not None and value.lower() in ["true", "false"]:
                 queryset = queryset.filter(**{field: value.lower() == "true"})
- 
-        # Apply pagination
+
+        # Pagination
         paginator = ProductPagination()
         paginated_qs = paginator.paginate_queryset(queryset, request)
- 
-        # Prefetch forecast notes only for paginated products
-        paginated_qs = ProductDetail.objects.filter(pk__in=[p.pk for p in paginated_qs]).prefetch_related(Prefetch("notes", queryset=ForecastNote.objects.all()))
- 
-        # Serialize with notes
+
+        # Prefetch notes for paginated products
+        paginated_qs = ProductDetail.objects.filter(
+            pk__in=[p.pk for p in paginated_qs]
+        ).prefetch_related(
+            Prefetch("notes", queryset=ForecastNote.objects.all())
+        )
+
+        # Serialize results
         result = []
         for product in paginated_qs:
             serialized_product = ProductDetailSerializer(product).data
-            serialized_product["forecast_notes"] = ForecastNoteSerializer(product.notes.all(), many=True).data
+            serialized_product["forecast_notes"] = ForecastNoteSerializer(
+                product.notes.all(), many=True
+            ).data
             result.append(serialized_product)
+
+        # -----------------------------
+        # Custom Aggregations
+        # -----------------------------
+
+        # 1. Count of products with at least one note of each status
+        filtered_ids = list(queryset.values_list("id", flat=True))
+
+        note_status_counts = {
+            "reviewed": ProductDetail.objects.filter(
+                id__in=filtered_ids, status="reviewed"
+            ).count(),
+
+            "not_reviewed": ProductDetail.objects.filter(
+                id__in=filtered_ids, status="not_reviewed"
+            ).count(),
+
+            "pending": ProductDetail.objects.filter(
+                id__in=filtered_ids, status="pending"
+            ).count(),
+        }
+            
+        
+
+        # 3. Count of products per product_type (total)
+       # 2. product_status_counts
+        
+
+        # 3. product_type_counts
+        product_type_counts_raw = ProductDetail.objects.filter(
+        sheet_id=sheet_id  # Restrict to this sheet only
+            ).values("product_type").annotate(count=Count("id"))
+
+        product_type_counts = {
+                row["product_type"]: row["count"]
+                for row in product_type_counts_raw
+            }
+        # -----------------------------
+        # Return Final Response
+        # -----------------------------
+        response = paginator.get_paginated_response(result)
+        response.data["note_status_counts"] = note_status_counts
+     
+        response.data["product_type_counts"] = product_type_counts
+
+        return response
+    
+    # @action(detail=False, methods=["get"])
+    # def filter_products(self, request):
+    #     sheet_id = request.query_params.get("sheet_id")
+    #     product_type = request.query_params.get("product_type")
+
+
+        
+    #     if not sheet_id:
+    #         return Response({"error": "sheet_id is required"}, status=400)
  
-        return paginator.get_paginated_response(result)
+    #     queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
+ 
+    #     if product_type:
+    #         queryset = queryset.filter(product_type=product_type)
+ 
+    #     multi_value_fields = ["category", "birthstone", "assigned_to"]
+    #     boolean_fields = [
+    #         "is_red_box_item", "is_considered_birthstone",
+    #         "is_added_quantity_using_macys_soq", "is_added_only_to_balance_macys_soq",
+    #         "is_below_min_order", "is_over_macys_soq", "is_need_to_review_first",
+    #         "valentine_day", "mothers_day", "fathers_day", "mens_day", "womens_day"
+    #     ]
+ 
+    #     for field in multi_value_fields:
+    #         values = request.query_params.getlist(field)
+    #         if values:
+    #             if field == "assigned_to":
+    #                 queryset = queryset.filter(assigned_to_id__in=values)
+    #             else:
+    #                 queryset = queryset.filter(**{f"{field}__in": values})
+ 
+    #     for field in boolean_fields:
+    #         value = request.query_params.get(field)
+    #         if value is not None and value.lower() in ["true", "false"]:
+    #             queryset = queryset.filter(**{field: value.lower() == "true"})
+ 
+    #     # Apply pagination
+    #     paginator = ProductPagination()
+    #     paginated_qs = paginator.paginate_queryset(queryset, request)
+ 
+    #     # Prefetch forecast notes only for paginated products
+    #     paginated_qs = ProductDetail.objects.filter(pk__in=[p.pk for p in paginated_qs]).prefetch_related(Prefetch("notes", queryset=ForecastNote.objects.all()))
+ 
+    #     # Serialize with notes
+    #     result = []
+    #     for product in paginated_qs:
+    #         serialized_product = ProductDetailSerializer(product).data
+    #         serialized_product["forecast_notes"] = ForecastNoteSerializer(product.notes.all(), many=True).data
+    #         result.append(serialized_product)
+ 
+    #     return paginator.get_paginated_response(result)
 
 
 # Done 

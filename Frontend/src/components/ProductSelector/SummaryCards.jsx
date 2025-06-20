@@ -1,20 +1,30 @@
 // ProductSelector/SummaryCards.jsx
 import React from "react";
 import { Package, CheckCircle, AlertCircle, Clock } from "lucide-react";
+import { useSelector } from "react-redux";
+import {
+  getReviewed,
+  getNotReviewed,
+  getPending,
+} from "../../redux/productSlice";
 
 const SummaryCards = ({ totalProducts, processedProducts }) => {
-  const reviewedCount = Object.values(processedProducts).filter(
-    (data) => data.status === "reviewed"
-  ).length;
+  // const reviewedCount = Object.values(processedProducts).filter(
+  //   (data) => data.status === "reviewed"
+  // ).length;
 
-  const notReviewedCount = Object.values(processedProducts).filter(
-    (data) => data.status === "not_reviewed"
-  ).length;
+  // const notReviewedCount = Object.values(processedProducts).filter(
+  //   (data) => data.status === "not_reviewed"
+  // ).length;
 
-  const pendingCount = Object.values(processedProducts).filter(
-    (data) => data.status === "pending"
-  ).length;
+  // const pendingCount = Object.values(processedProducts).filter(
+  //   (data) => data.status === "pending"
+  // ).length;
 
+  const reviewedCount = useSelector(getReviewed);
+  const notReviewedCount = useSelector(getNotReviewed);
+  const pendingCount = useSelector(getPending);
+  console.log(reviewedCount, notReviewedCount, pendingCount, "counts");
   return (
     <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
