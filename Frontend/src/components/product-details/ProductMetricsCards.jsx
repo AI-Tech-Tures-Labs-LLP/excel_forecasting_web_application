@@ -278,12 +278,22 @@ const ProductMetricCards = ({ cardData }) => {
                   BS Month
                 </span>
               </div>
-              <p
-                className="text-sm font-bold text-purple-600 truncate"
-                title={cardData.birthstoneMonth}
-              >
-                {cardData.birthstoneMonth}
-              </p>
+              <div className="flex flex-wrap gap-2">
+                {(Array.isArray(cardData.birthstoneMonth)
+                  ? cardData.birthstoneMonth
+                  : [cardData.birthstoneMonth]
+                )
+                  .filter(Boolean)
+                  .map((month, index) => (
+                    <span
+                      key={index}
+                      className="inline-block bg-purple-100 text-purple-700 text-xs font-semibold px-3 py-1 rounded-full"
+                      title={month}
+                    >
+                      {month}
+                    </span>
+                  ))}
+              </div>
             </div>
           </div>
         </div>

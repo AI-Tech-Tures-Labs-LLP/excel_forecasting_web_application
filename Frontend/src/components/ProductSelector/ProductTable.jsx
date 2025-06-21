@@ -1,3 +1,4 @@
+// Fixed ProductTable.jsx - Notes sorting functionality
 import React, { useState, useEffect } from "react";
 import {
   Package,
@@ -57,7 +58,7 @@ const ProductTable = ({
   const [lastReviewedDropdownOpen, setLastReviewedDropdownOpen] =
     useState(false);
   const [finalQtyDropdownOpen, setFinalQtyDropdownOpen] = useState(false);
-
+  const users = useSelector((state) => state.products.assignedUsers);
   // No need for separate API call - use Redux data
   const [usersData, setUsersData] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -206,22 +207,49 @@ const ProductTable = ({
     setCurrentPage(1);
   };
 
-  // Handle sorting changes
+  // Fixed: Handle sorting changes with proper parameter mapping
   const handleSortChange = (sortKey, direction) => {
+    // Map frontend sort keys to backend API parameters
+    const sortKeyMapping = {
+      note_created_at: "note_created_at", // Use note_created_at for notes sorting
+      created_at: "note_created_at", // Fallback mapping
+      recommended_total_quantity: "recommended_total_quantity",
+      user_updated_final_quantity: "user_updated_final_quantity",
+      updated_at: "updated_at",
+    };
+
+    const backendSortKey = sortKeyMapping[sortKey] || sortKey;
+
     setSelectedFilters((prev) => ({
       ...prev,
-      sort_by: sortKey,
+      sort_by: backendSortKey,
       sort_direction: direction,
+      // Clear legacy sorting parameters
+      notes_sort: null,
+      added_qty_sort: null,
+      final_qty_sort: null,
+      last_reviewed_sort: null,
     }));
     setCurrentPage(1);
   };
 
-  // Get sort icon for column headers
+  // Fixed: Get sort icon for column headers with proper mapping
   const getSortIcon = (sortKey) => {
     const currentSort = selectedFilters?.sort_by;
     const currentDirection = selectedFilters?.sort_direction;
 
-    if (currentSort !== sortKey) {
+    // Map display sort keys to backend parameters for comparison
+    const sortKeyMapping = {
+      note_created_at: "note_created_at",
+      created_at: "note_created_at",
+      recommended_total_quantity: "recommended_total_quantity",
+      user_updated_final_quantity: "user_updated_final_quantity",
+      updated_at: "updated_at",
+    };
+
+    const mappedSortKey = sortKeyMapping[sortKey] || sortKey;
+
+    if (currentSort !== mappedSortKey) {
       return <ArrowUpDown size={14} className="text-gray-400" />;
     }
 
@@ -230,6 +258,21 @@ const ProductTable = ({
     } else {
       return <ArrowDown size={14} className="text-indigo-600" />;
     }
+  };
+
+  // Helper function to check if a column is currently sorted
+  const isColumnSorted = (sortKey) => {
+    const currentSort = selectedFilters?.sort_by;
+    const sortKeyMapping = {
+      note_created_at: "note_created_at",
+      created_at: "note_created_at",
+      recommended_total_quantity: "recommended_total_quantity",
+      user_updated_final_quantity: "user_updated_final_quantity",
+      updated_at: "updated_at",
+    };
+
+    const mappedSortKey = sortKeyMapping[sortKey] || sortKey;
+    return currentSort === mappedSortKey;
   };
 
   const formatStatusDisplay = (product) => {
@@ -729,7 +772,7 @@ const ProductTable = ({
                       />
                       <input
                         type="text"
-                        placeholder="Search assigned users..."
+                        placeholder="Search users..."
                         value={assignedToSearchTerm}
                         onChange={(e) =>
                           setAssignedToSearchTerm(e.target.value)
@@ -750,15 +793,13 @@ const ProductTable = ({
                   <div className="p-2 border-b border-gray-100 flex justify-between">
                     <button
                       onClick={() => {
-                        const assignedUsers = getAssignedUsers();
-                        const filteredAssignees = assignedUsers.filter((user) =>
+                        const allUsers = assignedUsers; // Changed from getAssignedUsers()
+                        const filteredUsers = allUsers.filter((user) =>
                           (user.username || user.email || "")
                             .toLowerCase()
                             .includes(assignedToSearchTerm.toLowerCase())
                         );
-                        const userIds = filteredAssignees.map(
-                          (user) => user.id
-                        );
+                        const userIds = filteredUsers.map((user) => user.id);
                         const allSelections = hasUnassignedProducts()
                           ? [...userIds, "unassigned"]
                           : userIds;
@@ -828,7 +869,7 @@ const ProductTable = ({
                       </label>
                     )}
 
-                    {getAssignedUsers()
+                    {assignedUsers // Changed from getAssignedUsers()
                       .filter((user) => {
                         const searchText = assignedToSearchTerm.toLowerCase();
                         if (!searchText) return true;
@@ -907,15 +948,16 @@ const ProductTable = ({
                         );
                       })}
 
-                    {getAssignedUsers().length === 0 &&
+                    {assignedUsers.length === 0 && // Changed from getAssignedUsers()
                       !hasUnassignedProducts() && (
                         <div className="p-4 text-center text-gray-500 text-sm">
-                          No users assigned to products
+                          No users found
                         </div>
                       )}
 
                     {assignedToSearchTerm &&
-                      getAssignedUsers().filter((user) => {
+                      assignedUsers.filter((user) => {
+                        // Changed from getAssignedUsers()
                         const searchText = assignedToSearchTerm.toLowerCase();
                         return (
                           (user.username || "")
@@ -933,8 +975,7 @@ const ProductTable = ({
                         );
                       }).length === 0 && (
                         <div className="p-4 text-center text-gray-500 text-sm">
-                          No assigned users found matching "
-                          {assignedToSearchTerm}"
+                          No users found matching "{assignedToSearchTerm}"
                         </div>
                       )}
                   </div>
@@ -943,9 +984,9 @@ const ProductTable = ({
                     <div className="p-2 border-t border-gray-100 bg-gray-50">
                       <span className="text-xs text-gray-600">
                         {selectedFilters?.assigned_to?.length} of{" "}
-                        {getAssignedUsers().length +
+                        {assignedUsers.length + // Changed from getAssignedUsers()
                           (hasUnassignedProducts() ? 1 : 0)}{" "}
-                        assignees selected
+                        users selected
                       </span>
                     </div>
                   )}
@@ -953,7 +994,7 @@ const ProductTable = ({
               )}
             </th>
 
-            {/* Notes Column with Sorting */}
+            {/* FIXED: Notes Column with Sorting */}
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 tracking-wider relative">
               <button
                 onClick={() => {
@@ -961,13 +1002,13 @@ const ProductTable = ({
                   setNotesDropdownOpen(!notesDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters?.sort_by === "created_at"
+                  isColumnSorted("note_created_at")
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
                 <span>Notes</span>
-                {getSortIcon("created_at")}
+                {getSortIcon("note_created_at")}
               </button>
 
               {notesDropdownOpen && (
@@ -978,11 +1019,11 @@ const ProductTable = ({
                   <div className="p-2">
                     <button
                       onClick={() => {
-                        handleSortChange("created_at", "desc");
+                        handleSortChange("note_created_at", "desc");
                         setNotesDropdownOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
-                        selectedFilters?.sort_by === "created_at" &&
+                        selectedFilters?.sort_by === "note_created_at" &&
                         selectedFilters?.sort_direction === "desc"
                           ? "text-indigo-600 bg-indigo-50"
                           : "text-gray-700"
@@ -993,11 +1034,11 @@ const ProductTable = ({
                     </button>
                     <button
                       onClick={() => {
-                        handleSortChange("created_at", "asc");
+                        handleSortChange("note_created_at", "asc");
                         setNotesDropdownOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
-                        selectedFilters?.sort_by === "created_at" &&
+                        selectedFilters?.sort_by === "note_created_at" &&
                         selectedFilters?.sort_direction === "asc"
                           ? "text-indigo-600 bg-indigo-50"
                           : "text-gray-700"
@@ -1006,7 +1047,7 @@ const ProductTable = ({
                       <ArrowUp size={14} />
                       Oldest Notes First
                     </button>
-                    {selectedFilters?.sort_by === "created_at" && (
+                    {selectedFilters?.sort_by === "note_created_at" && (
                       <div className="border-t border-gray-100 pt-2 mt-2">
                         <button
                           onClick={() => {
@@ -1202,7 +1243,7 @@ const ProductTable = ({
                   setAddedQtyDropdownOpen(!addedQtyDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters?.sort_by === "recommended_total_quantity"
+                  isColumnSorted("recommended_total_quantity")
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
@@ -1409,7 +1450,7 @@ const ProductTable = ({
                   setFinalQtyDropdownOpen(!finalQtyDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  selectedFilters?.sort_by === "user_updated_final_quantity"
+                  isColumnSorted("user_updated_final_quantity")
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}

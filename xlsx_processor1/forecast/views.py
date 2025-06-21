@@ -482,10 +482,16 @@ class ForecastViewSet(ViewSet):
             if sort_by not in valid_sort_fields:
                 return Response({"error": f"Invalid sort_by field: {sort_by}"}, status=400)
 
-            if sort_by.startswith("note_"):
-                note_field = sort_by.replace("note_", "").lstrip("-")
+            # if sort_by.startswith("note_"):
+            #     note_field = sort_by.replace("note_", "").lstrip("-")
+            #     queryset = queryset.annotate(latest_note_date=Max(f"notes__{note_field}"))
+            #     direction = "-" if sort_by.startswith("-") else ""
+            #     queryset = queryset.order_by(f"{direction}latest_note_date")
+            if sort_by.startswith("note_") or sort_by.startswith("-note_"):
+                is_desc = sort_by.startswith("-")
+                note_field = sort_by.replace("note_", "").replace("-", "")
                 queryset = queryset.annotate(latest_note_date=Max(f"notes__{note_field}"))
-                direction = "-" if sort_by.startswith("-") else ""
+                direction = "-" if is_desc else ""
                 queryset = queryset.order_by(f"{direction}latest_note_date")
             else:
                 queryset = queryset.order_by(sort_by)

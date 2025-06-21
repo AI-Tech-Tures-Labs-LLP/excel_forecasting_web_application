@@ -26,6 +26,7 @@ import {
   XCircle,
   AlertTriangle,
   Info,
+  Check,
 } from "lucide-react";
 
 const ProductInfoCards = ({
@@ -370,22 +371,115 @@ const ProductInfoCards = ({
           </div>
 
           {/* Selected Month Card */}
+          {/* Selected Month Card */}
+          {/* Selected Month Card */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1.5 bg-teal-50 rounded-md">
-                  <CalendarIcon className="text-teal-600" size={14} />
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-teal-50 rounded-md">
+                    <CalendarIcon className="text-teal-600" size={14} />
+                  </div>
+                  <span className="text-xs font-medium text-gray-600">
+                    Selected
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-gray-600">
-                  Selected
-                </span>
+                {(() => {
+                  // Handle different formats of selectedMonth data
+                  let selectedMonths = [];
+
+                  if (Array.isArray(cardData?.selectedMonth)) {
+                    selectedMonths = cardData.selectedMonth;
+                  } else if (typeof cardData?.selectedMonth === "string") {
+                    // Split by comma and clean up the string
+                    const cleanedString = cardData.selectedMonth
+                      .replace(/[\[\]'"\s]/g, "") // Remove brackets, quotes, and spaces
+                      .split(",")
+                      .filter(Boolean);
+                    selectedMonths = cleanedString;
+                  }
+
+                  const validMonths = selectedMonths.filter(
+                    (month) => month && month.trim()
+                  );
+
+                  return (
+                    validMonths.length > 0 && (
+                      <span className="bg-teal-100 text-teal-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+                        {validMonths.length} selected
+                      </span>
+                    )
+                  );
+                })()}
               </div>
-              <p
-                className="text-sm font-bold text-teal-600 truncate"
-                title={cardData?.selectedMonth}
-              >
-                {cardData?.selectedMonth || "-"}
-              </p>
+
+              <div className="flex flex-wrap gap-2">
+                {(() => {
+                  // Handle different formats of selectedMonth data
+                  let selectedMonths = [];
+
+                  if (Array.isArray(cardData?.selectedMonth)) {
+                    selectedMonths = cardData.selectedMonth;
+                  } else if (typeof cardData?.selectedMonth === "string") {
+                    // Split by comma and clean up the string
+                    const cleanedString = cardData.selectedMonth
+                      .replace(/[\[\]'"\s]/g, "") // Remove brackets, quotes, and spaces
+                      .split(",")
+                      .filter(Boolean);
+                    selectedMonths = cleanedString;
+                  }
+
+                  const validMonths = selectedMonths.filter(
+                    (month) => month && month.trim()
+                  );
+
+                  const monthColors = {
+                    JAN: "bg-blue-100 text-blue-700",
+                    JANUARY: "bg-blue-100 text-blue-700",
+                    FEB: "bg-pink-100 text-pink-700",
+                    FEBRUARY: "bg-pink-100 text-pink-700",
+                    MAR: "bg-green-100 text-green-700",
+                    MARCH: "bg-green-100 text-green-700",
+                    APR: "bg-yellow-100 text-yellow-700",
+                    APRIL: "bg-yellow-100 text-yellow-700",
+                    MAY: "bg-purple-100 text-purple-700",
+                    JUN: "bg-indigo-100 text-indigo-700",
+                    JUNE: "bg-indigo-100 text-indigo-700",
+                    JUL: "bg-red-100 text-red-700",
+                    JULY: "bg-red-100 text-red-700",
+                    AUG: "bg-orange-100 text-orange-700",
+                    AUGUST: "bg-orange-100 text-orange-700",
+                    SEP: "bg-teal-100 text-teal-700",
+                    SEPTEMBER: "bg-teal-100 text-teal-700",
+                    OCT: "bg-amber-100 text-amber-700",
+                    OCTOBER: "bg-amber-100 text-amber-700",
+                    NOV: "bg-gray-100 text-gray-700",
+                    NOVEMBER: "bg-gray-100 text-gray-700",
+                    DEC: "bg-emerald-100 text-emerald-700",
+                    DECEMBER: "bg-emerald-100 text-emerald-700",
+                  };
+
+                  return validMonths.length === 0 ? (
+                    <span className="text-xs text-gray-400 italic">
+                      No months selected
+                    </span>
+                  ) : (
+                    validMonths.map((month, index) => (
+                      <span
+                        key={index}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-colors ${
+                          monthColors[month.trim().toUpperCase()] ||
+                          "bg-teal-100 text-teal-700"
+                        }`}
+                        title={month.trim()}
+                      >
+                        <Check size={10} />
+                        {month.trim()}
+                      </span>
+                    ))
+                  );
+                })()}
+              </div>
             </div>
           </div>
 

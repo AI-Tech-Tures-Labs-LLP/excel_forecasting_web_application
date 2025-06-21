@@ -28,9 +28,80 @@ import {
   Calculator,
   Truck,
   AlertCircle,
+  Check,
 } from "lucide-react";
 
+const renderMonthTags = (value) => {
+  let selectedMonths = [];
+
+  if (Array.isArray(value)) {
+    selectedMonths = value;
+  } else if (typeof value === "string") {
+    try {
+      selectedMonths = JSON.parse(value);
+    } catch {
+      selectedMonths = value
+        .replace(/[\[\]'"\s]/g, "")
+        .split(",")
+        .filter(Boolean);
+    }
+  }
+
+  const validMonths = selectedMonths.filter((month) => month && month.trim());
+
+  const monthColors = {
+    JAN: "bg-blue-100 text-blue-700",
+    JANUARY: "bg-blue-100 text-blue-700",
+    FEB: "bg-pink-100 text-pink-700",
+    FEBRUARY: "bg-pink-100 text-pink-700",
+    MAR: "bg-green-100 text-green-700",
+    MARCH: "bg-green-100 text-green-700",
+    APR: "bg-yellow-100 text-yellow-700",
+    APRIL: "bg-yellow-100 text-yellow-700",
+    MAY: "bg-purple-100 text-purple-700",
+    JUN: "bg-indigo-100 text-indigo-700",
+    JUNE: "bg-indigo-100 text-indigo-700",
+    JUL: "bg-red-100 text-red-700",
+    JULY: "bg-red-100 text-red-700",
+    AUG: "bg-orange-100 text-orange-700",
+    AUGUST: "bg-orange-100 text-orange-700",
+    SEP: "bg-teal-100 text-teal-700",
+    SEPTEMBER: "bg-teal-100 text-teal-700",
+    OCT: "bg-amber-100 text-amber-700",
+    OCTOBER: "bg-amber-100 text-amber-700",
+    NOV: "bg-gray-100 text-gray-700",
+    NOVEMBER: "bg-gray-100 text-gray-700",
+    DEC: "bg-emerald-100 text-emerald-700",
+    DECEMBER: "bg-emerald-100 text-emerald-700",
+  };
+
+  if (validMonths.length === 0) {
+    return (
+      <span className="text-xs text-gray-400 italic">No months selected</span>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {validMonths.map((month, index) => (
+        <span
+          key={index}
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-colors ${
+            monthColors[month.trim().toUpperCase()] ||
+            "bg-teal-100 text-teal-700"
+          }`}
+          title={month.trim()}
+        >
+          <Check size={10} />
+          {month.trim()}
+        </span>
+      ))}
+    </div>
+  );
+};
+
 const ForecastVariableCards = ({ productData, onOpenModal }) => {
+  console.log(productData);
   const attachModalConfig = (fields) => {
     const modalTypeMapping = {
       forecast_month_required_quantity: "required_quantity",
@@ -98,794 +169,10 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
   };
 
   const currentTypeData = getCurrentTypeData();
-  const allData = { ...product_details, ...currentTypeData };
-
-  // Define variable configurations for each product type
-  // const getVariableConfigByType = (type) => {
-  //   switch (type) {
-  //     case "store":
-  //       return [
-  //         // Lead Time Calculation
-  //         {
-  //           key: "vendor_name",
-  //           label: "Vendor",
-  //           icon: Truck,
-  //           groupKey: "leadtime",
-  //         },
-  //         {
-  //           key: "country",
-  //           label: "Country",
-  //           icon: MapPin,
-  //           groupKey: "leadtime",
-  //         },
-  //         {
-  //           key: "lead_time",
-  //           label: "Lead Time",
-  //           icon: Clock,
-
-  //           groupKey: "leadtime",
-  //         },
-
-  //         // Trend and Index Calculation
-  //         {
-  //           key: "std_trend",
-  //           label: "STD Months",
-  //           icon: Calendar,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "month_12_fc_index_original",
-  //           label: "12-Month FC Index",
-  //           icon: BarChart3,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "loss_updated",
-  //           label: "Loss (%)",
-  //           icon: TrendingDown,
-  //           groupKey: "trends_index",
-  //           type: "percentage",
-  //         },
-  //         {
-  //           key: "new_month_12_fc_index",
-  //           label: "12-Month FC Index (Loss %)",
-  //           icon: TrendingDown,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "trend",
-  //           label: "Trend",
-  //           icon: TrendingUp,
-  //           groupKey: "trends_index",
-  //           type: "trend",
-  //         },
-
-  //         // Selecting Forecasting Method
-  //         {
-  //           key: "inventory_maintained",
-  //           label: "Inventory Maintained",
-  //           icon: Box,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "trend_index_difference",
-  //           label: "Trend Index Difference",
-  //           icon: BarChart3,
-  //           groupKey: "forecasting_method",
-  //         },
-  //         {
-  //           key: "is_red_box_item",
-  //           label: "Red Box Item",
-  //           icon: AlertTriangle,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "forecasting_method",
-  //           label: "Forecasting Method",
-  //           icon: Settings,
-  //           groupKey: "forecasting_method",
-  //         },
-
-  //         // Required Qty for Forecast Month
-  //         {
-  //           key: "forecast_month",
-  //           label: "Forecast Month",
-  //           icon: Calendar,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "kpi_door_count",
-  //           label: "Door Count",
-  //           icon: Building2,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "average_com_oh",
-  //           label: "Average COM OH",
-  //           icon: Box,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "fldc",
-  //           label: "FLDC",
-  //           icon: MapPin,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "birthstone",
-  //           label: "Birthstone",
-  //           icon: Gem,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "birthstone_month",
-  //           label: "Birthstone Month",
-  //           icon: Calendar,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "is_considered_birthstone",
-  //           label: "Considered Birthstone",
-  //           icon: Gem,
-  //           groupKey: "forecast_month_req",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "forecast_month_required_quantity",
-  //           label: "Forecast Month - Required Quantity",
-  //           icon: Target,
-  //           groupKey: "forecast_month_req",
-  //           clickable: true,
-  //           modalType: "required_quantity",
-  //         },
-
-  //         // Required Qty for Next Forecast Month
-  //         {
-  //           key: "next_forecast_month",
-  //           label: "Next Forecast Month",
-  //           icon: Calendar,
-  //           groupKey: "next_forecast_month_req",
-  //         },
-  //         {
-  //           key: "next_forecast_month_required_quantity",
-  //           label: "Next Forecast Month - Required Quantity",
-  //           icon: Target,
-  //           groupKey: "next_forecast_month_req",
-  //           clickable: true,
-  //           modalType: "required_quantity",
-  //           forecastMonth: "next",
-  //         },
-
-  //         // Planned Shipment
-  //         {
-  //           key: "forecast_month_planned_oh_before",
-  //           label: "Forecast Month - Planned OH (Before Added Qty)",
-  //           icon: Package,
-  //           groupKey: "planned_shipment",
-  //         },
-  //         {
-  //           key: "qty_added_to_maintain_oh_forecast_month",
-  //           label: "Forecast Month - Planned Shipment",
-  //           icon: Truck,
-  //           groupKey: "planned_shipment",
-  //         },
-
-  //         // Next Planned Shipment
-  //         {
-  //           key: "next_forecast_month_planned_oh_before",
-  //           label: "Next Forecast Month - Planned OH (Before Added Qty)",
-  //           icon: Package,
-  //           groupKey: "next_planned_shipment",
-  //         },
-  //         {
-  //           key: "qty_added_to_maintain_oh_next_forecast_month",
-  //           label: "Next Forecast Month - Planned Shipment",
-  //           icon: Truck,
-  //           groupKey: "next_planned_shipment",
-  //         },
-
-  //         // Macy's SOQ
-  //         {
-  //           key: "macys_proj_receipt_upto_forecast_month",
-  //           label: "Macys SOQ - Total",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-  //         {
-  //           key: "qty_given_to_macys",
-  //           label: "Macys SOQ - Actual Given",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-  //         {
-  //           key: "macy_soq_percentage",
-  //           label: "Macys SOQ - Percentage Required",
-  //           icon: Percent,
-  //           groupKey: "macys_soq",
-  //           type: "percentage",
-  //         },
-  //         {
-  //           key: "qty_added_to_balance_soq_forecast_month",
-  //           label: "Macys SOQ - Qty Added",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-
-  //         // Final Qty
-  //         {
-  //           key: "min_order",
-  //           label: "Min Order",
-  //           icon: Package,
-  //           groupKey: "final_qty",
-  //         },
-  //         {
-  //           key: "is_added_only_to_balance_macys_soq",
-  //           label: "Qty Added Only Macy Rule",
-  //           icon: Star,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_below_min_order",
-  //           label: "Below Min Order",
-  //           icon: AlertTriangle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_over_macys_soq",
-  //           label: "Over Macys SOQ",
-  //           icon: AlertCircle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_need_to_review_first",
-  //           label: "Needs Review (Below Planned OH)",
-  //           icon: AlertTriangle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "recommended_total_quantity",
-  //           label: "Total Added Qty",
-  //           icon: Calculator,
-  //           groupKey: "final_qty",
-  //         },
-  //       ];
-
-  //     case "com":
-  //       return [
-  //         // Lead Time Calculation
-  //         {
-  //           key: "vendor_name",
-  //           label: "Vendor",
-  //           icon: Truck,
-  //           groupKey: "leadtime",
-  //         },
-  //         {
-  //           key: "country",
-  //           label: "Country",
-  //           icon: MapPin,
-  //           groupKey: "leadtime",
-  //         },
-  //         {
-  //           key: "lead_time",
-  //           label: "Lead Time",
-  //           icon: Clock,
-  //           groupKey: "leadtime",
-  //         },
-
-  //         // Trend and Index Calculation
-  //         {
-  //           key: "selected_months",
-  //           label: "STD Months",
-  //           icon: Calendar,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "new_month_12_fc_index",
-  //           label: "12-Month FC Index COM",
-  //           icon: BarChart3,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "com_trend_for_selected_month",
-  //           label: "Trend",
-  //           icon: TrendingUp,
-  //           groupKey: "trends_index",
-  //           type: "trend",
-  //         },
-
-  //         // Selecting Forecasting Method
-  //         {
-  //           key: "is_com_inventory_maintained",
-  //           label: "Inventory Maintained",
-  //           icon: Box,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "trend_index_difference",
-  //           label: "Trend Index Difference",
-  //           icon: BarChart3,
-  //           groupKey: "forecasting_method",
-  //         },
-  //         {
-  //           key: "is_red_box_item",
-  //           label: "Red Box Item",
-  //           icon: AlertTriangle,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "forecasting_method",
-  //           label: "Forecasting Method",
-  //           icon: Settings,
-  //           groupKey: "forecasting_method",
-  //         },
-
-  //         // Required Qty for Forecast Month
-  //         {
-  //           key: "forecast_month",
-  //           label: "Forecast Month",
-  //           icon: Calendar,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "minimum_required_oh_for_com",
-  //           label: "COM Average Maintain Value",
-  //           icon: Box,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "forecast_month_required_quantity",
-  //           label: "Forecast Month - Required Quantity",
-  //           icon: Target,
-  //           groupKey: "forecast_month_req",
-  //           clickable: true,
-  //           modalType: "required_quantity",
-  //         },
-
-  //         // Required Qty for Next Forecast Month
-  //         {
-  //           key: "next_forecast_month",
-  //           label: "Next Forecast Month",
-  //           icon: Calendar,
-  //           groupKey: "next_forecast_month_req",
-  //         },
-  //         {
-  //           key: "next_forecast_month_required_quantity",
-  //           label: "Next Forecast Month - Required Quantity",
-  //           icon: Target,
-  //           groupKey: "next_forecast_month_req",
-  //           clickable: true,
-  //           modalType: "required_quantity",
-  //           forecastMonth: "next",
-  //         },
-
-  //         // Planned Shipment
-  //         {
-  //           key: "forecast_month_planned_oh_before",
-  //           label: "Forecast Month - Planned OH (Before Added Qty)",
-  //           icon: Package,
-  //           groupKey: "planned_shipment",
-  //         },
-  //         {
-  //           key: "qty_added_to_maintain_oh_forecast_month",
-  //           label: "Forecast Month - Planned Shipment",
-  //           icon: Truck,
-  //           groupKey: "planned_shipment",
-  //         },
-
-  //         // Next Planned Shipment
-  //         {
-  //           key: "next_forecast_month_planned_oh_before",
-  //           label: "Next Forecast Month - Planned OH (Before Added Qty)",
-  //           icon: Package,
-  //           groupKey: "next_planned_shipment",
-  //         },
-  //         {
-  //           key: "qty_added_to_maintain_oh_next_forecast_month",
-  //           label: "Next Forecast Month - Planned Shipment",
-  //           icon: Truck,
-  //           groupKey: "next_planned_shipment",
-  //         },
-
-  //         // Macy's SOQ
-  //         {
-  //           key: "macys_proj_receipt_upto_forecast_month",
-  //           label: "Macys SOQ - Total",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-  //         {
-  //           key: "qty_given_to_macys",
-  //           label: "Macys SOQ - Actual Given",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-  //         {
-  //           key: "macy_soq_percentage",
-  //           label: "Macys SOQ - Percentage Required",
-  //           icon: Percent,
-  //           groupKey: "macys_soq",
-  //           type: "percentage",
-  //         },
-  //         {
-  //           key: "qty_added_to_balance_soq_forecast_month",
-  //           label: "Macys SOQ - Qty Added",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-
-  //         // Final Qty
-  //         {
-  //           key: "min_order",
-  //           label: "Min Order",
-  //           icon: Package,
-  //           groupKey: "final_qty",
-  //         },
-  //         {
-  //           key: "is_added_only_to_balance_macys_soq",
-  //           label: "Qty Added Only Macy Rule",
-  //           icon: Star,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_below_min_order",
-  //           label: "Below Min Order",
-  //           icon: AlertTriangle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_over_macys_soq",
-  //           label: "Over Macys SOQ",
-  //           icon: AlertCircle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_need_to_review_first",
-  //           label: "Needs Review (Below Planned OH)",
-  //           icon: AlertTriangle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "recommended_total_quantity",
-  //           label: "Total Added Qty",
-  //           icon: Calculator,
-  //           groupKey: "final_qty",
-  //         },
-  //       ];
-
-  //     case "omni":
-  //       return [
-  //         // Lead Time Calculation
-  //         {
-  //           key: "vendor_name",
-  //           label: "Vendor",
-  //           icon: Truck,
-  //           groupKey: "leadtime",
-  //         },
-  //         {
-  //           key: "country",
-  //           label: "Country",
-  //           icon: MapPin,
-  //           groupKey: "leadtime",
-  //         },
-  //         {
-  //           key: "lead_time",
-  //           label: "Lead Time",
-  //           icon: Clock,
-  //           groupKey: "leadtime",
-  //         },
-
-  //         // Trend and Index Calculation - Store
-  //         {
-  //           key: "selected_months",
-  //           label: "STD Months (Store)",
-  //           icon: Calendar,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "store_month_12_fc_index_original",
-  //           label: "12-Month FC Index (Store)",
-  //           icon: BarChart3,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "loss",
-  //           label: "Loss (%)",
-  //           icon: TrendingDown,
-  //           groupKey: "trends_index",
-  //           type: "percentage",
-  //         },
-  //         {
-  //           key: "store_month_12_fc_index_loss",
-  //           label: "12-Month FC Index (Loss %) (Store)",
-  //           icon: TrendingDown,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "store_trend",
-  //           label: "Trend (Store)",
-  //           icon: TrendingUp,
-  //           groupKey: "trends_index",
-  //           type: "trend",
-  //         },
-
-  //         // Trend and Index Calculation - COM
-  //         {
-  //           key: "com_month_12_fc_index",
-  //           label: "12-Month FC Index (COM)",
-  //           icon: BarChart3,
-  //           groupKey: "trends_index",
-  //         },
-  //         {
-  //           key: "com_trend_for_selected_month",
-  //           label: "Trend (COM)",
-  //           icon: TrendingUp,
-  //           groupKey: "trends_index",
-  //           type: "trend",
-  //         },
-
-  //         // Selecting Forecasting Method - Store
-  //         {
-  //           key: "is_store_inventory_maintained",
-  //           label: "Inventory Maintained (Store)",
-  //           icon: Box,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "trend_index_difference_store",
-  //           label: "Trend Index Difference (Store)",
-  //           icon: BarChart3,
-  //           groupKey: "forecasting_method",
-  //         },
-  //         {
-  //           key: "forecasting_method_for_store",
-  //           label: "Forecasting Method (Store)",
-  //           icon: Settings,
-  //           groupKey: "forecasting_method",
-  //         },
-
-  //         // Selecting Forecasting Method - COM
-  //         {
-  //           key: "is_com_inventory_maintained",
-  //           label: "Inventory Maintained (COM)",
-  //           icon: Box,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "trend_index_difference_com",
-  //           label: "Trend Index Difference (COM)",
-  //           icon: BarChart3,
-  //           groupKey: "forecasting_method",
-  //         },
-  //         {
-  //           key: "forecasting_method_for_com",
-  //           label: "Forecasting Method (COM)",
-  //           icon: Settings,
-  //           groupKey: "forecasting_method",
-  //         },
-  //         {
-  //           key: "is_red_box_item",
-  //           label: "Red Box Item",
-  //           icon: AlertTriangle,
-  //           groupKey: "forecasting_method",
-  //           type: "boolean",
-  //         },
-
-  //         // Required Qty for Forecast Month
-  //         {
-  //           key: "forecast_month",
-  //           label: "Forecast Month",
-  //           icon: Calendar,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "kpi_door_count",
-  //           label: "Door Count (Store)",
-  //           icon: Building2,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "store_fldc",
-  //           label: "FLDC (Store)",
-  //           icon: MapPin,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "birthstone",
-  //           label: "Birthstone",
-  //           icon: Gem,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "birthstone_month",
-  //           label: "Birthstone Month",
-  //           icon: Calendar,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "birthstone_status",
-  //           label: "Considered Birthstone",
-  //           icon: Gem,
-  //           groupKey: "forecast_month_req",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "required_quantity_store",
-  //           label: "Forecast Month - Required Quantity (Store)",
-  //           icon: Target,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "minimum_required_oh_for_com",
-  //           label: "COM Average Maintain Value",
-  //           icon: Box,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "com_fldc",
-  //           label: "FLDC (COM)",
-  //           icon: MapPin,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "forecast_month_required_quantity_com",
-  //           label: "Forecast Month - Required Quantity (COM)",
-  //           icon: Target,
-  //           groupKey: "forecast_month_req",
-  //         },
-  //         {
-  //           key: "forecast_month_required_quantity",
-  //           label: "Forecast Month - Required Quantity (Combined)",
-  //           icon: Target,
-  //           groupKey: "forecast_month_req",
-  //           clickable: true,
-  //           modalType: "required_quantity",
-  //         },
-
-  //         // Required Qty for Next Forecast Month
-  //         {
-  //           key: "next_forecast_month",
-  //           label: "Next Forecast Month",
-  //           icon: Calendar,
-  //           groupKey: "next_forecast_month_req",
-  //         },
-  //         {
-  //           key: "next_forecast_month_required_quantity_store",
-  //           label: "Next Forecast Month - Required Quantity (Store)",
-  //           icon: Target,
-  //           groupKey: "next_forecast_month_req",
-  //         },
-  //         {
-  //           key: "next_forecast_month_required_quantity_com",
-  //           label: "Next Forecast Month - Required Quantity (COM)",
-  //           icon: Target,
-  //           groupKey: "next_forecast_month_req",
-  //         },
-  //         {
-  //           key: "next_forecast_month_required_quantity",
-  //           label: "Next Forecast Month - Required Quantity (Combined)",
-  //           icon: Target,
-  //           groupKey: "next_forecast_month_req",
-  //           clickable: true,
-  //           modalType: "required_quantity",
-  //           forecastMonth: "next",
-  //         },
-
-  //         // Planned Shipment
-  //         {
-  //           key: "forecast_month_planned_oh_before",
-  //           label: "Forecast Month - Planned OH (Before Added Qty)",
-  //           icon: Package,
-  //           groupKey: "planned_shipment",
-  //         },
-  //         {
-  //           key: "qty_added_to_maintain_oh_forecast_month",
-  //           label: "Forecast Month - Planned Shipment",
-  //           icon: Truck,
-  //           groupKey: "planned_shipment",
-  //         },
-
-  //         // Next Planned Shipment
-  //         {
-  //           key: "next_forecast_month_planned_oh_before",
-  //           label: "Next Forecast Month - Planned OH (Before Added Qty)",
-  //           icon: Package,
-  //           groupKey: "next_planned_shipment",
-  //         },
-  //         {
-  //           key: "qty_added_to_maintain_oh_next_forecast_month",
-  //           label: "Next Forecast Month - Planned Shipment",
-  //           icon: Truck,
-  //           groupKey: "next_planned_shipment",
-  //         },
-
-  //         // Macy's SOQ
-  //         {
-  //           key: "macys_proj_receipt_upto_forecast_month",
-  //           label: "Macys SOQ - Total",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-  //         {
-  //           key: "qty_given_to_macys",
-  //           label: "Macys SOQ - Actual Given",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-  //         {
-  //           key: "macy_soq_percentage",
-  //           label: "Macys SOQ - Percentage Required",
-  //           icon: Percent,
-  //           groupKey: "macys_soq",
-  //           type: "percentage",
-  //         },
-  //         {
-  //           key: "qty_added_to_balance_soq_forecast_month",
-  //           label: "Macys SOQ - Qty Added",
-  //           icon: Star,
-  //           groupKey: "macys_soq",
-  //         },
-
-  //         // Final Qty
-  //         {
-  //           key: "min_order",
-  //           label: "Min Order",
-  //           icon: Package,
-  //           groupKey: "final_qty",
-  //         },
-  //         {
-  //           key: "is_added_only_to_balance_macys_soq",
-  //           label: "Qty Added Only Macy Rule",
-  //           icon: Star,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_below_min_order",
-  //           label: "Below Min Order",
-  //           icon: AlertTriangle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_over_macys_soq",
-  //           label: "Over Macys SOQ",
-  //           icon: AlertCircle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "is_need_to_review_first",
-  //           label: "Needs Review (Below Planned OH)",
-  //           icon: AlertTriangle,
-  //           groupKey: "final_qty",
-  //           type: "boolean",
-  //         },
-  //         {
-  //           key: "recommended_total_quantity",
-  //           label: "Total Added Qty",
-  //           icon: Calculator,
-  //           groupKey: "final_qty",
-  //         },
-  //       ];
-
-  //     default:
-  //       return [];
-  //   }
-  // };
+  const allData = {
+    ...currentTypeData,
+    ...product_details, // Override only if exists
+  };
 
   const getVariableConfigByType = (type) => {
     switch (type) {
@@ -913,11 +200,13 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
 
           // Trend and Index Calculation
           {
-            key: "selected_month",
+            key: "selected_months",
             label: "STD Months",
             icon: Calendar,
             groupKey: "trends_index",
+            type: "array",
           },
+
           {
             key: "month_12_fc_index_original",
             label: "12-Month FC Index",
@@ -2189,7 +1478,19 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
       case "boolean":
         return value ? "Yes" : "No";
       case "array":
-        return Array.isArray(value) ? value.join(", ") : value;
+        if (typeof value === "string") {
+          try {
+            const parsed = JSON.parse(value);
+            return Array.isArray(parsed) && parsed.length > 0
+              ? parsed.join(", ")
+              : "N/A";
+          } catch {
+            return value;
+          }
+        }
+        return Array.isArray(value) && value.length > 0
+          ? value.join(", ")
+          : "N/A";
       case "percentage":
         if (config.key === "loss" && value === 0) return "0%";
         return typeof value === "number"
@@ -2289,7 +1590,9 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
               isDataMissing ? "text-gray-400" : "text-gray-900"
             }`}
           >
-            {formatVariableValue(value, variable, product_details)}
+            {variable.key === "selected_months"
+              ? renderMonthTags(value)
+              : formatVariableValue(value, variable, product_details)}
           </div>
 
           {/* Visual indicators */}
@@ -2544,6 +1847,11 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {groupVariables.map((variable) => {
                         const value = allData[variable.key];
+                        console.log(
+                          "selected_months:",
+                          allData.selected_months
+                        );
+
                         return renderVariableCard(
                           variable,
                           value,
