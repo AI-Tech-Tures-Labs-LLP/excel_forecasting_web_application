@@ -924,13 +924,8 @@ const ForecastApprovalWorkflow = ({ userRole = "admin" }) => {
               <FileText size={32} className="text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-slate-600 mb-2">
-              No forecasts found
+              Select a Tab to See Details
             </h3>
-            <p className="text-slate-500">
-              {userRole === "admin"
-                ? "Try adjusting your search or filter criteria"
-                : "No forecast submissions match your criteria"}
-            </p>
           </div>
         )}
       </div>

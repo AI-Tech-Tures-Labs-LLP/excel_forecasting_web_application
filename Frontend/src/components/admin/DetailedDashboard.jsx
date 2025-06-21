@@ -124,6 +124,8 @@ const DetailedDashboard = () => {
       method: "ML Algorithm",
       forecastValue: 87500,
       quantity: 1250,
+      analystQtyUnit: 1250,
+      recommendedQty: 1320,
       submittedDate: "2024-12-18",
       reviewTime: 1.2,
       approver: "Michael Rodriguez",
@@ -139,6 +141,8 @@ const DetailedDashboard = () => {
       method: "Index-based",
       forecastValue: 62300,
       quantity: 890,
+      analystQtyUnit: 890,
+      recommendedQty: 950,
       submittedDate: "2024-12-17",
       reviewTime: 2.1,
       approver: "Jennifer Taylor",
@@ -154,6 +158,8 @@ const DetailedDashboard = () => {
       method: "Trend Analysis",
       forecastValue: 97500,
       quantity: 650,
+      analystQtyUnit: 650,
+      recommendedQty: 580,
       submittedDate: "2024-12-16",
       reviewTime: 3.2,
       approver: "Michael Rodriguez",
@@ -169,6 +175,8 @@ const DetailedDashboard = () => {
       method: "Hybrid (ML + Index)",
       forecastValue: 315000,
       quantity: 2100,
+      analystQtyUnit: 2100,
+      recommendedQty: 2250,
       submittedDate: "2024-12-19",
       reviewTime: null,
       approver: "Jennifer Taylor",
@@ -184,6 +192,8 @@ const DetailedDashboard = () => {
       method: "Index-based",
       forecastValue: 135000,
       quantity: 450,
+      analystQtyUnit: 450,
+      recommendedQty: 420,
       submittedDate: "2024-12-19",
       reviewTime: null,
       approver: null,
@@ -224,6 +234,19 @@ const DetailedDashboard = () => {
     }
   };
 
+  const getVarianceColor = (variance) => {
+    if (variance > 10) return "text-red-600";
+    if (variance > 5) return "text-amber-600";
+    if (variance < -5) return "text-emerald-600";
+    return "text-slate-600";
+  };
+
+  const getVarianceIcon = (variance) => {
+    if (variance > 5) return <ArrowUp className="w-3 h-3" />;
+    if (variance < -5) return <ArrowDown className="w-3 h-3" />;
+    return <Minus className="w-3 h-3" />;
+  };
+
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-6">
       {/* Header */}
@@ -242,10 +265,6 @@ const DetailedDashboard = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
-            <Download size={16} />
-            Export
-          </button>
           <button className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100">
             <RefreshCw size={16} />
           </button>
@@ -621,10 +640,10 @@ const DetailedDashboard = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Forecast
+                    Forecast Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Method
+                    Variance
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Review
@@ -635,104 +654,128 @@ const DetailedDashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white/40 divide-y divide-slate-200">
-                {productDetailedData.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="hover:bg-white/60 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className={`w-2 h-2 rounded-full ${getPriorityColor(
-                              product.priority
-                            )}`}
-                          ></div>
-                          <div>
-                            <div className="text-sm font-medium text-slate-900">
-                              {product.id}
-                            </div>
-                            <div className="text-sm text-slate-500">
-                              {product.category}
+                {productDetailedData.map((product) => {
+                  const variance =
+                    ((product.analystQtyUnit - product.recommendedQty) /
+                      product.recommendedQty) *
+                    100;
+
+                  return (
+                    <tr
+                      key={product.id}
+                      className="hover:bg-white/60 transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-2 h-2 rounded-full ${getPriorityColor(
+                                product.priority
+                              )}`}
+                            ></div>
+                            <div>
+                              <div className="text-sm font-medium text-slate-900">
+                                {product.id}
+                              </div>
+                              <div className="text-sm text-slate-500">
+                                {product.category}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-slate-900">
-                        {product.analyst}
-                      </div>
-                      {product.approver && (
-                        <div className="text-xs text-slate-500">
-                          Approver: {product.approver}
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                          product.status
-                        )}`}
-                      >
-                        {product.status.replace("_", " ").toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-slate-900">
-                          ${(product.forecastValue / 1000).toFixed(0)}K
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {product.quantity} units
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-slate-600">
-                            {product.confidence}%
-                          </span>
-                          {product.confidence > 90 && (
-                            <Star className="w-3 h-3 text-yellow-500" />
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                        {product.method}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="space-y-1">
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-slate-900">
-                          {product.submittedDate}
+                          {product.analyst}
                         </div>
-                        {product.reviewTime && (
+                        {product.approver && (
                           <div className="text-xs text-slate-500">
-                            {product.reviewTime}h review
+                            Approver: {product.approver}
                           </div>
                         )}
-                        {!product.reviewTime &&
-                          product.status === "pending" && (
-                            <div className="text-xs text-amber-600">
-                              Awaiting review
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                            product.status
+                          )}`}
+                        >
+                          {product.status.replace("_", " ").toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="text-sm font-medium text-slate-900">
+                            ${(product.forecastValue / 1000).toFixed(0)}K
+                          </div>
+                          <div className="text-xs text-slate-600">
+                            Analyst: {product.analystQtyUnit} units
+                          </div>
+                          <div className="text-xs text-blue-600">
+                            Recommended: {product.recommendedQty} units
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-slate-600">
+                              {product.confidence}%
+                            </span>
+                            {product.confidence > 90 && (
+                              <Star className="w-3 h-3 text-yellow-500" />
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div
+                          className={`flex items-center gap-1 ${getVarianceColor(
+                            variance
+                          )}`}
+                        >
+                          {getVarianceIcon(variance)}
+                          <span className="text-sm font-medium">
+                            {variance > 0 ? "+" : ""}
+                            {variance.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          {Math.abs(
+                            product.analystQtyUnit - product.recommendedQty
+                          )}{" "}
+                          units diff
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <div className="text-sm text-slate-900">
+                            {product.submittedDate}
+                          </div>
+                          {product.reviewTime && (
+                            <div className="text-xs text-slate-500">
+                              {product.reviewTime}h review
                             </div>
                           )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50">
-                          <Eye size={16} />
-                        </button>
-                        {product.status === "pending" && (
-                          <button className="text-emerald-600 hover:text-emerald-900 p-1 rounded hover:bg-emerald-50">
-                            <CheckCircle size={16} />
+                          {!product.reviewTime &&
+                            product.status === "pending" && (
+                              <div className="text-xs text-amber-600">
+                                Awaiting review
+                              </div>
+                            )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <button className="text-indigo-600 hover:text-indigo-900 p-1 rounded hover:bg-indigo-50">
+                            <Eye size={16} />
                           </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {product.status === "pending" && (
+                            <button className="text-emerald-600 hover:text-emerald-900 p-1 rounded hover:bg-emerald-50">
+                              <CheckCircle size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -764,7 +807,7 @@ const DetailedDashboard = () => {
               <div className="flex items-center justify-between mb-3">
                 <Award className="w-6 h-6 text-emerald-600" />
                 <span className="text-xs bg-emerald-200 text-emerald-800 px-2 py-1 rounded-full font-medium">
-                  AVG
+                  hours
                 </span>
               </div>
               <div className="text-2xl font-bold text-emerald-800 mb-1">
@@ -772,7 +815,6 @@ const DetailedDashboard = () => {
                   userDetailedData.reduce((sum, u) => sum + u.avgAccuracy, 0) /
                     userDetailedData.length
                 )}
-                %
               </div>
               <div className="text-sm text-emerald-600">Total Time Spent</div>
               <div className="text-xs text-emerald-500 mt-1">
@@ -790,14 +832,7 @@ const DetailedDashboard = () => {
               <div className="text-2xl font-bold text-purple-800 mb-1">
                 {productDetailedData.length}
               </div>
-              <div className="text-sm text-purple-600">Products Tracked</div>
-              <div className="text-xs text-purple-500 mt-1">
-                {
-                  productDetailedData.filter((p) => p.status === "completed")
-                    .length
-                }{" "}
-                completed
-              </div>
+              <div className="text-sm text-purple-600">Projection Products</div>
             </div>
 
             <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-4 rounded-xl border border-orange-200">
