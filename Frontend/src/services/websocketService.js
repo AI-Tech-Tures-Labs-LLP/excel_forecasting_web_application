@@ -21,7 +21,8 @@ class WebSocketService {
       this.disconnect();
 
       // Create WebSocket connection with token in query string
-      const wsUrl = `ws://localhost:8000/ws/notifications/`;
+
+      const wsUrl = import.meta.env.VITE_WEBSOCKET_URL;
       this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = (event) => {
