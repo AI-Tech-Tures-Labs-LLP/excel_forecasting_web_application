@@ -15,6 +15,9 @@ import {
   Activity,
   AlertTriangle,
   Info,
+  Clock,
+  Globe,
+  User,
 } from "lucide-react";
 import ForecastVariableCards from "./ForecastVariableCards";
 
@@ -45,7 +48,15 @@ const ForecastVariablesModal = ({
     if (!isOpen) return null;
 
     const getModalConfig = () => {
+      console.log("Modal Type:", modalType); // Debug log
       switch (modalType) {
+        case "lead_time":
+          return {
+            title: "Lead Time Calculation",
+            icon: Clock,
+            gradient: "from-purple-500 to-indigo-600",
+            getContent: () => getLeadTimeContent(),
+          };
         case "required_quantity":
           return {
             title: "Required EOH Quantity Calculation",
@@ -53,12 +64,26 @@ const ForecastVariablesModal = ({
             gradient: "from-emerald-500 to-green-600",
             getContent: () => getRequiredQuantityContent(),
           };
+        case "next_required_quantity":
+          return {
+            title: "Required EOH Quantity Calculation",
+            icon: Calculator,
+            gradient: "from-emerald-500 to-green-600",
+            getContent: () => getNextRequiredQuantityContent(),
+          };
         case "fc_index":
           return {
             title: "12-Month FC Index Calculation",
             icon: BarChart3,
             gradient: "from-blue-500 to-indigo-600",
             getContent: () => getFCIndexContent(),
+          };
+        case "com_fc_index":
+          return {
+            title: "12-Month FC Index Calculation",
+            icon: BarChart3,
+            gradient: "from-blue-500 to-indigo-600",
+            getContent: () => getCOMFCIndexContent(),
           };
         case "loss":
           return {
@@ -88,6 +113,13 @@ const ForecastVariablesModal = ({
             gradient: "from-cyan-500 to-blue-600",
             getContent: () => getPlannedShipmentContent(),
           };
+        case "next_planned_shipment":
+          return {
+            title: "Planned Shipment Calculation",
+            icon: Truck,
+            gradient: "from-cyan-500 to-blue-600",
+            getContent: () => getNextPlannedShipmentContent(),
+          };
         case "total_added_qty":
           return {
             title: "Total Added Quantity Calculation",
@@ -103,6 +135,314 @@ const ForecastVariablesModal = ({
             getContent: () => <div>No calculation details available</div>,
           };
       }
+    };
+
+    const getNextRequiredQuantityContent = () => {
+      const doorCount = data?.kpi_door_count || 0;
+      const averageComOh = data?.average_com_oh || 0;
+      const nextRequiredQuantity =
+        data?.next_forecast_month_required_quantity || 0;
+      const nextForecastMonth = data?.next_forecast_month || "Unknown";
+      const calculatedSum = doorCount + averageComOh; // No FLDC for next month
+
+      return (
+        <div className="space-y-6">
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <ShoppingCart className="text-green-600" size={20} />
+              <h3 className="font-semibold text-gray-800">
+                {type?.toUpperCase()} Forecast - {nextForecastMonth}
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Required EOH Quantity for Next forecast month calculation
+              (excludes FLDC)
+            </p>
+          </div>
+
+          {/* Calculation Formula */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">
+                Calculation Formula
+              </h4>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+              {type === "com"
+                ? `Next Forecast Month Required Quantity = COM Average Maintain Value`
+                : `Next Forecast Month Required Quantity = KPI Door Count + Average COM OH`}
+            </div>
+          </div>
+
+          {/* Data Cards */}
+          {type === "com" ? (
+            <div className="grid grid-cols-1 gap-4">
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingCart className="text-green-600" size={16} />
+                  <span className="font-medium text-green-700">
+                    COM Average Maintain Value
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-green-800">
+                  {data?.minimum_required_oh_for_com?.toLocaleString() || "N/A"}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="text-blue-600" size={16} />
+                  <span className="font-medium text-blue-700">
+                    KPI Door Count
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-blue-800">
+                  {doorCount.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingCart className="text-green-600" size={16} />
+                  <span className="font-medium text-green-700">
+                    Average COM OH
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-green-800">
+                  {averageComOh.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Calculation Steps */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
+            </div>
+            <div className="space-y-3">
+              {type === "com" ? (
+                <>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">
+                      COM Average Maintain Value:
+                    </span>
+                    <span className="font-medium">
+                      {data?.minimum_required_oh_for_com?.toLocaleString() ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <hr className="border-gray-300" />
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      Next Required Quantity for {nextForecastMonth}:
+                    </span>
+                    <span className="text-xl font-bold text-emerald-800">
+                      {data?.minimum_required_oh_for_com?.toLocaleString() ||
+                        "N/A"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">KPI Door Count:</span>
+                    <span className="font-medium">
+                      {doorCount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">+ Average COM OH:</span>
+                    <span className="font-medium">
+                      {averageComOh.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 text-sm text-gray-500">
+                    <span className="italic">
+                      Note: FLDC not included for next month
+                    </span>
+                    <span></span>
+                  </div>
+                  <hr className="border-gray-300" />
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      Next Required Quantity for {nextForecastMonth}:
+                    </span>
+                    <span className="text-xl font-bold text-emerald-800">
+                      {calculatedSum.toLocaleString()}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Yellow Calculation Note */}
+          {calculatedSum !== nextRequiredQuantity &&
+            nextRequiredQuantity > 0 &&
+            type !== "com" && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+                  <div>
+                    <h5 className="font-medium text-yellow-800 mb-1">
+                      Calculation Note
+                    </h5>
+                    <p className="text-yellow-700 text-sm">
+                      Calculated value ({calculatedSum.toLocaleString()})
+                      differs from stored value (
+                      {nextRequiredQuantity.toLocaleString()}). This may
+                      indicate additional factors in the actual calculation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {/* Always show yellow note explaining the difference */}
+          {(calculatedSum === nextRequiredQuantity ||
+            nextRequiredQuantity === 0 ||
+            type === "com") && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+                <div>
+                  <h5 className="font-medium text-yellow-800 mb-1">
+                    Calculation Note
+                  </h5>
+                  <p className="text-yellow-700 text-sm">
+                    Next Forecast Month Required Quantity calculation excludes
+                    FLDC and Birthstone uplift, including only Door Count and
+                    Average COM OH. This is applied when the forecast lead
+                    guideline is more than 2 weeks.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const getLeadTimeContent = () => {
+      const vendorName = data?.vendor_name || "Unknown Vendor";
+      const country = data?.country || "Unknown Country";
+      const leadTime = data?.lead_time || 14;
+
+      return (
+        <div className="space-y-6">
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <ShoppingCart className="text-green-600" size={20} />
+              <h3 className="font-semibold text-gray-800">
+                {type?.toUpperCase()} Forecast - Lead Time
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Fixed duration between placing an order and receiving goods, based
+              on vendor and country
+            </p>
+          </div>
+
+          {/* Calculation Formula */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">
+                Calculation Formula
+              </h4>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+              Lead Time = Fixed Duration (Based on Vendor + Country)
+            </div>
+          </div>
+
+          {/* Data Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+              <div className="flex items-center gap-2 mb-2">
+                <User className="text-blue-600" size={16} />
+                <span className="font-medium text-blue-700">Vendor Name</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-800 break-all">
+                {vendorName}
+              </div>
+            </div>
+
+            <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+              <div className="flex items-center gap-2 mb-2">
+                <Globe className="text-green-600" size={16} />
+                <span className="font-medium text-green-700">Country</span>
+              </div>
+              <div className="text-2xl font-bold text-green-800">{country}</div>
+            </div>
+
+            <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="text-purple-600" size={16} />
+                <span className="font-medium text-purple-700">
+                  Lead Time (Days)
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-purple-800">
+                {leadTime}
+              </div>
+            </div>
+          </div>
+
+          {/* Calculation Steps */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-700">Vendor:</span>
+                <span className="font-medium text-right max-w-xs truncate">
+                  {vendorName}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-700">Country:</span>
+                <span className="font-medium">{country}</span>
+              </div>
+              <hr className="border-gray-300" />
+              <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                <span className="font-semibold text-emerald-800">
+                  Lead Time (Days):
+                </span>
+                <span className="text-xl font-bold text-emerald-800">
+                  {leadTime}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Yellow Calculation Note */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+              <div>
+                <h5 className="font-medium text-yellow-800 mb-1">
+                  Calculation Note
+                </h5>
+                <p className="text-yellow-700 text-sm">
+                  Lead time is a fixed variable determined by vendor and country
+                  combination. This value is used in forecast calculations to
+                  ensure proper inventory timing and supply chain management.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
     };
 
     const getRequiredQuantityContent = () => {
@@ -121,50 +461,12 @@ const ForecastVariablesModal = ({
         forecastMonth === "next" ? nextRequiredQuantity : requiredQuantity;
       const calculatedSum = doorCount + averageComOh + fldc;
 
-      const getTypeColor = () => {
-        switch (type) {
-          case "store":
-            return {
-              bg: "bg-blue-50",
-              text: "text-blue-600",
-              border: "border-blue-200",
-            };
-          case "com":
-            return {
-              bg: "bg-green-50",
-              text: "text-green-600",
-              border: "border-green-200",
-            };
-          case "omni":
-            return {
-              bg: "bg-purple-50",
-              text: "text-purple-600",
-              border: "border-purple-200",
-            };
-          default:
-            return {
-              bg: "bg-gray-50",
-              text: "text-gray-600",
-              border: "border-gray-200",
-            };
-        }
-      };
-
-      const colors = getTypeColor();
-
       return (
         <div className="space-y-6">
-          <div
-            className={`${colors.bg} border ${colors.border} rounded-lg p-4`}
-          >
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-3 mb-2">
-              {type === "store" && (
-                <Building2 className={colors.text} size={20} />
-              )}
-              {type === "com" && (
-                <ShoppingCart className={colors.text} size={20} />
-              )}
-              {type === "omni" && <Layers className={colors.text} size={20} />}
+              <ShoppingCart className="text-green-600" size={20} />
               <h3 className="font-semibold text-gray-800">
                 {type?.toUpperCase()} Forecast - {displayMonth}
               </h3>
@@ -174,6 +476,7 @@ const ForecastVariablesModal = ({
             </p>
           </div>
 
+          {/* Calculation Formula */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-3">
               <Calculator className="text-gray-600" size={20} />
@@ -182,81 +485,127 @@ const ForecastVariablesModal = ({
               </h4>
             </div>
             <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
-              Required EOH for {displayMonth} = KPI Door Count + Average COM EOM
-              OH + FLDC
+              {type === "com"
+                ? `Required EOH for ${displayMonth} = COM Average Maintain Value`
+                : `Required EOH for ${displayMonth} = KPI Door Count + Average COM EOM OH + FLDC`}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-              <div className="flex items-center gap-2 mb-2">
-                <Building2 className="text-blue-600" size={16} />
-                <span className="font-medium text-blue-700">
-                  KPI Door Count
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-blue-800">
-                {doorCount.toLocaleString()}
-              </div>
-            </div>
-
-            <div className="border border-green-200 rounded-lg p-4 bg-green-50">
-              <div className="flex items-center gap-2 mb-2">
-                <ShoppingCart className="text-green-600" size={16} />
-                <span className="font-medium text-green-700">
-                  Average COM EOM OH
-                </span>
-              </div>
-              <div className="text-2xl font-bold text-green-800">
-                {averageComOh.toLocaleString()}
+          {/* Data Cards */}
+          {type === "com" ? (
+            <div className="grid grid-cols-1 gap-4">
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingCart className="text-green-600" size={16} />
+                  <span className="font-medium text-green-700">
+                    COM Average Maintain Value
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-green-800">
+                  {data?.minimum_required_oh_for_com?.toLocaleString() || "N/A"}
+                </div>
               </div>
             </div>
-
-            <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-              <div className="flex items-center gap-2 mb-2">
-                <MapPin className="text-purple-600" size={16} />
-                <span className="font-medium text-purple-700">FLDC</span>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 className="text-blue-600" size={16} />
+                  <span className="font-medium text-blue-700">
+                    KPI Door Count
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-blue-800">
+                  {doorCount.toLocaleString()}
+                </div>
               </div>
-              <div className="text-2xl font-bold text-purple-800">
-                {fldc.toLocaleString()}
+
+              <div className="border border-green-200 rounded-lg p-4 bg-green-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShoppingCart className="text-green-600" size={16} />
+                  <span className="font-medium text-green-700">
+                    Average COM EOM OH
+                  </span>
+                </div>
+                <div className="text-2xl font-bold text-green-800">
+                  {averageComOh.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <MapPin className="text-purple-600" size={16} />
+                  <span className="font-medium text-purple-700">FLDC</span>
+                </div>
+                <div className="text-2xl font-bold text-purple-800">
+                  {fldc.toLocaleString()}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
+          {/* Calculation Steps */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="text-gray-600" size={20} />
               <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
             </div>
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-700">KPI Door Count:</span>
-                <span className="font-medium">
-                  {doorCount.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-700">+ Average COM EOM OH:</span>
-                <span className="font-medium">
-                  {averageComOh.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-gray-700">+ FLDC:</span>
-                <span className="font-medium">{fldc.toLocaleString()}</span>
-              </div>
-              <hr className="border-gray-300" />
-              <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
-                <span className="font-semibold text-emerald-800">
-                  Required EOH for {displayMonth}:
-                </span>
-                <span className="text-xl font-bold text-emerald-800">
-                  {calculatedSum.toLocaleString()}
-                </span>
-              </div>
+              {type === "com" ? (
+                <>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">
+                      COM Average Maintain Value:
+                    </span>
+                    <span className="font-medium">
+                      {data?.minimum_required_oh_for_com?.toLocaleString() ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <hr className="border-gray-300" />
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      Required EOH for {displayMonth}:
+                    </span>
+                    <span className="text-xl font-bold text-emerald-800">
+                      {data?.minimum_required_oh_for_com?.toLocaleString() ||
+                        "N/A"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">KPI Door Count:</span>
+                    <span className="font-medium">
+                      {doorCount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">+ Average COM EOM OH:</span>
+                    <span className="font-medium">
+                      {averageComOh.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">+ FLDC:</span>
+                    <span className="font-medium">{fldc.toLocaleString()}</span>
+                  </div>
+                  <hr className="border-gray-300" />
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      Required EOH for {displayMonth}:
+                    </span>
+                    <span className="text-xl font-bold text-emerald-800">
+                      {calculatedSum.toLocaleString()}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
+          {/* Yellow Calculation Note */}
           {calculatedSum !== displayRequiredQuantity &&
             displayRequiredQuantity > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -320,15 +669,47 @@ const ForecastVariablesModal = ({
 
       return (
         <div className="space-y-6">
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <BarChart3 className="text-green-600" size={20} />
+              <h3 className="font-semibold text-gray-800">
+                {type?.toUpperCase()} Forecast - 12-Month FC Index
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Measures average unit sales adjusted for seasonality across 12
+              months
+            </p>
+          </div>
+
+          {/* Calculation Formula */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">
+                Calculation Formula
+              </h4>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+              {type === "omni" ? (
+                <>
+                  <div>{modalData.storeFormula}</div>
+                  <div className="mt-2">{modalData.comFormula}</div>
+                </>
+              ) : (
+                modalData.formula
+              )}
+            </div>
+          </div>
+
+          {/* Data Cards */}
           {type === "omni" ? (
             <>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h3 className="font-semibold text-blue-800 mb-4">
                   Store FC Index Calculation
                 </h3>
-                <div className="bg-gray-50 p-3 rounded-md font-mono text-sm mb-4">
-                  {modalData.storeFormula}
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="border border-blue-200 rounded-lg p-3 bg-white">
                     <span className="text-sm font-medium text-blue-700">
@@ -343,7 +724,8 @@ const ForecastVariablesModal = ({
                       STD Index Value
                     </span>
                     <div className="text-xl font-bold text-blue-800">
-                      {modalData.stdIndexValue?.toLocaleString() || "N/A"}
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
                     </div>
                   </div>
                   <div className="border border-emerald-200 rounded-lg p-3 bg-emerald-50">
@@ -361,9 +743,6 @@ const ForecastVariablesModal = ({
                 <h3 className="font-semibold text-green-800 mb-4">
                   COM FC Index Calculation
                 </h3>
-                <div className="bg-gray-50 p-3 rounded-md font-mono text-sm mb-4">
-                  {modalData.comFormula}
-                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="border border-green-200 rounded-lg p-3 bg-white">
                     <span className="text-sm font-medium text-green-700">
@@ -378,7 +757,8 @@ const ForecastVariablesModal = ({
                       STD Index Value
                     </span>
                     <div className="text-xl font-bold text-green-800">
-                      {modalData.stdIndexValue?.toLocaleString() || "N/A"}
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
                     </div>
                   </div>
                   <div className="border border-emerald-200 rounded-lg p-3 bg-emerald-50">
@@ -393,43 +773,446 @@ const ForecastVariablesModal = ({
               </div>
             </>
           ) : (
-            <>
-              <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
-                {modalData.formula}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <span className="text-sm font-medium text-blue-700">
+                  {type === "store" ? "STD TY Unit Sales" : "TY COM Sales Unit"}
+                </span>
+                <div className="text-2xl font-bold text-blue-800">
+                  {(type === "store"
+                    ? modalData.stdTySales
+                    : modalData.tyComSales
+                  )?.toLocaleString() || "N/A"}
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-                  <span className="text-sm font-medium text-blue-700">
-                    {type === "store"
-                      ? "STD TY Unit Sales"
-                      : "TY COM Sales Unit"}
-                  </span>
-                  <div className="text-2xl font-bold text-blue-800">
-                    {(type === "store"
-                      ? modalData.stdTySales
-                      : modalData.tyComSales
-                    )?.toLocaleString() || "N/A"}
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <span className="text-sm font-medium text-purple-700">
+                  STD Index Value
+                </span>
+                <div className="text-2xl font-bold text-purple-800">
+                  {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                    "N/A"}
+                </div>
+              </div>
+              <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
+                <span className="text-sm font-medium text-emerald-700">
+                  12-Month FC Index
+                </span>
+                <div className="text-2xl font-bold text-emerald-800">
+                  {modalData.month12FcIndex?.toLocaleString() || "N/A"}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Calculation Steps */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
+            </div>
+            <div className="space-y-3">
+              {type === "omni" ? (
+                <>
+                  <div className="text-sm font-medium text-blue-700 mb-2">
+                    Store Calculation:
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">TY Store Sales Unit:</span>
+                    <span className="font-medium">
+                      {modalData.tyStoreSales?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">÷ STD Index Value:</span>
+                    <span className="font-medium">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 bg-blue-50 px-3 rounded-md">
+                    <span className="font-semibold text-blue-800">
+                      Store 12-Month FC Index:
+                    </span>
+                    <span className="text-lg font-bold text-blue-800">
+                      {modalData.storeMonth12FcIndex?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+
+                  <hr className="border-gray-300 my-4" />
+
+                  <div className="text-sm font-medium text-green-700 mb-2">
+                    COM Calculation:
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">TY COM Sales Unit:</span>
+                    <span className="font-medium">
+                      {modalData.tyComSales?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">÷ STD Index Value:</span>
+                    <span className="font-medium">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      COM 12-Month FC Index:
+                    </span>
+                    <span className="text-lg font-bold text-emerald-800">
+                      {modalData.comMonth12FcIndex?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">
+                      {type === "store"
+                        ? "STD TY Unit Sales:"
+                        : "TY COM Sales Unit:"}
+                    </span>
+                    <span className="font-medium">
+                      {(type === "store"
+                        ? modalData.stdTySales
+                        : modalData.tyComSales
+                      )?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">÷ STD Index Value:</span>
+                    <span className="font-medium">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <hr className="border-gray-300" />
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      12-Month FC Index:
+                    </span>
+                    <span className="text-xl font-bold text-emerald-800">
+                      {modalData.month12FcIndex?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Yellow Calculation Note */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+              <div>
+                <h5 className="font-medium text-yellow-800 mb-1">
+                  Calculation Note
+                </h5>
+                <p className="text-yellow-700 text-sm">
+                  The 12-Month FC Index measures average unit sales adjusted for
+                  seasonality across 12 months. This index helps normalize
+                  seasonal variations to provide a more accurate forecast
+                  baseline for inventory planning.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const getCOMFCIndexContent = () => {
+      const getModalData = () => {
+        switch (type) {
+          case "store":
+            return {
+              stdIndexValue: data?.std_index_value || 0,
+              stdTySales: data?.std_ty_unit_sales || 0,
+              month12FcIndex: data?.month_12_fc_index_original || 0,
+              formula:
+                "12-Month FC Index = STD TY Unit Sales / STD Index Value",
+            };
+          case "com":
+            return {
+              tyComSales: data?.ty_com_sales_unit_selected_month_sum || 0,
+              stdIndexValue: data?.std_index_value || 0,
+              month12FcIndex: data?.new_month_12_fc_index || 0,
+              formula:
+                " month_12_fc_index  = ty_com_sales_unit_selected_month_sum/std_index_value",
+            };
+          case "omni":
+            return {
+              tyStoreSales: data?.ty_store_sales_unit_selected_month_sum || 0,
+              stdIndexValue: data?.std_index_value || 0,
+              storeMonth12FcIndex: data?.store_month_12_fc_index_original || 0,
+              tyComSales: data?.ty_com_sales_unit_selected_month_sum || 0,
+              comMonth12FcIndex: data?.com_month_12_fc_index || 0,
+              storeFormula:
+                "Store 12-Month FC Index = TY Store Sales Unit Selected Month Sum / STD Index Value",
+              comFormula:
+                "COM 12-Month FC Index = TY COM Sales Unit Selected Month Sum / STD Index Value",
+            };
+          default:
+            return {};
+        }
+      };
+
+      const modalData = getModalData();
+
+      return (
+        <div className="space-y-6">
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <BarChart3 className="text-green-600" size={20} />
+              <h3 className="font-semibold text-gray-800">
+                {type?.toUpperCase()} Forecast - 12-Month FC Index
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Measures average unit sales adjusted for seasonality across 12
+              months
+            </p>
+          </div>
+
+          {/* Calculation Formula */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">
+                Calculation Formula
+              </h4>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+              {type === "omni" ? (
+                <>
+                  <div>{modalData.storeFormula}</div>
+                  <div className="mt-2">{modalData.comFormula}</div>
+                </>
+              ) : (
+                modalData.formula
+              )}
+            </div>
+          </div>
+
+          {/* Data Cards */}
+          {type === "omni" ? (
+            <>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-800 mb-4">
+                  Store FC Index Calculation
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border border-blue-200 rounded-lg p-3 bg-white">
+                    <span className="text-sm font-medium text-blue-700">
+                      TY Store Sales Unit
+                    </span>
+                    <div className="text-xl font-bold text-blue-800">
+                      {modalData.tyStoreSales?.toLocaleString() || "N/A"}
+                    </div>
+                  </div>
+                  <div className="border border-blue-200 rounded-lg p-3 bg-white">
+                    <span className="text-sm font-medium text-blue-700">
+                      STD Index Value
+                    </span>
+                    <div className="text-xl font-bold text-blue-800">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </div>
+                  </div>
+                  <div className="border border-emerald-200 rounded-lg p-3 bg-emerald-50">
+                    <span className="text-sm font-medium text-emerald-700">
+                      Store 12-Month FC Index
+                    </span>
+                    <div className="text-xl font-bold text-emerald-800">
+                      {modalData.storeMonth12FcIndex?.toLocaleString() || "N/A"}
+                    </div>
                   </div>
                 </div>
-                <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                  <span className="text-sm font-medium text-purple-700">
-                    STD Index Value
-                  </span>
-                  <div className="text-2xl font-bold text-purple-800">
-                    {modalData.stdIndexValue?.toLocaleString() || "N/A"}
+              </div>
+
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 className="font-semibold text-green-800 mb-4">
+                  COM FC Index Calculation
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="border border-green-200 rounded-lg p-3 bg-white">
+                    <span className="text-sm font-medium text-green-700">
+                      TY COM Sales Unit
+                    </span>
+                    <div className="text-xl font-bold text-green-800">
+                      {modalData.tyComSales?.toLocaleString() || "N/A"}
+                    </div>
                   </div>
-                </div>
-                <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
-                  <span className="text-sm font-medium text-emerald-700">
-                    12-Month FC Index
-                  </span>
-                  <div className="text-2xl font-bold text-emerald-800">
-                    {modalData.month12FcIndex?.toLocaleString() || "N/A"}
+                  <div className="border border-green-200 rounded-lg p-3 bg-white">
+                    <span className="text-sm font-medium text-green-700">
+                      STD Index Value
+                    </span>
+                    <div className="text-xl font-bold text-green-800">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </div>
+                  </div>
+                  <div className="border border-emerald-200 rounded-lg p-3 bg-emerald-50">
+                    <span className="text-sm font-medium text-emerald-700">
+                      COM 12-Month FC Index
+                    </span>
+                    <div className="text-xl font-bold text-emerald-800">
+                      {modalData.comMonth12FcIndex?.toLocaleString() || "N/A"}
+                    </div>
                   </div>
                 </div>
               </div>
             </>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+                <span className="text-sm font-medium text-blue-700">
+                  {type === "store" ? "STD TY Unit Sales" : "TY COM Sales Unit"}
+                </span>
+                <div className="text-2xl font-bold text-blue-800">
+                  {(type === "store"
+                    ? modalData.stdTySales
+                    : modalData.tyComSales
+                  )?.toLocaleString() || "N/A"}
+                </div>
+              </div>
+              <div className="border border-purple-200 rounded-lg p-4 bg-purple-50">
+                <span className="text-sm font-medium text-purple-700">
+                  STD Index Value
+                </span>
+                <div className="text-2xl font-bold text-purple-800">
+                  {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                    "N/A"}
+                </div>
+              </div>
+              <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
+                <span className="text-sm font-medium text-emerald-700">
+                  12-Month FC Index
+                </span>
+                <div className="text-2xl font-bold text-emerald-800">
+                  {modalData.month12FcIndex?.toLocaleString() || "N/A"}
+                </div>
+              </div>
+            </div>
           )}
+
+          {/* Calculation Steps */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Activity className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
+            </div>
+            <div className="space-y-3">
+              {type === "omni" ? (
+                <>
+                  <div className="text-sm font-medium text-blue-700 mb-2">
+                    Store Calculation:
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">TY Store Sales Unit:</span>
+                    <span className="font-medium">
+                      {modalData.tyStoreSales?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">÷ STD Index Value:</span>
+                    <span className="font-medium">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 bg-blue-50 px-3 rounded-md">
+                    <span className="font-semibold text-blue-800">
+                      Store 12-Month FC Index:
+                    </span>
+                    <span className="text-lg font-bold text-blue-800">
+                      {modalData.storeMonth12FcIndex?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+
+                  <hr className="border-gray-300 my-4" />
+
+                  <div className="text-sm font-medium text-green-700 mb-2">
+                    COM Calculation:
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">TY COM Sales Unit:</span>
+                    <span className="font-medium">
+                      {modalData.tyComSales?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">÷ STD Index Value:</span>
+                    <span className="font-medium">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      COM 12-Month FC Index:
+                    </span>
+                    <span className="text-lg font-bold text-emerald-800">
+                      {modalData.comMonth12FcIndex?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">
+                      {type === "store"
+                        ? "STD TY Unit Sales:"
+                        : "TY COM Sales Unit:"}
+                    </span>
+                    <span className="font-medium">
+                      {(type === "store"
+                        ? modalData.stdTySales
+                        : modalData.tyComSales
+                      )?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-gray-700">÷ STD Index Value:</span>
+                    <span className="font-medium">
+                      {`${(modalData.stdIndexValue * 100).toLocaleString()}%` ||
+                        "N/A"}
+                    </span>
+                  </div>
+                  <hr className="border-gray-300" />
+                  <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                    <span className="font-semibold text-emerald-800">
+                      12-Month FC Index:
+                    </span>
+                    <span className="text-xl font-bold text-emerald-800">
+                      {modalData.month12FcIndex?.toLocaleString() || "N/A"}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Yellow Calculation Note */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+              <div>
+                <h5 className="font-medium text-yellow-800 mb-1">
+                  Calculation Note
+                </h5>
+                <p className="text-yellow-700 text-sm">
+                  The 12-Month FC Index measures average unit sales adjusted for
+                  seasonality across 12 months. This index helps normalize
+                  seasonal variations to provide a more accurate forecast
+                  baseline for inventory planning.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       );
     };
@@ -442,10 +1225,34 @@ const ForecastVariablesModal = ({
 
       return (
         <div className="space-y-6">
-          <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
-            Loss % = Door Count / Average EOM OH
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <TrendingDown className="text-green-600" size={20} />
+              <h3 className="font-semibold text-gray-800">
+                {type?.toUpperCase()} Forecast - Loss Percentage
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Represents inefficiency or stockout risk by comparing door count
+              to average OH
+            </p>
           </div>
 
+          {/* Calculation Formula */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">
+                Calculation Formula
+              </h4>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+              Loss % = Door Count / Average EOM OH
+            </div>
+          </div>
+
+          {/* Data Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
               <div className="flex items-center gap-2 mb-2">
@@ -480,9 +1287,10 @@ const ForecastVariablesModal = ({
             </div>
           </div>
 
+          {/* Calculation Steps */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-4">
-              <Calculator className="text-gray-600" size={20} />
+              <Activity className="text-gray-600" size={20} />
               <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
             </div>
             <div className="space-y-3">
@@ -499,11 +1307,29 @@ const ForecastVariablesModal = ({
                 </span>
               </div>
               <hr className="border-gray-300" />
-              <div className="flex justify-between items-center py-2 bg-red-50 px-3 rounded-md">
-                <span className="font-semibold text-red-800">Loss %:</span>
-                <span className="text-xl font-bold text-red-800">
+              <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                <span className="font-semibold text-emerald-800">Loss %:</span>
+                <span className="text-xl font-bold text-emerald-800">
                   {(calculatedLoss * 100).toFixed(2)}%
                 </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Yellow Calculation Note */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+              <div>
+                <h5 className="font-medium text-yellow-800 mb-1">
+                  Calculation Note
+                </h5>
+                <p className="text-yellow-700 text-sm">
+                  Loss percentage represents the ratio of door count to average
+                  EOM OH, indicating potential stockout risk or inventory
+                  inefficiency. Higher percentages suggest greater risk of not
+                  meeting demand due to insufficient inventory levels.
+                </p>
               </div>
             </div>
           </div>
@@ -672,17 +1498,6 @@ const ForecastVariablesModal = ({
                     )?.toLocaleString() || "N/A"}
                   </div>
                 </div>
-                {/* <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <span className="text-sm font-medium text-gray-700">
-                    Difference
-                  </span>
-                  <div className="text-xl font-bold text-gray-800">
-                    {(type === "store"
-                      ? trendData.tyUnitSales - trendData.lyUnitSales
-                      : trendData.tyComSales - trendData.lyComSales
-                    )?.toLocaleString() || "N/A"}
-                  </div>
-                </div> */}
                 <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
                   <span className="text-sm font-medium text-emerald-700">
                     Trend
@@ -702,54 +1517,97 @@ const ForecastVariablesModal = ({
       const month12FcIndexOriginal =
         data?.month_12_fc_index_original ||
         data?.store_month_12_fc_index_original ||
+        data?.month_12_fc_index_base ||
         0;
       const lossUpdated = data?.loss_updated || 0;
       const month12FcIndexLoss =
-        data?.new_month_12_fc_index || data?.store_month_12_fc_index_loss || 0;
+        data?.new_month_12_fc_index ||
+        data?.store_month_12_fc_index_loss ||
+        data?.month_12_fc_index_loss ||
+        0;
       const calculatedLoss = month12FcIndexOriginal * (1 + lossUpdated);
 
       return (
         <div className="space-y-6">
-          <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
-            12-Month FC Index (Loss %) = 12-Month FC Index × (1 + Loss %)
+          {/* Green Info Box */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <TrendingDown className="text-green-600" size={20} />
+              <h3 className="font-semibold text-gray-800">
+                {type?.toUpperCase()} Forecast - 12-Month FC Index (Loss %)
+              </h3>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Adjusted forecast index that accounts for potential loss rate
+            </p>
           </div>
 
+          {/* Calculation Formula */}
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">
+                Calculation Formula
+              </h4>
+            </div>
+            <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+              12-Month FC Index (Loss %) = 12-Month FC Index × (1 + Loss %)
+            </div>
+          </div>
+
+          {/* Data Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
-              <span className="text-sm font-medium text-blue-700">
-                12-Month FC Index
-              </span>
-              <div className="text-xl font-bold text-blue-800">
+              <div className="flex items-center gap-2 mb-2">
+                <BarChart3 className="text-blue-600" size={16} />
+                <span className="font-medium text-blue-700">
+                  12-Month FC Index
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-blue-800">
                 {month12FcIndexOriginal?.toLocaleString() || "N/A"}
               </div>
             </div>
+
             <div className="border border-red-200 rounded-lg p-4 bg-red-50">
-              <span className="text-sm font-medium text-red-700">Loss %</span>
-              <div className="text-xl font-bold text-red-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingDown className="text-red-600" size={16} />
+                <span className="font-medium text-red-700">Loss %</span>
+              </div>
+              <div className="text-2xl font-bold text-red-800">
                 {(lossUpdated * 100)?.toFixed(2) || "N/A"}%
               </div>
             </div>
-            <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-              <span className="text-sm font-medium text-gray-700">
-                Multiplier (1 + Loss %)
-              </span>
-              <div className="text-xl font-bold text-gray-800">
+
+            {/* <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div className="flex items-center gap-2 mb-2">
+                <Calculator className="text-gray-600" size={16} />
+                <span className="font-medium text-gray-700">
+                  Multiplier (1 + Loss %)
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-gray-800">
                 {(1 + lossUpdated)?.toFixed(4) || "N/A"}
               </div>
-            </div>
+            </div> */}
+
             <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
-              <span className="text-sm font-medium text-emerald-700">
-                FC Index (Loss %)
-              </span>
-              <div className="text-xl font-bold text-emerald-800">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="text-emerald-600" size={16} />
+                <span className="font-medium text-emerald-700">
+                  FC Index (Loss %)
+                </span>
+              </div>
+              <div className="text-2xl font-bold text-emerald-800">
                 {month12FcIndexLoss?.toLocaleString() || "N/A"}
               </div>
             </div>
           </div>
 
+          {/* Calculation Steps */}
           <div className="border border-gray-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-4">
-              <Calculator className="text-gray-600" size={20} />
+              <Activity className="text-gray-600" size={20} />
               <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
             </div>
             <div className="space-y-3">
@@ -760,22 +1618,66 @@ const ForecastVariablesModal = ({
                 </span>
               </div>
               <div className="flex justify-between items-center py-2">
+                <span className="text-gray-700">Loss %:</span>
+                <span className="font-medium">
+                  {(lossUpdated * 100)?.toFixed(2) || "N/A"}%
+                </span>
+              </div>
+              {/* <div className="flex justify-between items-center py-2">
                 <span className="text-gray-700">× (1 + Loss %):</span>
                 <span className="font-medium">
                   × {(1 + lossUpdated)?.toFixed(4) || "N/A"}
                 </span>
-              </div>
+              </div> */}
               <hr className="border-gray-300" />
               <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
                 <span className="font-semibold text-emerald-800">
-                  FC Index (Loss %):
+                  12-Month FC Index (Loss %):
                 </span>
                 <span className="text-xl font-bold text-emerald-800">
-                  {calculatedLoss?.toLocaleString() || "N/A"}
+                  {calculatedLoss?.toFixed(2) || "N/A"}
                 </span>
               </div>
             </div>
           </div>
+
+          {/* Yellow Calculation Note */}
+          {Math.abs(calculatedLoss - month12FcIndexLoss) > 0.01 &&
+          month12FcIndexLoss > 0 ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+                <div>
+                  <h5 className="font-medium text-yellow-800 mb-1">
+                    Calculation Note
+                  </h5>
+                  <p className="text-yellow-700 text-sm">
+                    Calculated value ({calculatedLoss?.toFixed(2)}) differs from
+                    stored value ({month12FcIndexLoss?.toFixed(2)}). This may
+                    indicate additional business rules or rounding applied in
+                    the actual calculation.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="text-yellow-600 mt-0.5" size={16} />
+                <div>
+                  <h5 className="font-medium text-yellow-800 mb-1">
+                    Calculation Note
+                  </h5>
+                  <p className="text-yellow-700 text-sm">
+                    The 12-Month FC Index (Loss %) adjusts the base forecast
+                    index by accounting for potential loss percentage. This
+                    helps provide a more conservative forecast that factors in
+                    expected inefficiencies or stockout risks.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     };
@@ -794,6 +1696,81 @@ const ForecastVariablesModal = ({
       const monthLabel = isNext
         ? data?.next_forecast_month || "Next Forecast Month"
         : data?.forecast_month || "Forecast Month";
+
+      return (
+        <div className="space-y-6">
+          <div className="bg-gray-50 p-3 rounded-md font-mono text-sm">
+            {monthLabel} - Planned Shipment = Required Quantity - Planned OH
+            (Before Added Qty)
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="border border-blue-200 rounded-lg p-4 bg-blue-50">
+              <span className="text-sm font-medium text-blue-700">
+                Required Quantity
+              </span>
+              <div className="text-2xl font-bold text-blue-800">
+                {requiredQty?.toLocaleString() || "N/A"}
+              </div>
+            </div>
+            <div className="border border-orange-200 rounded-lg p-4 bg-orange-50">
+              <span className="text-sm font-medium text-orange-700">
+                Planned OH (Before)
+              </span>
+              <div className="text-2xl font-bold text-orange-800">
+                {plannedOhBefore?.toLocaleString() || "N/A"}
+              </div>
+            </div>
+            <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
+              <span className="text-sm font-medium text-emerald-700">
+                Planned Shipment
+              </span>
+              <div className="text-2xl font-bold text-emerald-800">
+                {plannedShipment?.toLocaleString() || "N/A"}
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Calculator className="text-gray-600" size={20} />
+              <h4 className="font-semibold text-gray-800">Calculation Steps</h4>
+            </div>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-700">Required Quantity:</span>
+                <span className="font-medium">
+                  {requiredQty?.toLocaleString() || "N/A"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-gray-700">- Planned OH (Before):</span>
+                <span className="font-medium">
+                  {plannedOhBefore?.toLocaleString() || "N/A"}
+                </span>
+              </div>
+              <hr className="border-gray-300" />
+              <div className="flex justify-between items-center py-2 bg-emerald-50 px-3 rounded-md">
+                <span className="font-semibold text-emerald-800">
+                  Planned Shipment:
+                </span>
+                <span className="text-xl font-bold text-emerald-800">
+                  {(requiredQty - plannedOhBefore)?.toLocaleString() || "N/A"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const getNextPlannedShipmentContent = () => {
+      const isNext = forecastMonth === "next";
+      const requiredQty = data?.next_forecast_month_required_quantity || 0;
+      const plannedOhBefore = data?.next_forecast_month_planned_oh_before || 0;
+      const plannedShipment =
+        data?.qty_added_to_maintain_oh_next_forecast_month || 0;
+      const monthLabel = data?.next_forecast_month || "Next Forecast Month";
 
       return (
         <div className="space-y-6">
@@ -1034,6 +2011,7 @@ const ForecastVariablesModal = ({
       forecastMonth,
     });
   };
+
   const closeDynamicModal = () => {
     setDynamicModalState({
       isOpen: false,
@@ -1109,7 +2087,7 @@ const ForecastVariablesModal = ({
             <div className="h-full overflow-y-auto p-6 custom-scrollbar">
               <ForecastVariableCards
                 productData={productData}
-                onOpenModal={openDynamicModal} // Add this prop
+                onOpenModal={openDynamicModal}
               />
             </div>
           </div>

@@ -105,18 +105,18 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
   const attachModalConfig = (fields) => {
     const modalTypeMapping = {
       forecast_month_required_quantity: "required_quantity",
-      next_forecast_month_required_quantity: "required_quantity",
+      next_forecast_month_required_quantity: "next_required_quantity",
       month_12_fc_index_original: "fc_index",
-      new_month_12_fc_index: "fc_index",
+      new_month_12_fc_index: "fc_index_loss",
       store_month_12_fc_index_original: "fc_index",
-      com_month_12_fc_index: "fc_index",
+      com_month_12_fc_index: "com_fc_index",
       loss_updated: "loss",
       std_trend: "trend",
       com_trend_for_selected_month: "trend",
       store_trend: "trend",
       store_month_12_fc_index_loss: "fc_index_loss",
       qty_added_to_maintain_oh_forecast_month: "planned_shipment",
-      qty_added_to_maintain_oh_next_forecast_month: "planned_shipment",
+      qty_added_to_maintain_oh_next_forecast_month: "next_planned_shipment",
       recommended_total_quantity: "total_added_qty",
     };
 
@@ -1186,7 +1186,7 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
     forecastMonth,
   }) => {
     if (!isOpen) return null;
-
+    console.log(fldc);
     const doorCount = data?.kpi_door_count || 0;
     const averageComOh = data?.average_com_oh || 0;
     const fldc = data?.fldc || 0;

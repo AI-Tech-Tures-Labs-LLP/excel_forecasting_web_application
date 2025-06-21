@@ -426,11 +426,18 @@ class ForecastViewSet(ViewSet):
     def filter_products(self, request):
         sheet_id = request.query_params.get("sheet_id")
         sort_by = request.query_params.get("sort_by")
+        product_type = request.query_params.get("product_type")
 
         if not sheet_id:
             return Response({"error": "sheet_id is required"}, status=400)
+        
+        if product_type:
+            queryset = ProductDetail.objects.filter(sheet_id=sheet_id,product_type=product_type)
+        else:
+            queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
+ 
+        
 
-        queryset = ProductDetail.objects.filter(sheet_id=sheet_id)
 
         # ✅ Multi-value fields
         multi_value_fields = [
