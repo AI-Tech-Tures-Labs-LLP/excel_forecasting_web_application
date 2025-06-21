@@ -659,22 +659,25 @@ class DownloadFinalQuantityReport(APIView):
         data = []
 
         for product in products:
-            final_qty = (
-                product.user_updated_final_quantity
-                if product.user_updated_final_quantity is not None
-                else product.recommended_total_quantity
-            )
-            if final_qty and final_qty > 0:
+            # final_qty = (
+            #     product.user_updated_final_quantity
+            #     if product.user_updated_final_quantity is not None
+            #     else product.recommended_total_quantity
+            # )
+            if product.user_updated_final_quantity and product.user_updated_final_quantity > 0:
                 data.append({
                     "PID": product.product_id,
                     "Category": product.category,
-                    "Final_qty": final_qty,
+                    "Recommended Quantity" : product.recommended_total_quantity,
+                    "Final_qty": product.user_updated_final_quantity,
+
                 })
 
         if not data:
             return Response({"detail": "No data with final quantity > 0."}, status=204)
 
         df = pd.DataFrame(data)
+        print(df)
 
         # Create Excel file in memory and save to S3
         excel_buffer = io.BytesIO()

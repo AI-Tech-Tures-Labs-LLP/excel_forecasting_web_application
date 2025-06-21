@@ -65,8 +65,10 @@ def find_pid_type(Safe_Non_Safe,pid_value,LY_Unit_Sales,LY_MCOM_Unit_Sales,Door_
         pid_type='com'
     elif(Safe_Non_Safe=='OMNI' and count_ttl_com_sale(LY_Unit_Sales,LY_MCOM_Unit_Sales)>=65):
         pid_type='omni'
-    else:
+    elif Door_count >3:
         pid_type='store'
+    else:
+        pid_type='not_forecast'
     return pid_type
 
 def get_vendor_by_pid(pid_value, master_sheet):
