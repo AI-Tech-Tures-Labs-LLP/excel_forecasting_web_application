@@ -1,4 +1,4 @@
-// ProductSelector/SearchBar.jsx
+// Updated SearchBar.jsx - Works with both options
 import React, { useState, useEffect } from "react";
 import {
   Search,
@@ -22,10 +22,15 @@ const SearchBar = ({
   const [recentSearches, setRecentSearches] = useState([]);
 
   useEffect(() => {
-    const stored = JSON.parse(
-      localStorage.getItem("recentSearchedProducts") || "[]"
-    );
-    setRecentSearches(stored);
+    try {
+      const stored = JSON.parse(
+        localStorage.getItem("recentSearchedProducts") || "[]"
+      );
+      setRecentSearches(stored);
+    } catch (error) {
+      console.error("Error loading recent searches:", error);
+      setRecentSearches([]);
+    }
   }, []);
 
   useEffect(() => {
@@ -72,8 +77,9 @@ const SearchBar = ({
     }
   };
 
+  // 🔥 Updated to handle both immediate and debounced search
   const handleSearch = (query) => {
-    onSearch(query);
+    onSearch(query); // This will be debounced in the parent component
     setShowSearchDropdown(true);
   };
 
@@ -87,6 +93,8 @@ const SearchBar = ({
 
     // Close search dropdown
     setShowSearchDropdown(false);
+
+    // Clear search when selecting a product
     onSearch("");
 
     // Navigate to details
@@ -102,9 +110,25 @@ const SearchBar = ({
   };
 
   const clearRecentSearches = () => {
-    localStorage.removeItem("recentSearchedProducts");
-    setRecentSearches([]);
+    try {
+      localStorage.removeItem("recentSearchedProducts");
+      setRecentSearches([]);
+    } catch (error) {
+      console.error("Error clearing recent searches:", error);
+    }
   };
+
+  // 🔥 Filter processed products based on search query
+  const filteredProducts = processedProducts.filter((product) => {
+    if (!searchQuery.trim()) return false;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      product.product_id?.toString().toLowerCase().includes(query) ||
+      product.category?.toLowerCase().includes(query) ||
+      product.name?.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="relative search-container w-full sm:w-auto sm:min-w-[300px] lg:min-w-[400px]">
@@ -204,13 +228,13 @@ const SearchBar = ({
           )}
 
           {/* Show Search Results when there's a query */}
-          {searchQuery.trim() !== "" && processedProducts.length > 0 && (
+          {searchQuery.trim() !== "" && filteredProducts.length > 0 && (
             <>
               <div className="px-4 py-2 bg-gray-50 border-b border-gray-200 text-sm text-gray-600 font-medium">
-                {processedProducts.length} products found
+                {filteredProducts.length} products found
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {processedProducts.slice(0, 10).map((product) => (
+                {filteredProducts.slice(0, 10).map((product) => (
                   <div
                     key={product.product_id}
                     onClick={() => handleViewDetails(product)}
@@ -233,7 +257,7 @@ const SearchBar = ({
                           <div className="flex items-center space-x-3 text-xs text-gray-600">
                             <div className="flex items-center space-x-1">
                               <Calendar className="w-3 h-3" />
-                              <span>Added Today</span>
+                              <span>Found in search</span>
                             </div>
                             <div className="flex items-center space-x-1">
                               <MessageSquare className="w-3 h-3" />
@@ -263,17 +287,17 @@ const SearchBar = ({
                   </div>
                 ))}
               </div>
-              {processedProducts.length > 10 && (
+              {filteredProducts.length > 10 && (
                 <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-xs text-gray-500 text-center">
                   <ChevronDown className="w-3 h-3 inline mr-1" />
-                  Showing first 10 of {processedProducts.length} results
+                  Showing first 10 of {filteredProducts.length} results
                 </div>
               )}
             </>
           )}
 
           {/* No results message */}
-          {searchQuery.trim() !== "" && processedProducts.length === 0 && (
+          {searchQuery.trim() !== "" && filteredProducts.length === 0 && (
             <div className="px-4 py-8 text-center text-gray-500">
               <Package className="w-8 h-8 mx-auto mb-2 text-gray-300" />
               <p className="text-sm">No products found</p>
