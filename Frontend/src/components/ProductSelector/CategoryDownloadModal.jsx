@@ -1,49 +1,30 @@
-// ProductSelector/CategoryDownloadModal.jsx
-import React from "react";
+import React, { useState } from "react";
 import { X, Package, FileDown } from "lucide-react";
 import { useSelector } from "react-redux";
 
-const CategoryDownloadModal = ({
-  categoryDownloadModal,
-  setCategoryDownloadModal,
-  onToast,
-}) => {
-  const forecastData = useSelector((state) => state.forecast.currentSession);
+const CategoryDownloadModal = ({ isOpen, onClose, onToast }) => {
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [isDownloading, setIsDownloading] = useState(false);
 
-  const handleCloseCategoryDownload = () => {
-    setCategoryDownloadModal((prev) => ({
-      ...prev,
-      isOpen: false,
-      selectedCategories: [],
-      isDownloading: false,
-    }));
-  };
+  const forecastData = useSelector((state) => state.forecast.currentSession);
+  const categories = useSelector((state) => state.products.categories || []);
 
   const handleCategorySelectionChange = (category, checked) => {
-    setCategoryDownloadModal((prev) => ({
-      ...prev,
-      selectedCategories: checked
-        ? [...prev.selectedCategories, category]
-        : prev.selectedCategories.filter((cat) => cat !== category),
-    }));
+    setSelectedCategories((prev) =>
+      checked ? [...prev, category] : prev.filter((cat) => cat !== category)
+    );
   };
 
   const handleSelectAllCategories = () => {
-    setCategoryDownloadModal((prev) => ({
-      ...prev,
-      selectedCategories: [...prev.availableCategories],
-    }));
+    setSelectedCategories([...categories]);
   };
 
   const handleDeselectAllCategories = () => {
-    setCategoryDownloadModal((prev) => ({
-      ...prev,
-      selectedCategories: [],
-    }));
+    setSelectedCategories([]);
   };
 
   const handleDownloadSelectedCategories = async () => {
-    if (categoryDownloadModal.selectedCategories.length === 0) {
+    if (selectedCategories.length === 0) {
       onToast({
         type: "error",
         message: "Please select at least one category to download",
@@ -52,42 +33,22 @@ const CategoryDownloadModal = ({
       return;
     }
 
-    setCategoryDownloadModal((prev) => ({ ...prev, isDownloading: true }));
+    setIsDownloading(true);
 
     try {
-      // Convert display names to file names by removing brackets and spaces
-      const processedCategories = categoryDownloadModal.selectedCategories.map(
-        (category) => {
-          // Remove brackets and extra spaces to match file names
-          return category.replace(/\s*\([^)]*\)/, "");
-        }
+      const processedCategories = selectedCategories.map((category) =>
+        category.replace(/\s*\([^)]*\)/, "")
       );
 
       const categoriesParam = processedCategories.join(",");
-
-      // Get the output filename from localStorage forecast data
-      // const forecastData = JSON.parse(
-      //   localStorage.getItem("forecastData") || "{}"
-      // );
       const outputFileName = forecastData.output_folder || "";
 
-      console.log(
-        "Original categories:",
-        categoryDownloadModal.selectedCategories
-      );
-      console.log("Processed categories:", processedCategories);
-      console.log("Using output filename:", outputFileName);
-
-      // Use 'file_path' parameter to match backend
       const downloadUrl = `${
         import.meta.env.VITE_API_BASE_URL
       }/forecast/download-category/?category=${encodeURIComponent(
         categoriesParam
       )}&file_path=${encodeURIComponent(outputFileName)}`;
 
-      console.log("Full download URL:", downloadUrl);
-
-      // Create a temporary link to trigger download
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.download =
@@ -98,7 +59,7 @@ const CategoryDownloadModal = ({
       link.click();
       document.body.removeChild(link);
 
-      handleCloseCategoryDownload();
+      handleClose();
     } catch (error) {
       console.error("Error downloading categories:", error);
       onToast({
@@ -107,11 +68,17 @@ const CategoryDownloadModal = ({
         duration: 5000,
       });
     } finally {
-      setCategoryDownloadModal((prev) => ({ ...prev, isDownloading: false }));
+      setIsDownloading(false);
     }
   };
 
-  if (!categoryDownloadModal.isOpen) return null;
+  const handleClose = () => {
+    setSelectedCategories([]);
+    setIsDownloading(false);
+    onClose(); // trigger parent close
+  };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -121,14 +88,14 @@ const CategoryDownloadModal = ({
             Select Categories to Download
           </h3>
           <button
-            onClick={handleCloseCategoryDownload}
+            onClick={handleClose}
             className="text-gray-400 hover:text-gray-600"
           >
             <X size={20} />
           </button>
         </div>
 
-        {categoryDownloadModal.availableCategories.length === 0 ? (
+        {categories.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Package size={48} className="mx-auto mb-3 text-gray-300" />
             <p>No categories available for download</p>
@@ -151,16 +118,14 @@ const CategoryDownloadModal = ({
             </div>
 
             <div className="space-y-2 mb-6 max-h-60 overflow-y-auto">
-              {categoryDownloadModal.availableCategories.map((category) => (
+              {categories.map((category) => (
                 <label
                   key={category}
                   className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
                 >
                   <input
                     type="checkbox"
-                    checked={categoryDownloadModal.selectedCategories.includes(
-                      category
-                    )}
+                    checked={selectedCategories.includes(category)}
                     onChange={(e) =>
                       handleCategorySelectionChange(category, e.target.checked)
                     }
@@ -173,25 +138,21 @@ const CategoryDownloadModal = ({
 
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">
-                {categoryDownloadModal.selectedCategories.length} categories
-                selected
+                {selectedCategories.length} categories selected
               </span>
               <div className="flex gap-2">
                 <button
-                  onClick={handleCloseCategoryDownload}
+                  onClick={handleClose}
                   className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDownloadSelectedCategories}
-                  disabled={
-                    categoryDownloadModal.selectedCategories.length === 0 ||
-                    categoryDownloadModal.isDownloading
-                  }
+                  disabled={selectedCategories.length === 0 || isDownloading}
                   className="px-4 py-2 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {categoryDownloadModal.isDownloading ? (
+                  {isDownloading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Downloading...

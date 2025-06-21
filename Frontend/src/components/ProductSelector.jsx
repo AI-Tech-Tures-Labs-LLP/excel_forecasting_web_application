@@ -489,11 +489,7 @@ function ProductSelector() {
   };
 
   const handleOpenCategoryDownload = () => {
-    setCategoryDownloadModal((prev) => ({
-      ...prev,
-      isOpen: true,
-      selectedCategories: [],
-    }));
+    setCategoryDownloadModal({ isOpen: true });
   };
 
   const handleBackToSelector = () => {
@@ -921,8 +917,13 @@ function ProductSelector() {
       />
 
       <CategoryDownloadModal
-        categoryDownloadModal={categoryDownloadModal}
-        setCategoryDownloadModal={setCategoryDownloadModal}
+        isOpen={categoryDownloadModal.isOpen}
+        onClose={() =>
+          setCategoryDownloadModal((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
         onToast={(message) => dispatch(addToast(message))}
       />
 
