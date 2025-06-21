@@ -231,6 +231,107 @@ const ProductDetailsView = () => {
   //   }
   // };
 
+  // const fetchProductDetails = async () => {
+  //   console.log("Fetching details for product:", productId);
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     const response = await axios.get(
+  //       `${
+  //         import.meta.env.VITE_API_BASE_URL
+  //       }/forecast/product/${productId}/?sheet_id=${sheetId}`
+  //     );
+  //     console.log("Product details fetched:", response.data);
+  //     setProductData(response.data);
+
+  //     // Pre-fetch and set the critical adjustment values
+  //     if (response.data.product_details) {
+  //       const userQty =
+  //         response.data.product_details.user_updated_final_quantity;
+  //       setUserAddedQuantity(
+  //         userQty !== null && userQty !== undefined ? userQty.toString() : ""
+  //       );
+
+  //       const extFactorPerc =
+  //         response.data.product_details.external_factor_percentage;
+  //       setExternalFactorPercentage(
+  //         extFactorPerc !== null && extFactorPerc !== undefined
+  //           ? extFactorPerc.toString()
+  //           : ""
+  //       );
+  //       console.log(
+  //         "Responsevifawfwa",
+  //         response.data.product_details.external_factor_note
+  //       );
+  //       setExternalFactor(
+  //         response.data.product_details?.external_factor_note || ""
+  //       );
+  //     }
+
+  //     // Extract 12-month rolling forecast dynamically with updated variable names
+  //     const rolling = {
+  //       index: [],
+  //       fcByIndex: [],
+  //       fcByTrend: [],
+  //       recommendedFC: [],
+  //       plannedFC: [],
+  //       plannedShipments: [],
+  //       plannedEOH: [],
+  //       grossProjection: [],
+  //       macysProjReceipts: [],
+  //       plannedSellThru: [],
+  //     };
+
+  //     const monthOrder = [
+  //       "feb",
+  //       "mar",
+  //       "apr",
+  //       "may",
+  //       "jun",
+  //       "jul",
+  //       "aug",
+  //       "sep",
+  //       "oct",
+  //       "nov",
+  //       "dec",
+  //       "jan",
+  //     ];
+
+  //     const getForecastValues = (variable) => {
+  //       const item = response.data.monthly_forecast?.find(
+  //         (f) => f.variable_name === variable
+  //       );
+  //       if (!item) {
+  //         console.warn(`Variable ${variable} not found in monthly_forecast`);
+  //         return Array(12).fill(0);
+  //       }
+
+  //       const values = monthOrder.map((m) => item[m] ?? 0);
+  //       console.log(`${variable} values:`, values);
+  //       return values;
+  //     };
+
+  //     // Updated variable names to match backend
+  //     rolling.index = getForecastValues("index");
+  //     rolling.fcByIndex = getForecastValues("fc_by_index");
+  //     rolling.fcByTrend = getForecastValues("fc_by_trend");
+  //     rolling.recommendedFC = getForecastValues("recommended_fc");
+  //     rolling.plannedFC = getForecastValues("planned_fc");
+  //     rolling.plannedShipments = getForecastValues("planned_shipments");
+  //     rolling.plannedEOH = getForecastValues("planned_eoh_cal");
+  //     rolling.grossProjection = getForecastValues("gross_projection_nav");
+  //     rolling.macysProjReceipts = getForecastValues("macys_proj_receipts");
+  //     rolling.plannedSellThru = getForecastValues("planned_sell_thru_pct");
+
+  //     console.log("Rolling forecast data:", rolling);
+  //     setRollingForecastData(rolling);
+  //   } catch (error) {
+  //     console.error("Error fetching product details:", error);
+  //     setError("Failed to load product details");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchProductDetails = async () => {
     console.log("Fetching details for product:", productId);
     setLoading(true);
@@ -259,13 +360,15 @@ const ProductDetailsView = () => {
             ? extFactorPerc.toString()
             : ""
         );
-        console.log(
-          "Responsevifawfwa",
-          response.data.product_details.external_factor_note
-        );
-        setExternalFactor(
-          response.data.product_details.external_factor_note || ""
-        );
+
+        // Fix: Check both external_factor_note and external_factor fields
+        const externalFactorNote =
+          response.data.product_details.external_factor_note ||
+          response.data.product_details.external_factor ||
+          "";
+
+        console.log("External factor note found:", externalFactorNote);
+        setExternalFactor(externalFactorNote);
       }
 
       // Extract 12-month rolling forecast dynamically with updated variable names

@@ -1470,7 +1470,7 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
       if (fallbackValue !== null && fallbackValue !== undefined) {
         value = fallbackValue;
       } else {
-        return "N/A";
+        return "No Details";
       }
     }
 
@@ -1483,14 +1483,14 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
             const parsed = JSON.parse(value);
             return Array.isArray(parsed) && parsed.length > 0
               ? parsed.join(", ")
-              : "N/A";
+              : "No Details";
           } catch {
             return value;
           }
         }
         return Array.isArray(value) && value.length > 0
           ? value.join(", ")
-          : "N/A";
+          : "No Details";
       case "percentage":
         if (config.key === "loss" && value === 0) return "0%";
         return typeof value === "number"
@@ -1529,7 +1529,7 @@ const ForecastVariableCards = ({ productData, onOpenModal }) => {
         !searchQuery ||
         variable.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
         variable.key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        String(value !== null && value !== undefined ? value : "N/A")
+        String(value !== null && value !== undefined ? value : "No Details")
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
 

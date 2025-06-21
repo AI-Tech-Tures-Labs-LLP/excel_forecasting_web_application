@@ -1,4 +1,4 @@
-// Updated productSlice.js with proper notes sorting support
+// Updated productSlice.js with note_updated_at sorting support
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
@@ -79,7 +79,7 @@ export const fetchProducts = createAsyncThunk(
         }
       });
 
-      // FIXED: Enhanced sorting parameters with proper notes sorting support
+      // UPDATED: Enhanced sorting parameters with note_updated_at support
       if (filters.sort_by) {
         let sortParam = filters.sort_by;
 
@@ -100,11 +100,12 @@ export const fetchProducts = createAsyncThunk(
       // Legacy sorting support (keeping for backward compatibility)
       // These will be overridden by the new sort_by parameter if both are present
       if (filters.notes_sort && !filters.sort_by) {
+        // UPDATED: Default to note_updated_at for better UX when using legacy sorting
         params.append(
           "sort_by",
           filters.notes_sort === "latest"
-            ? "-note_created_at"
-            : "note_created_at"
+            ? "-note_updated_at" // Changed from note_created_at to note_updated_at
+            : "note_updated_at" // Changed from note_created_at to note_updated_at
         );
       }
       if (filters.added_qty_sort && !filters.sort_by) {
@@ -295,7 +296,7 @@ const initialState = {
     },
   },
 
-  // FIXED: Enhanced filter state with proper sorting structure
+  // UPDATED: Enhanced filter state with note_updated_at sorting support
   appliedFilters: {
     category: [],
     birthstone: [],
@@ -317,8 +318,8 @@ const initialState = {
     mens_day: null,
     womens_day: null,
 
-    // FIXED: New unified sorting parameters
-    sort_by: null, // Can be: 'note_created_at', 'recommended_total_quantity', 'user_updated_final_quantity', 'updated_at'
+    // UPDATED: New unified sorting parameters with note_updated_at support
+    sort_by: null, // Can be: 'note_updated_at', 'note_created_at', 'recommended_total_quantity', 'user_updated_final_quantity', 'updated_at'
     sort_direction: null, // 'asc' or 'desc'
 
     // Legacy sorting (keeping for backward compatibility)
@@ -395,14 +396,15 @@ const productSlice = createSlice({
       });
     },
 
-    // UPDATED: Enhanced sorting action with better parameter handling
+    // UPDATED: Enhanced sorting action with note_updated_at support
     setSorting: (state, action) => {
       const { sortBy, direction } = action.payload;
 
-      // FIXED: Map frontend sort keys to backend parameters if needed
+      // UPDATED: Map frontend sort keys to backend parameters with note_updated_at support
       const sortKeyMapping = {
-        created_at: "note_created_at", // Map created_at to note_created_at
-        note_created_at: "note_created_at",
+        created_at: "note_updated_at", // Default to note_updated_at for better UX
+        note_created_at: "note_created_at", // Keep for explicit note creation time sorting
+        note_updated_at: "note_updated_at", // NEW: Support for note update time
         recommended_total_quantity: "recommended_total_quantity",
         user_updated_final_quantity: "user_updated_final_quantity",
         updated_at: "updated_at",
@@ -900,7 +902,7 @@ export const selectPageNumbers = (state) => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i);
 };
 
-// FIXED: Enhanced sorting selectors
+// UPDATED: Enhanced sorting selectors with note_updated_at support
 export const selectCurrentSort = (state) => ({
   sortBy: state.products.appliedFilters.sort_by,
   direction: state.products.appliedFilters.sort_direction,
@@ -917,15 +919,16 @@ export const selectIsSorted = (state) => {
   );
 };
 
-// Helper selector to check if a specific field is being sorted
+// UPDATED: Helper selector to check if a specific field is being sorted
 export const selectIsFieldSorted = (state, fieldName) => {
   const currentSort = selectCurrentSort(state);
 
-  // Map field names to backend sort parameters
+  // UPDATED: Map field names to backend sort parameters with note_updated_at support
   const fieldMapping = {
-    notes: "note_created_at",
-    created_at: "note_created_at",
-    note_created_at: "note_created_at",
+    notes: "note_updated_at", // Default to note_updated_at for better UX
+    created_at: "note_updated_at", // Default to note_updated_at for better UX
+    note_created_at: "note_created_at", // Explicit note creation time
+    note_updated_at: "note_updated_at", // NEW: Note update time
     recommended_total_quantity: "recommended_total_quantity",
     user_updated_final_quantity: "user_updated_final_quantity",
     updated_at: "updated_at",
@@ -968,7 +971,7 @@ export const selectHasActiveFilters = (state) => {
   });
 };
 
-// UPDATED: Enhanced debug selector with sorting info
+// UPDATED: Enhanced debug selector with sorting info including note_updated_at
 export const selectProductsDebug = (state) => ({
   storeCount: state.products.storeProducts.length,
   comCount: state.products.comProducts.length,
@@ -989,6 +992,13 @@ export const selectProductsDebug = (state) => ({
     sort_direction: state.products.appliedFilters.sort_direction,
     legacy_notes_sort: state.products.appliedFilters.notes_sort,
     legacy_added_qty_sort: state.products.appliedFilters.added_qty_sort,
+    supportedSortFields: [
+      "note_updated_at",
+      "note_created_at",
+      "recommended_total_quantity",
+      "user_updated_final_quantity",
+      "updated_at",
+    ],
   },
   sampleStoreProduct: state.products.storeProducts[0] || null,
   sampleComProduct: state.products.comProducts[0] || null,

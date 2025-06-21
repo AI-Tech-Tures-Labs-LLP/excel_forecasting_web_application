@@ -23,6 +23,7 @@ import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 
 const ProductTable = ({
+  selectedProductType,
   loading,
   currentProducts,
   productNotesData,
@@ -203,6 +204,7 @@ const ProductTable = ({
     setSelectedFilters((prev) => ({
       ...prev,
       [filterKey]: newValues,
+      product_type: selectedProductType,
     }));
     setCurrentPage(1);
   };
@@ -211,7 +213,7 @@ const ProductTable = ({
   const handleSortChange = (sortKey, direction) => {
     // Map frontend sort keys to backend API parameters
     const sortKeyMapping = {
-      note_created_at: "note_created_at", // Use note_created_at for notes sorting
+      note_updated_at: "note_updated_at", // NEW: Support for note update time
       created_at: "note_created_at", // Fallback mapping
       recommended_total_quantity: "recommended_total_quantity",
       user_updated_final_quantity: "user_updated_final_quantity",
@@ -229,6 +231,7 @@ const ProductTable = ({
       added_qty_sort: null,
       final_qty_sort: null,
       last_reviewed_sort: null,
+      product_type: selectedProductType,
     }));
     setCurrentPage(1);
   };
@@ -240,7 +243,7 @@ const ProductTable = ({
 
     // Map display sort keys to backend parameters for comparison
     const sortKeyMapping = {
-      note_created_at: "note_created_at",
+      note_updated_at: "note_updated_at",
       created_at: "note_created_at",
       recommended_total_quantity: "recommended_total_quantity",
       user_updated_final_quantity: "user_updated_final_quantity",
@@ -264,7 +267,7 @@ const ProductTable = ({
   const isColumnSorted = (sortKey) => {
     const currentSort = selectedFilters?.sort_by;
     const sortKeyMapping = {
-      note_created_at: "note_created_at",
+      note_updated_at: "note_updated_at",
       created_at: "note_created_at",
       recommended_total_quantity: "recommended_total_quantity",
       user_updated_final_quantity: "user_updated_final_quantity",
@@ -641,6 +644,7 @@ const ProductTable = ({
                               ...filteredCategories,
                             ]),
                           ],
+                          product_type: selectedProductType,
                         }));
                       }}
                       className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
@@ -652,6 +656,7 @@ const ProductTable = ({
                         setSelectedFilters((prev) => ({
                           ...prev,
                           category: [],
+                          product_type: selectedProductType,
                         }))
                       }
                       className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -812,6 +817,7 @@ const ProductTable = ({
                               ...allSelections,
                             ]),
                           ],
+                          product_type: selectedProductType,
                         }));
                       }}
                       className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
@@ -823,6 +829,7 @@ const ProductTable = ({
                         setSelectedFilters((prev) => ({
                           ...prev,
                           assigned_to: [],
+                          product_type: selectedProductType,
                         }))
                       }
                       className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -1002,13 +1009,13 @@ const ProductTable = ({
                   setNotesDropdownOpen(!notesDropdownOpen);
                 }}
                 className={`flex items-center gap-2 hover:text-gray-700 transition-colors ${
-                  isColumnSorted("note_created_at")
+                  isColumnSorted("note_updated_at")
                     ? "text-indigo-600 font-semibold"
                     : ""
                 }`}
               >
                 <span>Notes</span>
-                {getSortIcon("note_created_at")}
+                {getSortIcon("note_updated_at")}
               </button>
 
               {notesDropdownOpen && (
@@ -1019,11 +1026,11 @@ const ProductTable = ({
                   <div className="p-2">
                     <button
                       onClick={() => {
-                        handleSortChange("note_created_at", "desc");
+                        handleSortChange("note_updated_at", "desc");
                         setNotesDropdownOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
-                        selectedFilters?.sort_by === "note_created_at" &&
+                        selectedFilters?.sort_by === "note_updated_at" &&
                         selectedFilters?.sort_direction === "desc"
                           ? "text-indigo-600 bg-indigo-50"
                           : "text-gray-700"
@@ -1034,11 +1041,11 @@ const ProductTable = ({
                     </button>
                     <button
                       onClick={() => {
-                        handleSortChange("note_created_at", "asc");
+                        handleSortChange("note_updated_at", "asc");
                         setNotesDropdownOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-50 flex items-center gap-2 ${
-                        selectedFilters?.sort_by === "note_created_at" &&
+                        selectedFilters?.sort_by === "note_updated_at" &&
                         selectedFilters?.sort_direction === "asc"
                           ? "text-indigo-600 bg-indigo-50"
                           : "text-gray-700"
@@ -1047,7 +1054,7 @@ const ProductTable = ({
                       <ArrowUp size={14} />
                       Oldest Notes First
                     </button>
-                    {selectedFilters?.sort_by === "note_created_at" && (
+                    {selectedFilters?.sort_by === "note_updated_at" && (
                       <div className="border-t border-gray-100 pt-2 mt-2">
                         <button
                           onClick={() => {
@@ -1055,6 +1062,7 @@ const ProductTable = ({
                               ...prev,
                               sort_by: null,
                               sort_direction: null,
+                              product_type: selectedProductType,
                             }));
                             setNotesDropdownOpen(false);
                           }}
@@ -1150,6 +1158,8 @@ const ProductTable = ({
                               ...filteredMonths,
                             ]),
                           ],
+
+                          product_type: selectedProductType,
                         }));
                       }}
                       className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
@@ -1161,6 +1171,7 @@ const ProductTable = ({
                         setSelectedFilters((prev) => ({
                           ...prev,
                           forecast_month: [],
+                          product_type: selectedProductType,
                         }))
                       }
                       className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -1299,6 +1310,7 @@ const ProductTable = ({
                               ...prev,
                               sort_by: null,
                               sort_direction: null,
+                              product_type: selectedProductType,
                             }));
                             setAddedQtyDropdownOpen(false);
                           }}
@@ -1356,6 +1368,7 @@ const ProductTable = ({
                         setSelectedFilters((prev) => ({
                           ...prev,
                           status: statusOptions.map((opt) => opt.value),
+                          product_type: selectedProductType,
                         }));
                       }}
                       className="px-3 py-1 text-xs bg-indigo-100 text-indigo-700 rounded hover:bg-indigo-200 transition-colors"
@@ -1367,6 +1380,7 @@ const ProductTable = ({
                         setSelectedFilters((prev) => ({
                           ...prev,
                           status: [],
+                          product_type: selectedProductType,
                         }))
                       }
                       className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
@@ -1506,6 +1520,7 @@ const ProductTable = ({
                               ...prev,
                               sort_by: null,
                               sort_direction: null,
+                              product_type: selectedProductType,
                             }));
                             setFinalQtyDropdownOpen(false);
                           }}
@@ -1665,8 +1680,8 @@ const ProductTable = ({
 };
 
 // Status Dropdown Component
-const StatusDropdownWithBadge = ({ product }) => {
-  const currentStatus = product.status;
+const StatusDropdownWithBadge = ({ product, sheetId, onStatusChange }) => {
+  const [currentStatus, setCurrentStatus] = useState(product.status);
 
   const statusConfig = {
     reviewed: {
@@ -1698,13 +1713,52 @@ const StatusDropdownWithBadge = ({ product }) => {
 
   const { icon, bg, text, label } = statusConfig[currentStatus] || fallback;
 
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.value;
+
+    try {
+      await axios.patch(
+        `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${
+          product.product_id
+        }/`,
+        {
+          sheet_id: sheetId,
+          product_details: {
+            status: newStatus,
+          },
+        }
+      );
+      setCurrentStatus(newStatus);
+      if (onStatusChange) onStatusChange(newStatus);
+    } catch (error) {
+      console.error("Failed to update status:", error);
+    }
+  };
+
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}
-    >
-      {icon}
-      {label}
-    </span>
+    <div className="flex items-center gap-2">
+      {/* <select
+        value={currentStatus}
+        onChange={handleStatusChange}
+        className={`text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 border ${
+          currentStatus === "reviewed"
+            ? "bg-green-100 text-green-800"
+            : currentStatus === "pending"
+            ? "bg-yellow-100 text-yellow-800"
+            : "bg-red-100 text-red-800"
+        }`}
+      >
+        <option value="not_reviewed">Not Reviewed</option>
+        <option value="pending">Pending</option>
+        <option value="reviewed">Reviewed</option>
+      </select> */}
+      <div
+        className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium border ${bg} ${text}`}
+      >
+        {icon}
+        {label}
+      </div>
+    </div>
   );
 };
 

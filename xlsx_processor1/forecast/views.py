@@ -46,6 +46,7 @@ import logging
 from .pagination import ProductPagination
 from django.db.models import Prefetch
 from django.db.models import Count, Q, Prefetch
+from django.db.models import OuterRef, Subquery
 
 logger = logging.getLogger('django')
 def get_product_forecast_data(pid,sheet_object):
@@ -487,12 +488,23 @@ class ForecastViewSet(ViewSet):
             #     queryset = queryset.annotate(latest_note_date=Max(f"notes__{note_field}"))
             #     direction = "-" if sort_by.startswith("-") else ""
             #     queryset = queryset.order_by(f"{direction}latest_note_date")
-            if sort_by.startswith("note_") or sort_by.startswith("-note_"):
-                is_desc = sort_by.startswith("-")
-                note_field = sort_by.replace("note_", "").replace("-", "")
-                queryset = queryset.annotate(latest_note_date=Max(f"notes__{note_field}"))
-                direction = "-" if is_desc else ""
-                queryset = queryset.order_by(f"{direction}latest_note_date")
+            if sort_by in ["note_updated_at", "-note_updated_at"]:
+                # Create subquery to fetch exact latest updated_at per product
+                latest_updated_subquery = ForecastNote.objects.filter(
+                    productdetail=OuterRef("pk")
+                ).order_by(
+                    "updated_at" if sort_by == "note_updated_at" else "-updated_at"
+                ).values("updated_at")[:1]
+ 
+                # Annotate with the exact updated_at timestamp
+                queryset = queryset.annotate(
+                    latest_note_time=Subquery(latest_updated_subquery)
+                ).exclude(
+                    latest_note_time=None  # Exclude products with no notes
+                ).order_by(
+                    "latest_note_time" if sort_by == "note_updated_at" else "-latest_note_time"
+                )
+         
             else:
                 queryset = queryset.order_by(sort_by)
 

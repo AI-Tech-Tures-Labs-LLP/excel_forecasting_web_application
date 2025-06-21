@@ -222,6 +222,90 @@ const CriticalAdjustments = ({
     }
   };
 
+  // const handleSaveCriticalInputs = async () => {
+  //   // Validate inputs before submission
+  //   if (!validateInputs()) {
+  //     return;
+  //   }
+
+  //   setIsSubmitting(true);
+
+  //   try {
+  //     const payload = {
+  //       sheet_id: sheetId,
+  //       product_details: {
+  //         user_updated_final_quantity: userAddedQuantity
+  //           ? parseFloat(userAddedQuantity)
+  //           : null,
+  //         external_factor_percentage: externalFactorPercentage
+  //           ? parseFloat(externalFactorPercentage)
+  //           : null,
+  //         external_factor: externalFactor || null,
+  //         external_factor_note: externalFactor.trim() || null,
+  //       },
+  //       tagged_to: [],
+  //     };
+
+  //     console.log("Saving critical inputs:", payload);
+
+  //     const response = await axios.patch(
+  //       `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${productId}/`,
+  //       payload
+  //     );
+
+  //     console.log("Save response:", response.data);
+
+  //     if (response.status === 200 || response.status === 201) {
+  //       if (response.data.product_details) {
+  //         setUserAddedQuantity(
+  //           response.data.product_details.user_updated_final_quantity?.toString() ||
+  //             userAddedQuantity
+  //         );
+  //         setExternalFactorPercentage(
+  //           response.data.product_details.external_factor_percentage?.toString() ||
+  //             externalFactorPercentage
+  //         );
+  //         setExternalFactor(
+  //           response.data.product_details.external_factor || externalFactor
+  //         );
+  //       }
+
+  //       if (onSave) onSave();
+
+  //       if (
+  //         fetchProducts &&
+  //         dispatch &&
+  //         selectedProductType &&
+  //         selectedFilters
+  //       ) {
+  //         dispatch(
+  //           fetchProducts({
+  //             productType: selectedProductType,
+  //             filters: selectedFilters,
+  //             sheetId: sheetId,
+  //           })
+  //         );
+  //       }
+
+  //       // Clear any remaining errors after successful save
+  //       setErrors({});
+  //     }
+  //   } catch (error) {
+  //     console.error("Error saving critical inputs:", error);
+  //     console.error("Error response:", error.response?.data);
+
+  //     // Show more user-friendly error messages
+  //     const errorMessage = error.response?.data?.message || error.message;
+  //     setErrors({
+  //       submit: `Failed to save: ${errorMessage}`,
+  //     });
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
+
+  // Check if form has valid data to save
+
   const handleSaveCriticalInputs = async () => {
     // Validate inputs before submission
     if (!validateInputs()) {
@@ -240,8 +324,8 @@ const CriticalAdjustments = ({
           external_factor_percentage: externalFactorPercentage
             ? parseFloat(externalFactorPercentage)
             : null,
-          external_factor: externalFactor || null,
-          external_factor_note: externalFactor.trim() || null,
+          // Fix: Only save to external_factor_note field
+          external_factor_note: externalFactor ? externalFactor.trim() : null,
         },
         tagged_to: [],
       };
@@ -265,8 +349,11 @@ const CriticalAdjustments = ({
             response.data.product_details.external_factor_percentage?.toString() ||
               externalFactorPercentage
           );
+          // Fix: Read from external_factor_note field
           setExternalFactor(
-            response.data.product_details.external_factor || externalFactor
+            response.data.product_details.external_factor_note ||
+              response.data.product_details.external_factor ||
+              externalFactor
           );
         }
 
@@ -304,7 +391,6 @@ const CriticalAdjustments = ({
     }
   };
 
-  // Check if form has valid data to save
   const hasDataToSave =
     (userAddedQuantity && userAddedQuantity.trim() !== "") ||
     (externalFactor && externalFactor.trim() !== "");

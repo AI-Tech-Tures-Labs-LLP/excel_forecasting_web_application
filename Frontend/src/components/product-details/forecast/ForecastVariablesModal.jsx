@@ -672,7 +672,7 @@ const ForecastVariablesModal = ({
                     )?.toLocaleString() || "N/A"}
                   </div>
                 </div>
-                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                {/* <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                   <span className="text-sm font-medium text-gray-700">
                     Difference
                   </span>
@@ -682,7 +682,7 @@ const ForecastVariablesModal = ({
                       : trendData.tyComSales - trendData.lyComSales
                     )?.toLocaleString() || "N/A"}
                   </div>
-                </div>
+                </div> */}
                 <div className="border border-emerald-200 rounded-lg p-4 bg-emerald-50">
                   <span className="text-sm font-medium text-emerald-700">
                     Trend

@@ -420,20 +420,71 @@ function ProductSelector() {
     );
   };
 
+  // const handleDownloadFromS3Url = async () => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${API_BASE_URL}/forecast/export-summary/?sheet_id=${sheetId}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+  //         },
+  //       }
+  //     );
+  //     const downloadUrl = res.data.download_url;
+  //     window.open(downloadUrl, "_blank", "noopener,noreferrer");
+  //   } catch (err) {
+  //     console.error("Failed to download:", err);
+  //   }
+  // };
+
   const handleDownloadFromS3Url = async () => {
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/forecast/export-summary/?sheet_id=${sheetId}`,
+        `${
+          import.meta.env.VITE_API_BASE_URL
+        }/forecast/final-quantity-report/?sheet_id=${sheetId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           },
         }
       );
+
       const downloadUrl = res.data.download_url;
-      window.open(downloadUrl, "_blank", "noopener,noreferrer");
+
+      if (!downloadUrl) {
+        throw new Error("No download URL received from server");
+      }
+
+      // Create a temporary link element and trigger download
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = "final_quantity_report.xlsx"; // Optional: set a default filename
+      link.target = "_blank";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      dispatch(
+        addToast({
+          type: "success",
+          message: "Download started successfully",
+          duration: 3000,
+        })
+      );
     } catch (err) {
       console.error("Failed to download:", err);
+
+      dispatch(
+        addToast({
+          type: "error",
+          message: `Failed to download report: ${
+            err.message || "Please try again."
+          }`,
+          duration: 5000,
+        })
+      );
     }
   };
 
@@ -730,6 +781,7 @@ function ProductSelector() {
               onViewDetails={(product) => {
                 navigate(`/products/${product.sheet}/${product.product_id}`);
               }}
+              selectedProductType={selectedProductType}
               onOpenNotes={handleOpenNotes}
               searchQuery={searchQuery}
               selectedFilters={selectedFilters}
