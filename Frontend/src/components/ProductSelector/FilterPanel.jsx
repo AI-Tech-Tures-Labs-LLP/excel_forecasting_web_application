@@ -381,28 +381,31 @@ const FilterPanel = ({
                 </div>
 
                 <div className="space-y-2">
-                  {availableFilters.is_red_box_items?.map((item) => (
+                  {[
+                    { label: "Yes", value: true },
+                    { label: "No", value: false },
+                  ].map(({ label, value }) => (
                     <label
-                      key={item}
+                      key={label}
                       className="flex items-center gap-3 p-3 border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer transition-all duration-200 hover:border-red-300 bg-red-50/30"
                     >
                       <input
                         type="checkbox"
                         checked={
-                          selectedFilters.is_red_box_item?.includes(item) ||
+                          selectedFilters.is_red_box_item?.includes(value) ||
                           false
                         }
                         onChange={(e) =>
                           handleMultiSelectFilterChange(
                             "is_red_box_item",
-                            item,
+                            value,
                             e.target.checked
                           )
                         }
                         className="w-4 h-4 text-red-600 border-red-300 rounded focus:ring-red-500 focus:ring-2"
                       />
                       <span className="text-sm font-semibold text-red-800">
-                        {item}
+                        {label}
                       </span>
                     </label>
                   ))}

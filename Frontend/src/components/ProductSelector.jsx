@@ -469,7 +469,7 @@ function ProductSelector() {
       dispatch(
         addToast({
           type: "success",
-          message: "Download started successfully",
+          message: "Downloaded successfully",
           duration: 3000,
         })
       );
