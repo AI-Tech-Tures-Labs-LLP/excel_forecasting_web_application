@@ -21,6 +21,22 @@ const FilterPanel = ({
 }) => {
   const [activeTab, setActiveTab] = useState("basic");
 
+  // Static birthstone data
+  const BIRTHSTONE_DATA = [
+    { month: 1, monthName: "January", stone: "Garnet" },
+    { month: 2, monthName: "February", stone: "Amethyst" },
+    { month: 3, monthName: "March", stone: "Aquamarine" },
+    { month: 4, monthName: "April", stone: "Diamond" },
+    { month: 5, monthName: "May", stone: "Emerald" },
+    { month: 6, monthName: "June", stone: "Pearl" },
+    { month: 7, monthName: "July", stone: "Ruby" },
+    { month: 8, monthName: "August", stone: "Peridot" },
+    { month: 9, monthName: "September", stone: "Sapphire" },
+    { month: 10, monthName: "October", stone: "Opal" },
+    { month: 11, monthName: "November", stone: "Citrine" },
+    { month: 12, monthName: "December", stone: "Tanzanite" },
+  ];
+
   // Boolean filter options
   const booleanOptions = [
     { value: "", label: "All" },
@@ -263,7 +279,7 @@ const FilterPanel = ({
           {/* Basic Filters Tab */}
           {activeTab === "basic" && (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {/* Birthstones Filter */}
+              {/* Birthstones Filter - Fixed uppercase handling */}
               {(selectedProductType === "store" ||
                 selectedProductType === "omni") && (
                 <div className="bg-white border-2 border-purple-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 hover:border-purple-300">
@@ -288,42 +304,56 @@ const FilterPanel = ({
 
                   <div className="border border-purple-200 rounded-lg p-3 bg-purple-50/30 max-h-64 overflow-y-auto">
                     <div className="space-y-2">
-                      {availableFilters.birthstones?.map((birthstone) => (
-                        <label
-                          key={birthstone}
-                          className="flex items-center gap-3 p-2 hover:bg-purple-100 rounded-lg cursor-pointer transition-colors group"
-                        >
-                          <div className="relative">
-                            <input
-                              type="checkbox"
-                              checked={
-                                selectedFilters.birthstone?.includes(
-                                  birthstone
-                                ) || false
-                              }
-                              onChange={(e) =>
-                                handleMultiSelectFilterChange(
-                                  "birthstone",
-                                  birthstone,
-                                  e.target.checked
-                                )
-                              }
-                              className="w-4 h-4 text-purple-600 border-purple-300 rounded focus:ring-purple-500 focus:ring-2"
-                            />
-                            {selectedFilters.birthstone?.includes(
-                              birthstone
-                            ) && (
-                              <Check
-                                size={12}
-                                className="absolute inset-0 m-auto text-white pointer-events-none"
+                      {BIRTHSTONE_DATA.map((birthstoneData) => {
+                        const uppercaseStone =
+                          birthstoneData.stone.toUpperCase();
+                        return (
+                          <label
+                            key={birthstoneData.stone}
+                            className="flex items-center gap-3 p-2 hover:bg-purple-100 rounded-lg cursor-pointer transition-colors group"
+                          >
+                            <div className="relative">
+                              <input
+                                type="checkbox"
+                                checked={
+                                  selectedFilters.birthstone?.includes(
+                                    uppercaseStone
+                                  ) || false
+                                }
+                                onChange={(e) => {
+                                  console.log("Birthstone filter change:", {
+                                    stone: birthstoneData.stone,
+                                    uppercaseStone: uppercaseStone,
+                                    checked: e.target.checked,
+                                  });
+                                  handleMultiSelectFilterChange(
+                                    "birthstone",
+                                    uppercaseStone,
+                                    e.target.checked
+                                  );
+                                }}
+                                className="w-4 h-4 text-purple-600 border-purple-300 rounded focus:ring-purple-500 focus:ring-2"
                               />
-                            )}
-                          </div>
-                          <span className="text-sm text-purple-800 group-hover:text-purple-900 font-medium capitalize">
-                            {birthstone.toLowerCase()}
-                          </span>
-                        </label>
-                      ))}
+                              {selectedFilters.birthstone?.includes(
+                                uppercaseStone
+                              ) && (
+                                <Check
+                                  size={12}
+                                  className="absolute inset-0 m-auto text-white pointer-events-none"
+                                />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <span className="text-sm text-purple-800 group-hover:text-purple-900 font-medium">
+                                {birthstoneData.stone}
+                              </span>
+                              <span className="text-xs text-purple-600 ml-2">
+                                ({birthstoneData.monthName})
+                              </span>
+                            </div>
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

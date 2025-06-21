@@ -4,7 +4,124 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Build query parameters for the enhanced filter API with pagination
+// // Build query parameters for the enhanced filter API with pagination
+// export const buildFilterParams = (
+//   filters,
+//   productType,
+//   page = 1,
+//   pageSize = 10
+// ) => {
+//   const params = new URLSearchParams();
+
+//   // Add pagination parameters
+//   params.append("page", page.toString());
+//   params.append("page_size", pageSize.toString());
+
+//   // Multi-select filters that accept arrays
+//   const multiSelectFilters = {
+//     category: filters.category || [],
+//     birthstone: filters.birthstone || [],
+//     is_red_box_item: filters.is_red_box_item || [],
+//     vdf_status: filters.vdf_status || [],
+//     tagged_to: filters.tagged_to || [],
+//     forecast_month: filters.forecast_month || [],
+//     status: filters.status || [],
+//     assigned_to: filters.assigned_to || [],
+//   };
+
+//   // Add multi-select filters
+//   Object.entries(multiSelectFilters).forEach(([key, values]) => {
+//     if (Array.isArray(values) && values.length > 0) {
+//       values.forEach((value) => {
+//         // Convert UI values to API format
+//         if (key === "is_red_box_item") {
+//           const apiValue =
+//             value === "Yes" ? "true" : value === "No" ? "false" : value;
+//           params.append(key, apiValue);
+//         } else if (key === "vdf_status") {
+//           const apiValue =
+//             value === "Active"
+//               ? "true"
+//               : value === "Inactive"
+//               ? "false"
+//               : value;
+//           params.append(key, apiValue);
+//         } else {
+//           params.append(key, value);
+//         }
+//       });
+//     }
+//   });
+
+//   // Single-select boolean filters
+//   const booleanFilters = [
+//     "is_considered_birthstone",
+//     "is_added_quantity_using_macys_soq",
+//     "is_below_min_order",
+//     "is_over_macys_soq",
+//     "is_added_only_to_balance_macys_soq",
+//     "is_need_to_review_first",
+//     "valentine_day",
+//     "mothers_day",
+//     "fathers_day",
+//     "mens_day",
+//     "womens_day",
+//   ];
+
+//   booleanFilters.forEach((filterKey) => {
+//     const value = filters[filterKey];
+//     if (
+//       value !== null &&
+//       value !== undefined &&
+//       value !== "" &&
+//       value !== "clear"
+//     ) {
+//       params.append(filterKey, value);
+//     }
+//   });
+
+//   // Add sorting parameters
+//   if (filters.notes_sort) {
+//     params.append(
+//       "ordering",
+//       filters.notes_sort === "latest" ? "-created_at" : "created_at"
+//     );
+//   }
+//   if (filters.added_qty_sort) {
+//     params.append(
+//       "ordering",
+//       filters.added_qty_sort === "asc"
+//         ? "recommended_total_quantity"
+//         : "-recommended_total_quantity"
+//     );
+//   }
+//   if (filters.final_qty_sort) {
+//     params.append(
+//       "ordering",
+//       filters.final_qty_sort === "asc"
+//         ? "user_updated_final_quantity"
+//         : "-user_updated_final_quantity"
+//     );
+//   }
+//   if (filters.last_reviewed_sort) {
+//     params.append(
+//       "ordering",
+//       filters.last_reviewed_sort === "newest" ? "-updated_at" : "updated_at"
+//     );
+//   }
+
+//   // Add search query
+//   if (filters.search) {
+//     params.append("search", filters.search);
+//   }
+
+//   // Add product type if specified
+//   if (productType) {
+//     params.append("product_type", productType);
+//   }
+
+//   return params;
+// };
 export const buildFilterParams = (
   filters,
   productType,
@@ -13,11 +130,11 @@ export const buildFilterParams = (
 ) => {
   const params = new URLSearchParams();
 
-  // Add pagination parameters
+  // Pagination
   params.append("page", page.toString());
   params.append("page_size", pageSize.toString());
 
-  // Multi-select filters that accept arrays
+  // Multi-select filters
   const multiSelectFilters = {
     category: filters.category || [],
     birthstone: filters.birthstone || [],
@@ -29,31 +146,19 @@ export const buildFilterParams = (
     assigned_to: filters.assigned_to || [],
   };
 
-  // Add multi-select filters
   Object.entries(multiSelectFilters).forEach(([key, values]) => {
-    if (Array.isArray(values) && values.length > 0) {
-      values.forEach((value) => {
-        // Convert UI values to API format
-        if (key === "is_red_box_item") {
-          const apiValue =
-            value === "Yes" ? "true" : value === "No" ? "false" : value;
-          params.append(key, apiValue);
-        } else if (key === "vdf_status") {
-          const apiValue =
-            value === "Active"
-              ? "true"
-              : value === "Inactive"
-              ? "false"
-              : value;
-          params.append(key, apiValue);
-        } else {
-          params.append(key, value);
-        }
-      });
-    }
+    values.forEach((value) => {
+      let processed = value;
+      if (key === "is_red_box_item" || key === "vdf_status") {
+        processed = value === "Yes" ? "true" : value === "No" ? "false" : value;
+      } else if (key === "birthstone") {
+        processed = value.toString().trim().toUpperCase(); // ✅ Ensure full uppercase
+      }
+      params.append(key, processed);
+    });
   });
 
-  // Single-select boolean filters
+  // Boolean single-select filters
   const booleanFilters = [
     "is_considered_birthstone",
     "is_added_quantity_using_macys_soq",
@@ -68,55 +173,68 @@ export const buildFilterParams = (
     "womens_day",
   ];
 
-  booleanFilters.forEach((filterKey) => {
-    const value = filters[filterKey];
+  booleanFilters.forEach((key) => {
+    const value = filters[key];
     if (
       value !== null &&
       value !== undefined &&
       value !== "" &&
       value !== "clear"
     ) {
-      params.append(filterKey, value);
+      params.append(key, value);
     }
   });
 
-  // Add sorting parameters
-  if (filters.notes_sort) {
-    params.append(
-      "ordering",
-      filters.notes_sort === "latest" ? "-created_at" : "created_at"
-    );
-  }
-  if (filters.added_qty_sort) {
-    params.append(
-      "ordering",
-      filters.added_qty_sort === "asc"
-        ? "recommended_total_quantity"
-        : "-recommended_total_quantity"
-    );
-  }
-  if (filters.final_qty_sort) {
-    params.append(
-      "ordering",
-      filters.final_qty_sort === "asc"
-        ? "user_updated_final_quantity"
-        : "-user_updated_final_quantity"
-    );
-  }
-  if (filters.last_reviewed_sort) {
-    params.append(
-      "ordering",
-      filters.last_reviewed_sort === "newest" ? "-updated_at" : "updated_at"
-    );
+  // ✅ Enhanced sorting (new format)
+  if (filters.sort_by) {
+    const sortKeyMap = {
+      created_at: "note_created_at",
+      notes: "note_created_at",
+      note_created_at: "note_created_at",
+      recommended_total_quantity: "recommended_total_quantity",
+      user_updated_final_quantity: "user_updated_final_quantity",
+      updated_at: "updated_at",
+    };
+
+    const backendSortKey = sortKeyMap[filters.sort_by] || filters.sort_by;
+    const sortDirection = filters.sort_direction === "desc" ? "-" : "";
+    params.append("sort_by", `${sortDirection}${backendSortKey}`);
+  } else {
+    // ✅ Legacy fallback sorting (if new `sort_by` is not used)
+    if (filters.notes_sort) {
+      params.append(
+        "sort_by",
+        filters.notes_sort === "latest" ? "-note_created_at" : "note_created_at"
+      );
+    } else if (filters.added_qty_sort) {
+      params.append(
+        "sort_by",
+        filters.added_qty_sort === "asc"
+          ? "recommended_total_quantity"
+          : "-recommended_total_quantity"
+      );
+    } else if (filters.final_qty_sort) {
+      params.append(
+        "sort_by",
+        filters.final_qty_sort === "asc"
+          ? "user_updated_final_quantity"
+          : "-user_updated_final_quantity"
+      );
+    } else if (filters.last_reviewed_sort) {
+      params.append(
+        "sort_by",
+        filters.last_reviewed_sort === "newest" ? "-updated_at" : "updated_at"
+      );
+    }
   }
 
-  // Add search query
-  if (filters.search) {
-    params.append("search", filters.search);
+  // Search
+  if (filters.search && filters.search.trim()) {
+    params.append("search", filters.search.trim());
   }
 
-  // Add product type if specified
-  if (productType) {
+  // Product type
+  if (productType && productType !== "all") {
     params.append("product_type", productType);
   }
 

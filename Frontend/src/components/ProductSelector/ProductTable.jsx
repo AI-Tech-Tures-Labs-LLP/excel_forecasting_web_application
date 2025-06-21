@@ -1665,8 +1665,8 @@ const ProductTable = ({
 };
 
 // Status Dropdown Component
-const StatusDropdownWithBadge = ({ product, sheetId, onStatusChange }) => {
-  const [currentStatus, setCurrentStatus] = useState(product.status);
+const StatusDropdownWithBadge = ({ product }) => {
+  const currentStatus = product.status;
 
   const statusConfig = {
     reviewed: {
@@ -1698,46 +1698,13 @@ const StatusDropdownWithBadge = ({ product, sheetId, onStatusChange }) => {
 
   const { icon, bg, text, label } = statusConfig[currentStatus] || fallback;
 
-  const handleStatusChange = async (e) => {
-    const newStatus = e.target.value;
-
-    try {
-      await axios.patch(
-        `${import.meta.env.VITE_API_BASE_URL}/forecast/product/${
-          product.product_id
-        }/`,
-        {
-          sheet_id: sheetId,
-          product_details: {
-            status: newStatus,
-          },
-        }
-      );
-      setCurrentStatus(newStatus);
-      if (onStatusChange) onStatusChange(newStatus);
-    } catch (error) {
-      console.error("Failed to update status:", error);
-    }
-  };
-
   return (
-    <div className="flex items-center gap-2">
-      <select
-        value={currentStatus}
-        onChange={handleStatusChange}
-        className={`text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 border ${
-          currentStatus === "reviewed"
-            ? "bg-green-100 text-green-800"
-            : currentStatus === "pending"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-red-100 text-red-800"
-        }`}
-      >
-        <option value="not_reviewed">Not Reviewed</option>
-        <option value="pending">Pending</option>
-        <option value="reviewed">Reviewed</option>
-      </select>
-    </div>
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bg} ${text}`}
+    >
+      {icon}
+      {label}
+    </span>
   );
 };
 

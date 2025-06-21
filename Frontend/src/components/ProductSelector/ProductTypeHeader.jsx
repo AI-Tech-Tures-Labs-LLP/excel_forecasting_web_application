@@ -61,9 +61,9 @@ const ProductTypeHeader = ({
             >
               <IconComponent size={18} />
               {config.label}
-              <span className="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+              {/* <span className="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
                 {getProductCount(type)}
-              </span>
+              </span> */}
             </button>
           );
         })}

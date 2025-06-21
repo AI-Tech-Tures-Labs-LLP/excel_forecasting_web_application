@@ -259,8 +259,13 @@ const ProductDetailsView = () => {
             ? extFactorPerc.toString()
             : ""
         );
-
-        setExternalFactor(response.data.product_details.external_factor || "");
+        console.log(
+          "Responsevifawfwa",
+          response.data.product_details.external_factor_note
+        );
+        setExternalFactor(
+          response.data.product_details.external_factor_note || ""
+        );
       }
 
       // Extract 12-month rolling forecast dynamically with updated variable names
