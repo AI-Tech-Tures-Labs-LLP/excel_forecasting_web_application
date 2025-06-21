@@ -1823,33 +1823,29 @@ const StatusDropdownWithBadge = ({ product, sheetId, onStatusChange }) => {
 
   const statusConfig = {
     reviewed: {
-      icon: <CheckCircle size={12} className="mr-1" />,
-      bg: "bg-green-100",
-      text: "text-green-800",
+      icon: <CheckCircle size={14} className="text-green-600" />,
+      bg: "bg-green-100 text-green-800",
       label: "Reviewed",
     },
     not_reviewed: {
-      icon: <AlertCircle size={12} className="mr-1" />,
-      bg: "bg-red-100",
-      text: "text-red-800",
+      icon: <AlertCircle size={14} className="text-red-600" />,
+      bg: "bg-red-100 text-red-800",
       label: "Not Reviewed",
     },
     pending: {
-      icon: <Clock size={12} className="mr-1" />,
-      bg: "bg-yellow-100",
-      text: "text-yellow-800",
+      icon: <Clock size={14} className="text-yellow-600" />,
+      bg: "bg-yellow-100 text-yellow-800",
       label: "Pending",
     },
   };
 
   const fallback = {
-    icon: <AlertCircle size={12} className="mr-1" />,
-    bg: "bg-gray-100",
-    text: "text-gray-800",
+    icon: <AlertCircle size={14} className="text-gray-600" />,
+    bg: "bg-gray-100 text-gray-800",
     label: "Unknown",
   };
 
-  const { icon, bg, text, label } = statusConfig[currentStatus] || fallback;
+  const { icon, bg, label } = statusConfig[currentStatus] || fallback;
 
   const handleStatusChange = async (e) => {
     const newStatus = e.target.value;
@@ -1874,24 +1870,11 @@ const StatusDropdownWithBadge = ({ product, sheetId, onStatusChange }) => {
   };
 
   return (
-    <div className="flex items-center gap-2">
-      {/* <select
-        value={currentStatus}
-        onChange={handleStatusChange}
-        className={`text-xs rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500 border ${
-          currentStatus === "reviewed"
-            ? "bg-green-100 text-green-800"
-            : currentStatus === "pending"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-red-100 text-red-800"
-        }`}
-      >
-        <option value="not_reviewed">Not Reviewed</option>
-        <option value="pending">Pending</option>
-        <option value="reviewed">Reviewed</option>
-      </select> */}
+    <div
+      className={`inline-flex items-center gap-2 px-2 py-1 rounded-full ${bg}`}
+    >
       {icon}
-      {label}
+      <span className="text-xs font-medium">{label}</span>
     </div>
   );
 };

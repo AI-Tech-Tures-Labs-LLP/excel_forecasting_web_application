@@ -276,12 +276,12 @@ const SearchBar = ({
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        {/* <div className="flex items-center space-x-2">
                           <button className="inline-flex items-center px-2 py-1 rounded-md bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 transition-colors">
                             <Eye className="w-3 h-3 mr-1" />
                             View
                           </button>
-                        </div>
+                        </div> */}
                       </div>
                     </div>
                   </div>
