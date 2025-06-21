@@ -1175,6 +1175,57 @@ import { useNavigate } from "react-router-dom";
 const LoadingModal = ({ isOpen, progress }) => {
   if (!isOpen) return null;
 
+  // More detailed progress phases with realistic timing
+  const getProgressPhase = (progress) => {
+    if (progress < 25) {
+      return {
+        title: "Uploading files...",
+        description: "Securely transferring your forecast data",
+        icon: "📤",
+        color: "blue",
+      };
+    } else if (progress < 50) {
+      return {
+        title: "Processing data structure...",
+        description: "Analyzing categories and analyst assignments",
+        icon: "⚙️",
+        color: "indigo",
+      };
+    } else if (progress < 85) {
+      return {
+        title: "Generating analyst forecasts...",
+        description: "Creating personalized forecasts for each analyst",
+        icon: "📊",
+        color: "purple",
+      };
+    } else if (progress < 95) {
+      return {
+        title: "Creating download files...",
+        description: "Packaging forecast data into downloadable format",
+        icon: "📁",
+        color: "green",
+      };
+    } else {
+      return {
+        title: "Almost done...",
+        description: "Finalizing your forecast files",
+        icon: "✅",
+        color: "emerald",
+      };
+    }
+  };
+
+  const currentPhase = getProgressPhase(progress);
+
+  // Estimated time remaining (approximate)
+  const getEstimatedTime = (progress) => {
+    if (progress < 25) return "2-3 minutes";
+    if (progress < 50) return "90-120 seconds";
+    if (progress < 85) return "45-75 seconds";
+    if (progress < 95) return "15-30 seconds";
+    return "Few seconds";
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
@@ -1187,7 +1238,7 @@ const LoadingModal = ({ isOpen, progress }) => {
               Generating Forecasts
             </h3>
             <p className="text-gray-600 text-sm">
-              Creating full forecasts for each assigned analyst...
+              Creating comprehensive forecasts for each assigned analyst...
             </p>
           </div>
 
@@ -1198,49 +1249,150 @@ const LoadingModal = ({ isOpen, progress }) => {
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-gradient-to-r from-indigo-500 to-purple-600 h-full rounded-full transition-all duration-500 ease-out"
+                className={`bg-gradient-to-r from-${currentPhase.color}-500 to-${currentPhase.color}-600 h-full rounded-full transition-all duration-1000 ease-out`}
                 style={{ width: `${Math.round(progress)}%` }}
               />
             </div>
+            <div className="mt-2 text-xs text-gray-500">
+              Estimated time remaining: {getEstimatedTime(progress)}
+            </div>
           </div>
 
-          <div className="space-y-2 text-sm text-gray-600">
-            {progress < 25 && (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                <span>Uploading files...</span>
+          {/* Current Phase Display */}
+          <div
+            className={`mb-6 p-4 bg-${currentPhase.color}-50 border border-${currentPhase.color}-200 rounded-lg`}
+          >
+            <div className="flex items-center justify-center gap-3">
+              <div className="text-2xl">{currentPhase.icon}</div>
+              <div className="text-left">
+                <div
+                  className={`text-sm font-semibold text-${currentPhase.color}-800`}
+                >
+                  {currentPhase.title}
+                </div>
+                <div className={`text-xs text-${currentPhase.color}-600 mt-1`}>
+                  {currentPhase.description}
+                </div>
               </div>
-            )}
-            {progress >= 25 && progress < 50 && (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                <span>Processing data structure...</span>
+            </div>
+          </div>
+
+          {/* Detailed Progress Steps */}
+          <div className="space-y-3 text-sm">
+            <div
+              className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
+                progress >= 25 ? "bg-green-50 text-green-700" : "text-gray-500"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  progress >= 25 ? "bg-green-500" : "bg-gray-300"
+                }`}
+              >
+                {progress >= 25 ? (
+                  <CheckCircle size={12} className="text-white" />
+                ) : (
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                )}
               </div>
-            )}
-            {progress >= 50 && progress < 75 && (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                <span>Generating analyst forecasts...</span>
+              <span>File upload & validation</span>
+            </div>
+
+            <div
+              className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
+                progress >= 50
+                  ? "bg-green-50 text-green-700"
+                  : progress >= 25
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-gray-500"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  progress >= 50
+                    ? "bg-green-500"
+                    : progress >= 25
+                    ? "bg-blue-500"
+                    : "bg-gray-300"
+                }`}
+              >
+                {progress >= 50 ? (
+                  <CheckCircle size={12} className="text-white" />
+                ) : progress >= 25 ? (
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                ) : (
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                )}
               </div>
-            )}
-            {progress >= 75 && progress < 95 && (
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                <span>Creating download files...</span>
+              <span>Data structure analysis</span>
+            </div>
+
+            <div
+              className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
+                progress >= 85
+                  ? "bg-green-50 text-green-700"
+                  : progress >= 50
+                  ? "bg-purple-50 text-purple-700"
+                  : "text-gray-500"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  progress >= 85
+                    ? "bg-green-500"
+                    : progress >= 50
+                    ? "bg-purple-500"
+                    : "bg-gray-300"
+                }`}
+              >
+                {progress >= 85 ? (
+                  <CheckCircle size={12} className="text-white" />
+                ) : progress >= 50 ? (
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                ) : (
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                )}
               </div>
-            )}
-            {progress >= 95 && (
-              <div className="flex items-center justify-center gap-2 text-green-600">
-                <CheckCircle size={16} />
-                <span>Almost done...</span>
+              <span>Forecast generation</span>
+            </div>
+
+            <div
+              className={`flex items-center gap-3 p-2 rounded-md transition-colors ${
+                progress >= 95
+                  ? "bg-green-50 text-green-700"
+                  : progress >= 85
+                  ? "bg-green-50 text-green-700"
+                  : "text-gray-500"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  progress >= 95
+                    ? "bg-green-500"
+                    : progress >= 85
+                    ? "bg-green-500"
+                    : "bg-gray-300"
+                }`}
+              >
+                {progress >= 95 ? (
+                  <CheckCircle size={12} className="text-white" />
+                ) : progress >= 85 ? (
+                  <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                ) : (
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                )}
               </div>
-            )}
+              <span>File packaging & preparation</span>
+            </div>
           </div>
 
           <div className="mt-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-center gap-2 text-amber-800">
               <AlertCircle size={16} />
-              <span className="text-xs">Please don't close this window</span>
+              <span className="text-xs">
+                This process typically takes 3-4 minutes. Please don't close
+                this window.
+              </span>
             </div>
           </div>
         </div>
@@ -1540,13 +1692,44 @@ function Forecast() {
   useEffect(() => {
     let interval;
     if (loading && showModal) {
+      const startTime = Date.now();
+      const totalDuration = 3 * 60 * 1000; // 3 minutes in milliseconds
+
       interval = setInterval(() => {
         setProgress((prev) => {
-          let increment = Math.random() * 2 + 0.5;
-          if (prev < 95) return prev + increment;
-          return prev;
+          const elapsedTime = Date.now() - startTime;
+          const timeProgress = (elapsedTime / totalDuration) * 100;
+
+          // Different progress rates for different phases
+          let targetProgress;
+
+          if (timeProgress < 25) {
+            // First 45 seconds: 0-25% (file upload simulation)
+            targetProgress = (timeProgress / 25) * 25;
+          } else if (timeProgress < 50) {
+            // Next 45 seconds: 25-50% (processing structure)
+            targetProgress = 25 + ((timeProgress - 25) / 25) * 25;
+          } else if (timeProgress < 85) {
+            // Next 63 seconds: 50-85% (generating forecasts - longest phase)
+            targetProgress = 50 + ((timeProgress - 50) / 35) * 35;
+          } else if (timeProgress < 95) {
+            // Next 18 seconds: 85-95% (creating files)
+            targetProgress = 85 + ((timeProgress - 85) / 10) * 10;
+          } else {
+            // Last 9 seconds: 95-99% (finalizing)
+            targetProgress = Math.min(99, 95 + ((timeProgress - 95) / 5) * 4);
+          }
+
+          // Add some randomness but keep it close to target
+          const randomOffset = (Math.random() - 0.5) * 2; // ±1%
+          const newProgress = Math.max(
+            prev,
+            Math.min(99, targetProgress + randomOffset)
+          );
+
+          return newProgress;
         });
-      }, 800);
+      }, 1000); // Update every second for smoother progress
     }
     return () => clearInterval(interval);
   }, [loading, showModal]);

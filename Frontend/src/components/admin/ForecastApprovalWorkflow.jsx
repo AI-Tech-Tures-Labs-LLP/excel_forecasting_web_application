@@ -317,7 +317,8 @@ const ForecastApprovalWorkflow = ({ userRole = "admin" }) => {
 
     const matchesTab =
       activeTab === "all" ||
-      (activeTab === "pending" && forecast.status === "pending_approval") ||
+      (activeTab === "pending approval" &&
+        forecast.status === "pending_approval") ||
       (activeTab === "approved" && forecast.status === "approved") ||
       (activeTab === "revision" && forecast.status === "revision_requested");
 
@@ -434,6 +435,157 @@ const ForecastApprovalWorkflow = ({ userRole = "admin" }) => {
     totalValue: forecasts.reduce((sum, f) => sum + f.value, 0),
   };
 
+  const exportApprovedForecasts = () => {
+    const approvedForecasts = forecasts.filter((f) => f.status === "approved");
+
+    if (approvedForecasts.length === 0) {
+      setSuccessMessage("No approved forecasts to export!");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      return;
+    }
+
+    // Prepare CSV data
+    const csvData = approvedForecasts.map((forecast) => ({
+      "Forecast ID": forecast.id,
+      "Product ID": forecast.productId,
+      Category: forecast.category,
+      Analyst: forecast.analyst,
+      "Approved Date": forecast.approvedDate,
+      "Approved By": forecast.approver,
+      Method: forecast.method,
+      "Confidence %": forecast.confidence,
+      "Recommended Quantity": forecast.recommendedQuantity,
+      "Analyst Final Quantity": forecast.analystFinalQuantity,
+      "Admin Approved Quantity":
+        forecast.adminQuantity || forecast.analystFinalQuantity,
+      "Forecast Value": forecast.value,
+      Variance: forecast.variance,
+      Priority: forecast.priority.toUpperCase(),
+      "Approval Notes": forecast.approvalNotes || "",
+      "Analyst Notes": forecast.notes || "",
+    }));
+
+    // Convert to CSV string
+    const headers = Object.keys(csvData[0]);
+    const csvString = [
+      headers.join(","),
+      ...csvData.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            // Escape commas and quotes in values
+            if (
+              typeof value === "string" &&
+              (value.includes(",") || value.includes('"'))
+            ) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    // Create and download file
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `approved-forecasts-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message
+    setSuccessMessage(
+      `Exported ${approvedForecasts.length} approved forecasts successfully!`
+    );
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
+  };
+  const exportAnalystForecasts = () => {
+    const analystForecasts =
+      filteredForecasts.length > 0 ? filteredForecasts : forecasts;
+
+    if (analystForecasts.length === 0) {
+      setSuccessMessage("No forecasts to export!");
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 3000);
+      return;
+    }
+
+    // Prepare CSV data for analyst
+    const csvData = analystForecasts.map((forecast) => ({
+      "Forecast ID": forecast.id,
+      "Product ID": forecast.productId,
+      Category: forecast.category,
+      Status: forecast.status.replace("_", " ").toUpperCase(),
+      "Submitted Date": forecast.finalizedDate,
+      "Due Date": forecast.dueDate,
+      Method: forecast.method,
+      "Confidence %": forecast.confidence,
+      "Recommended Quantity": forecast.recommendedQuantity,
+      "My Final Quantity": forecast.analystFinalQuantity,
+      "Admin Approved Quantity": forecast.adminQuantity || "",
+      "Forecast Value": forecast.value,
+      Variance: forecast.variance,
+      Priority: forecast.priority.toUpperCase(),
+      "Hours Ago Submitted": forecast.submittedHours,
+      Approver: forecast.approver || "",
+      "Approved Date": forecast.approvedDate || "",
+      "Approval Notes": forecast.approvalNotes || "",
+      "Revision Reason": forecast.rejectionReason || "",
+      "My Notes": forecast.notes || "",
+    }));
+
+    // Convert to CSV string
+    const headers = Object.keys(csvData[0]);
+    const csvString = [
+      headers.join(","),
+      ...csvData.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            // Escape commas and quotes in values
+            if (
+              typeof value === "string" &&
+              (value.includes(",") || value.includes('"'))
+            ) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    // Create and download file
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `my-forecasts-${new Date().toISOString().split("T")[0]}.csv`
+    );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Show success message
+    setSuccessMessage(
+      `Exported ${analystForecasts.length} forecasts successfully!`
+    );
+    setShowSuccessToast(true);
+    setTimeout(() => setShowSuccessToast(false), 3000);
+  };
+
   return (
     <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/20 p-6">
       {/* Success Toast */}
@@ -535,7 +687,7 @@ const ForecastApprovalWorkflow = ({ userRole = "admin" }) => {
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         {/* Tabs */}
         <div className="flex bg-slate-100 rounded-lg p-1">
-          {["pending", "approved", "revision", "all"].map((tab) => (
+          {["pending approval", "approved", "revision", "all"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -551,6 +703,22 @@ const ForecastApprovalWorkflow = ({ userRole = "admin" }) => {
             </button>
           ))}
         </div>
+
+        {/* Export Button - Show for admin in approved tab, or for analyst in any tab */}
+        {((userRole === "admin" && activeTab === "approved") ||
+          userRole === "analyst") && (
+          <button
+            onClick={
+              userRole === "admin"
+                ? exportApprovedForecasts
+                : exportAnalystForecasts
+            }
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm font-medium"
+          >
+            <Download size={16} />
+            {userRole === "admin" ? "Export Approved" : "Export My Forecasts"}
+          </button>
+        )}
 
         {/* Search and Filter */}
         <div className="flex gap-2 flex-1">

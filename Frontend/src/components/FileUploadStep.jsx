@@ -566,8 +566,6 @@ function FileUploadStep() {
   const handleBack = () => {
     // Role-based back navigation
     if (isAdmin) {
-      navigate("/");
-    } else {
       navigate("/dashboard");
     }
   };

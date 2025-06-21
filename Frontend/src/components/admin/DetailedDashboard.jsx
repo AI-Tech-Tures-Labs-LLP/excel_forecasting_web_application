@@ -66,7 +66,6 @@ const DetailedDashboard = () => {
       categories: ["Bridge Gem742", "Diamond"],
       lastActive: "2 hours ago",
       status: "active",
-      weeklyTrend: "+12%",
     },
     {
       id: 2,
@@ -82,7 +81,6 @@ const DetailedDashboard = () => {
       categories: ["Womens Silver260&404", "Fine Pearl"],
       lastActive: "1 hour ago",
       status: "active",
-      weeklyTrend: "+8%",
     },
     {
       id: 3,
@@ -98,7 +96,6 @@ const DetailedDashboard = () => {
       categories: ["Fine Pearl", "Semi"],
       lastActive: "30 minutes ago",
       status: "active",
-      weeklyTrend: "-3%",
     },
     {
       id: 4,
@@ -114,7 +111,6 @@ const DetailedDashboard = () => {
       categories: ["Diamond", "Bridal"],
       lastActive: "4 hours ago",
       status: "active",
-      weeklyTrend: "+15%",
     },
   ];
 
@@ -226,14 +222,6 @@ const DetailedDashboard = () => {
       default:
         return "bg-gray-500";
     }
-  };
-
-  const getTrendIcon = (trend) => {
-    if (trend.startsWith("+"))
-      return <ArrowUp size={12} className="text-green-600" />;
-    if (trend.startsWith("-"))
-      return <ArrowDown size={12} className="text-red-600" />;
-    return <Minus size={12} className="text-gray-600" />;
   };
 
   return (
@@ -489,9 +477,6 @@ const DetailedDashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                     Activity
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Trend
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white/40 divide-y divide-slate-200">
@@ -585,20 +570,7 @@ const DetailedDashboard = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        {getTrendIcon(user.weeklyTrend)}
-                        <span
-                          className={`text-sm font-medium ${
-                            user.weeklyTrend.startsWith("+")
-                              ? "text-green-600"
-                              : user.weeklyTrend.startsWith("-")
-                              ? "text-red-600"
-                              : "text-gray-600"
-                          }`}
-                        >
-                          {user.weeklyTrend}
-                        </span>
-                      </div>
+                      <div className="flex items-center gap-1"></div>
                     </td>
                   </tr>
                 ))}
